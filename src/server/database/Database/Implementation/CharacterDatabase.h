@@ -530,6 +530,9 @@ enum CharacterDatabaseStatements : uint32
 
     CHAR_SEL_WORLD_STATE,
     CHAR_REP_WORLD_STATE,
+    
+    // 아이템 강화 로그 (이 줄 추가)
+    CHAR_INS_ITEM_ENHANCEMENT_LOG,
 
     MAX_CHARACTERDATABASE_STATEMENTS
 };

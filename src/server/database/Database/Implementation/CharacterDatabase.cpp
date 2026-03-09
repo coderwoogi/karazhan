@@ -620,6 +620,9 @@ void CharacterDatabaseConnection::DoPrepareStatements()
     // world_state
     PrepareStatement(CHAR_SEL_WORLD_STATE, "SELECT Id, Data FROM world_state", CONNECTION_SYNCH);
     PrepareStatement(CHAR_REP_WORLD_STATE, "REPLACE INTO world_state (Id, Data) VALUES(?, ?)", CONNECTION_ASYNC);
+
+    // 아이템 강화 로그
+    PrepareStatement(CHAR_INS_ITEM_ENHANCEMENT_LOG, "INSERT INTO item_enhancement_log (player_guid, player_name, item_entry, item_name, old_level, new_level, result) VALUES (?, ?, ?, ?, ?, ?, ?)", CONNECTION_ASYNC);
 }
 
 CharacterDatabaseConnection::CharacterDatabaseConnection(MySQLConnectionInfo& connInfo) : MySQLConnection(connInfo)
