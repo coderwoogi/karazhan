@@ -1,0 +1,15 @@
+#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>, released under GNU AGPL v3 license: https://github.com/azerothcore/azerothcore-wotlk/blob/master/LICENSE-AGPL3
+#
+
+[worldserver]
+
+RewardPlayedTime.Enable = 1
+RewardPlayedTime.Announce = 1
+
+# Add item to the player bag (1) or to the mailbox (0)
+RewardPlayedTime.AddToBag = 1
+
+# Reward intervals in seconds
+RewardPlayedTime.RewardInterval = 3600
+RewardPlayedTime.RewardItems = 1401, 1412, 1416, 117, 159, 414, 436, 118, 1205, 4536, 4540, 4541, 4542, 4544, 3770, 3771, 4599, 4601, 4602, 4604, 4605, 4606, 4607, 4608, 8952, 8953, 2589, 2592, 4306, 4338, 14047, 2835, 2836, 2838, 2770, 2771, 2772, 3355, 3356, 3357, 3358, 2447, 765, 2449, 1210, 2450, 13463, 13464, 13465, 22445, 22573, 22574, 37702, 37705, 22572, 22575, 37701, 37704, 22785, 22786, 22787, 23424, 23425, 43015, 33447, 33448, 38260, 44817, 22250, 36932, 35624, 36918, 51809, 47257, 44326, 47213

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>암상인 모듈 정리</title>
+    <style>
+        :root {
+            --bg: #f4efe6;
+            --panel: #fffaf1;
+            --panel-strong: #f2e2bf;
+            --line: #c8b48a;
+            --text: #2b2418;
+            --muted: #6d6048;
+            --head: #5a3e1b;
+            --head-text: #fff7ea;
+            --row-alt: #f9f1df;
+            --accent: #b7791f;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 32px;
+            background:
+                radial-gradient(circle at top left, #fff3d9 0, transparent 28%),
+                linear-gradient(180deg, #f5ead3 0%, #efe3c7 100%);
+            color: var(--text);
+            font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
+        }
+
+        .wrap {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .hero {
+            padding: 28px 30px;
+            border: 1px solid var(--line);
+            background: linear-gradient(135deg, #fff8eb 0%, #f5e7c6 100%);
+            border-radius: 18px;
+            box-shadow: 0 18px 40px rgba(90, 62, 27, 0.12);
+        }
+
+        .hero h1 {
+            margin: 0 0 10px;
+            font-size: 34px;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(280px, 1fr));
+            gap: 16px;
+            margin-top: 22px;
+        }
+
+        .info-card {
+            padding: 18px 20px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+        }
+
+        .info-card strong {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--accent);
+            font-size: 13px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+        }
+
+        .info-card span {
+            display: block;
+            font-size: 16px;
+            line-height: 1.55;
+            word-break: break-all;
+        }
+
+        .section {
+            margin-top: 28px;
+            padding: 24px;
+            background: rgba(255, 250, 241, 0.92);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 16px 36px rgba(90, 62, 27, 0.08);
+        }
+
+        .section h2 {
+            margin: 0 0 14px;
+            font-size: 24px;
+        }
+
+        .section p {
+            margin: 0 0 18px;
+            color: var(--muted);
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border-radius: 14px;
+            border: 1px solid var(--line);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: auto;
+            background: var(--panel);
+        }
+
+        thead th {
+            padding: 14px 16px;
+            background: var(--head);
+            color: var(--head-text);
+            text-align: left;
+            font-size: 14px;
+            white-space: nowrap;
+            border-right: 1px solid rgba(255, 247, 234, 0.18);
+        }
+
+        tbody td {
+            padding: 14px 16px;
+            vertical-align: top;
+            border-top: 1px solid var(--line);
+            border-right: 1px solid #e5d7b8;
+            line-height: 1.6;
+            white-space: normal;
+            word-break: keep-all;
+        }
+
+        tbody tr:nth-child(even) td {
+            background: var(--row-alt);
+        }
+
+        .col-db {
+            min-width: 150px;
+        }
+
+        .col-name {
+            min-width: 260px;
+        }
+
+        .col-type {
+            min-width: 100px;
+        }
+
+        .col-desc {
+            min-width: 360px;
+        }
+
+        .col-detail {
+            min-width: 420px;
+        }
+
+        .col-source {
+            min-width: 460px;
+            word-break: break-all;
+        }
+
+        code {
+            padding: 2px 6px;
+            background: #f1e3c1;
+            border-radius: 6px;
+            font-family: Consolas, "Courier New", monospace;
+            font-size: 13px;
+        }
+
+        @media (max-width: 900px) {
+            body {
+                padding: 18px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <section class="hero">
+            <h1>암상인 모듈 정리</h1>
+            <p>암상인 모듈의 기능 개요와 사용 중인 데이터베이스 테이블, 관리자 명령어를 한 문서에서 확인할 수 있도록 정리한 참조 문서입니다.</p>
+
+            <div class="info-grid">
+                <div class="info-card">
+                    <strong>이름</strong>
+                    <span>암상인 시스템</span>
+                </div>
+                <div class="info-card">
+                    <strong>설명</strong>
+                    <span>암상인을 월드 내 특정 후보 위치 중 한 곳에 생성하고, 등록된 아이템 풀에서 일부를 골라 판매하며, 구매 로그와 현재 상태를 저장하는 모듈입니다. 현재 로직은 구매가 발생할 때만 다른 랜덤 위치로 이동합니다.</span>
+                </div>
+                <div class="info-card">
+                    <strong>모듈명</strong>
+                    <span><code>mod-blackmarket</code></span>
+                </div>
+                <div class="info-card">
+                    <strong>파일 위치</strong>
+                    <span><code>E:\server\azerothcore-wotlk\modules\mod-blackmarket</code></span>
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>사용 테이블</h2>
+            <p>암상인 모듈이 실제로 사용하는 월드/캐릭터 데이터베이스 테이블과 역할입니다.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-db">데이터베이스</th>
+                            <th class="col-name">테이블명</th>
+                            <th class="col-type">유형</th>
+                            <th class="col-desc">설명</th>
+                            <th class="col-detail">주요 내용</th>
+                            <th class="col-source">파일 위치</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>acore_world</td>
+                            <td><code>blackmarket_spawn_points</code></td>
+                            <td>Table</td>
+                            <td>암상인이 생성될 수 있는 후보 위치 목록</td>
+                            <td>컬럼: id, map, position_x, position_y, position_z, orientation, zone_id, comment</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\data\sql\db-world\blackmarket_spawn_points.sql</td>
+                        </tr>
+                        <tr>
+                            <td>acore_world</td>
+                            <td><code>blackmarket_item_pool</code></td>
+                            <td>Table</td>
+                            <td>암상인이 판매 후보로 사용할 전체 아이템 풀</td>
+                            <td>컬럼: id, item_entry, price_gold, price_item, price_item_count, rarity, weight, max_per_spawn, comment</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\data\sql\db-world\blackmarket_item_pool.sql</td>
+                        </tr>
+                        <tr>
+                            <td>acore_world</td>
+                            <td><code>blackmarket_vendor_items</code></td>
+                            <td>Table</td>
+                            <td>현재 세션에서 암상인이 실제로 판매 중인 아이템 목록</td>
+                            <td>컬럼: id, item_entry, price_gold, price_item, price_item_count, remaining_count, comment</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\data\sql\db-world\blackmarket_vendor_items.sql</td>
+                        </tr>
+                        <tr>
+                            <td>acore_world</td>
+                            <td><code>blackmarket_state</code></td>
+                            <td>Table</td>
+                            <td>암상인의 현재 활성 상태와 현재 위치 정보를 저장하는 단일 상태 테이블</td>
+                            <td>컬럼: id, is_active, creature_guid, spawn_point_id, spawn_time, despawn_time</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\data\sql\db-world\blackmarket_state.sql</td>
+                        </tr>
+                        <tr>
+                            <td>acore_characters</td>
+                            <td><code>blackmarket_purchase_log</code></td>
+                            <td>Table</td>
+                            <td>누가 어떤 아이템을 언제 구매했는지 기록하는 로그 테이블</td>
+                            <td>컬럼: id, account_id, character_guid, item_entry, purchase_time</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\data\sql\db-characters\blackmarket_purchase_log.sql</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2>관리자 명령어</h2>
+            <p>암상인 모듈에 연결된 GM/관리자용 명령어 목록입니다.</p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="col-db">실행 환경</th>
+                            <th class="col-name">명령어</th>
+                            <th class="col-type">유형</th>
+                            <th class="col-desc">설명</th>
+                            <th class="col-detail">권한 및 동작</th>
+                            <th class="col-source">파일 위치</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>worldserver</td>
+                            <td><code>.blackmarket tele add &lt;comment&gt;</code></td>
+                            <td>Command</td>
+                            <td>현재 GM 위치를 암상인 스폰 포인트로 추가</td>
+                            <td>권한: SEC_GAMEMASTER, <code>blackmarket_spawn_points</code> 테이블에 INSERT 수행</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\src\BlackMarketCommands.cpp</td>
+                        </tr>
+                        <tr>
+                            <td>worldserver</td>
+                            <td><code>.blackmarket enable</code></td>
+                            <td>Command</td>
+                            <td>암상인 시스템을 활성화</td>
+                            <td>권한: SEC_ADMINISTRATOR, 비활성 상태면 Enable 호출</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\src\BlackMarketCommands.cpp</td>
+                        </tr>
+                        <tr>
+                            <td>worldserver</td>
+                            <td><code>.blackmarket disable</code></td>
+                            <td>Command</td>
+                            <td>암상인 시스템을 비활성화</td>
+                            <td>권한: SEC_ADMINISTRATOR, 활성 상태면 Disable 호출</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\src\BlackMarketCommands.cpp</td>
+                        </tr>
+                        <tr>
+                            <td>worldserver</td>
+                            <td><code>.blackmarket toggle</code></td>
+                            <td>Command</td>
+                            <td>암상인 시스템 활성/비활성 상태를 전환</td>
+                            <td>권한: SEC_ADMINISTRATOR</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\src\BlackMarketCommands.cpp</td>
+                        </tr>
+                        <tr>
+                            <td>worldserver</td>
+                            <td><code>.blackmarket status</code></td>
+                            <td>Command</td>
+                            <td>암상인 시스템 상태를 출력</td>
+                            <td>권한: SEC_GAMEMASTER, 시스템 활성 여부와 NPC 스폰 여부, 세션 ID 출력</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\src\BlackMarketCommands.cpp</td>
+                        </tr>
+                        <tr>
+                            <td>worldserver</td>
+                            <td><code>.blackmarket go</code></td>
+                            <td>Command</td>
+                            <td>현재 스폰된 암상인 위치로 이동</td>
+                            <td>권한: SEC_GAMEMASTER, 현재 merchant GUID를 찾아 <code>TeleportTo</code> 수행</td>
+                            <td>E:\server\azerothcore-wotlk\modules\mod-blackmarket\src\BlackMarketCommands.cpp</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

@@ -1,0 +1,44 @@
+[worldserver]
+
+###################################################################################################
+#    BlackMarket System Configuration
+###################################################################################################
+#
+#    BlackMarket.Enable
+#        Description: Enable/Disable the BlackMarket system
+#                     When disabled, players cannot see BlackMarket NPCs
+#                     Can be changed at runtime with .blackmarket enable/disable commands
+#        Default:     1 (enabled)
+#
+#    BlackMarket.SpawnCycle
+#        Description: NPC spawn cycle in minutes
+#                     Wait time between merchant despawn and next spawn
+#        Default:     30
+#
+#    BlackMarket.ItemCount
+#        Description: Number of items to sell per spawn
+#                     Random items selected each spawn session
+#        Default:     5
+#
+#    BlackMarket.NpcEntry
+#        Description: BlackMarket NPC Entry ID
+#                     Must be defined in creature_template
+#        Default:     999999
+#
+#    BlackMarket.Announce.Global
+#        Description: Enable global server announcement
+#                     Announces to entire server when merchant spawns
+#        Default:     0 (disabled)
+#
+#    BlackMarket.Announce.Zone
+#        Description: Enable zone announcement
+#                     Announces only in the zone where merchant spawns
+#        Default:     1 (enabled)
+#
+
+BlackMarket.Enable = 1
+BlackMarket.SpawnCycle = 30
+BlackMarket.ItemCount = 5
+BlackMarket.NpcEntry = 999999
+BlackMarket.Announce.Global = 0
+BlackMarket.Announce.Zone = 1

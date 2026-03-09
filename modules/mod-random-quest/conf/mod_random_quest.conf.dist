@@ -1,0 +1,10 @@
+###################################################################################################
+# RandomQuest 모듈 설정
+###################################################################################################
+
+RandomQuest.Enable = 1
+RandomQuest.ResetHour = 6
+RandomQuest.NpcEntry = 900000
+RandomQuest.RewardItemEntry = 900001
+RandomQuest.RewardItemCount = 1
+RandomQuest.RewardGold = 0

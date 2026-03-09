@@ -1,0 +1,7 @@
+CU_SET_PATH("CMAKE_CONFIG_PATH" "${CMAKE_CURRENT_SOURCE_DIR}/conf")
+CU_SET_PATH("CMAKE_CONFIG_OUTPUT_PATH" "${CMAKE_BINARY_DIR}/etc/modules")
+
+AC_ADD_SCRIPT("${CMAKE_CURRENT_LIST_DIR}/src/boss_volgrass.cpp")
+AC_ADD_SCRIPT_LOADER("mod_custom_boss_volgrass" "${CMAKE_CURRENT_LIST_DIR}/src/loader.cpp")
+
+CU_ADD_HOOK(AFTER_WORLDSERVER_CMAKE "${CMAKE_CURRENT_LIST_DIR}/conf/mod_custom_boss_volgrass.conf.dist" "${CMAKE_CONFIG_OUTPUT_PATH}")

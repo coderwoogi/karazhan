@@ -1,0 +1,7 @@
+[worldserver]
+
+#
+# Custom Changes Module Configuration
+#
+
+CustomChanges.Enable = 1

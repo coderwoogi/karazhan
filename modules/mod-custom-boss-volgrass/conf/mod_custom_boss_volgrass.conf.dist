@@ -1,0 +1,70 @@
+﻿#
+# Copyright (C) 2016+ AzerothCore <www.azerothcore.org>
+#
+# This file is free software; as a special exception the author gives
+# unlimited permission to copy and/or distribute it, with or without
+# modifications, as long as this notice is preserved.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY, to the extent permitted by law; without even the
+# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+#
+# Volgrass Boss Configuration
+#
+
+###################################################################################################
+# BOSS SETTINGS
+###################################################################################################
+
+#
+#    Volgrass.Add.EntryID
+#        Description: Creature Entry ID to summon as adds during Phase 2 and 3
+#                     Set to 0 to disable add spawning
+#        Default:     190019
+
+Volgrass.Add.EntryID = 190019
+
+#
+#    Volgrass.Phase2.AddCount
+#        Description: Number of adds to summon during Phase 2
+#        Default:     3
+
+Volgrass.Phase2.AddCount = 3
+
+#
+#    Volgrass.Phase3.AddCount
+#        Description: Number of adds to summon during Phase 3 (Berserk mode)
+#        Default:     5
+
+Volgrass.Phase3.AddCount = 5
+
+#
+#    Volgrass.Summon.Interval
+#        Description: Time interval between add summons (in milliseconds)
+#        Default:     30000 (30 seconds)
+
+Volgrass.Summon.Interval = 30000
+
+#
+#    Volgrass.Berserk.Timer
+#        Description: Time before boss enters Berserk (in milliseconds)
+#        Default:     1080000 (18 minutes)
+
+Volgrass.Berserk.Timer = 1080000
+
+#
+#    Volgrass.Encounter.Timeout
+#        Description: Encounter hard timeout. Boss despawns when exceeded (in milliseconds)
+#        Default:     1200000 (20 minutes)
+
+Volgrass.Encounter.Timeout = 1200000
+
+#
+#    Volgrass.Invasion.PreAnnounceMinutes
+#        Description: Minutes before spawn to announce invasion globally.
+#                     Spawn cycle is fixed at every 2 hours on the hour.
+#        Default:     5
+
+Volgrass.Invasion.PreAnnounceMinutes = 5
+

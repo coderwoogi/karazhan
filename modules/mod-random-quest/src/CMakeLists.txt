@@ -1,0 +1,10 @@
+AC_ADD_SCRIPT("${CMAKE_CURRENT_LIST_DIR}/src/RandomQuestSystem.cpp")
+AC_ADD_SCRIPT("${CMAKE_CURRENT_LIST_DIR}/src/RandomQuestNPC.cpp")
+AC_ADD_SCRIPT("${CMAKE_CURRENT_LIST_DIR}/src/RandomQuestHooks.cpp")
+AC_ADD_SCRIPT("${CMAKE_CURRENT_LIST_DIR}/src/RandomQuestItem.cpp")
+AC_ADD_SCRIPT("${CMAKE_CURRENT_LIST_DIR}/src/RandomQuestLoader.cpp")
+
+AC_ADD_SCRIPT_LOADER("RandomQuest" "${CMAKE_CURRENT_LIST_DIR}/src/RandomQuestLoader.cpp")
+
+CU_SET_PATH("CMAKE_CONFIG_DIR" "${CMAKE_CURRENT_LIST_DIR}/conf")
+CU_ADD_HOOK(AFTER_WORLDSERVER_CMAKE "${CMAKE_CURRENT_LIST_DIR}/cmake/after_ws_install.cmake")
