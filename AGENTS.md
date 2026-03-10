@@ -2,6 +2,10 @@
 
 This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
+## Local Work Rules
+
+Before starting any new user request, check [KARAZHAN_RULES.md](/E:/server/azerothcore-wotlk/KARAZHAN_RULES.md) and follow it with priority for this workspace.
+
 ## Project Overview
 
 AzerothCore is an open-source MMORPG server emulator for World of Warcraft patch 3.3.5a (Wrath of the Lich King). It's a C++ project built with CMake, using MySQL for data storage. Licensed under GNU GPL v2.
