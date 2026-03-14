@@ -63,6 +63,35 @@ static bool DecodeEnhanceTypeAction(uint32 action, uint8& slot,
     return true;
 }
 
+static void AddEnhanceConfigPreview(Player* player, uint32 action,
+    KarazhanEnchantConfig const* config)
+{
+    if (!config)
+        return;
+
+    std::ostringstream costMsg;
+    costMsg << "  비용: " << config->goldCost << " 골드";
+    AddGossipItemFor(player, GOSSIP_ICON_DOT, costMsg.str(),
+        GOSSIP_SENDER_MAIN, action);
+
+    if (config->material1 > 0 && config->material1Count > 0)
+    {
+        std::string materialName = sItemKarazhanMgr->GetItemNameLocale(
+            config->material1, player);
+        std::ostringstream materialMsg;
+        materialMsg << "  재료: " << materialName << " x"
+                    << config->material1Count;
+        AddGossipItemFor(player, GOSSIP_ICON_DOT, materialMsg.str(),
+            GOSSIP_SENDER_MAIN, action);
+    }
+
+    std::ostringstream successMsg;
+    successMsg << "  성공: " << std::fixed << std::setprecision(1)
+               << config->successRate << "%";
+    AddGossipItemFor(player, GOSSIP_ICON_DOT, successMsg.str(),
+        GOSSIP_SENDER_MAIN, action);
+}
+
 class npc_item_karazhan : public CreatureScript
 {
 public:
@@ -370,15 +399,6 @@ private:
         LOG_INFO("module", "Karazhan: ShowEnhanceConfirm - GUID: {}, Current: {}, Target: {}",
             itemGuid, currentLevel, targetLevel);
 
-        KarazhanEnchantConfig const* config = sItemKarazhanMgr->GetEnchantConfig(targetLevel);
-        if (!config)
-        {
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "강화 설정을 찾을 수 없습니다!", GOSSIP_SENDER_MAIN, ACTION_MAIN_MENU);
-            AddGossipItemFor(player, GOSSIP_ICON_TALK, "확인", GOSSIP_SENDER_MAIN, ACTION_MAIN_MENU);
-            SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
-            return;
-        }
-
         AddGossipItemFor(player, GOSSIP_ICON_CHAT, "=== 강화 확인 ===", GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
 
         // Resolve localized item name
@@ -402,81 +422,39 @@ private:
         AddGossipItemFor(player, GOSSIP_ICON_DOT, typeMsg.str(),
             GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
 
-        // goldCost is stored in gold units
-        std::ostringstream costMsg;
-        costMsg << "강화 비용: ";
-        
-        if (config->goldCost > 0)
-        {
-            costMsg << config->goldCost << " 골드";
-        }
-        else
-        {
-            costMsg << "무료";
-        }
-
-        AddGossipItemFor(player, GOSSIP_ICON_DOT, costMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
-
-        // ???щ즺 ?쒖떆 (?쒓?紐?
-        if (config->material1 > 0 && config->material1Count > 0)
-        {
-            std::string materialName = sItemKarazhanMgr->GetItemNameLocale(config->material1, player);
-            std::ostringstream materialMsg;
-            materialMsg << "필요 재료 1: " << materialName << " x" << config->material1Count;
-            AddGossipItemFor(player, GOSSIP_ICON_DOT, materialMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
-        }
-
-        if (config->material2 > 0 && config->material2Count > 0)
-        {
-            std::string materialName = sItemKarazhanMgr->GetItemNameLocale(config->material2, player);
-            std::ostringstream materialMsg;
-            materialMsg << "필요 재료 2: " << materialName << " x" << config->material2Count;
-            AddGossipItemFor(player, GOSSIP_ICON_DOT, materialMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
-        }
-
-        if (config->material3 > 0 && config->material3Count > 0)
-        {
-            std::string materialName = sItemKarazhanMgr->GetItemNameLocale(config->material3, player);
-            std::ostringstream materialMsg;
-            materialMsg << "필요 재료 3: " << materialName << " x" << config->material3Count;
-            AddGossipItemFor(player, GOSSIP_ICON_DOT, materialMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
-        }
-
-        std::ostringstream successMsg;
-        successMsg << "성공 확률: " << std::fixed << std::setprecision(1) << config->successRate << "%";
-        AddGossipItemFor(player, GOSSIP_ICON_DOT, successMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
-
-        float destroyRate = 100.0f - config->successRate - config->failRate;
-        if (destroyRate > 0)
-        {
-            std::ostringstream destroyMsg;
-            destroyMsg << "파괴 확률: " << std::fixed << std::setprecision(1) << destroyRate << "%";
-            AddGossipItemFor(player, GOSSIP_ICON_DOT, destroyMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
-        }
-
-        if (config->failRate > 0)
-        {
-            std::ostringstream failMsg;
-            failMsg << "실패 (단계 유지): " << std::fixed << std::setprecision(1) << config->failRate << "%";
-            AddGossipItemFor(player, GOSSIP_ICON_DOT, failMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
-        }
-
         AddGossipItemFor(player, GOSSIP_ICON_CHAT,
             "------------------------------",
             GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
 
+        uint32 meleeAction = EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_MELEE);
+        uint32 casterAction = EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_CASTER);
+        uint32 healerAction = EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_HEALER);
+        uint32 tankAction = EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_TANK);
+
+        KarazhanEnchantConfig const* meleeConfig = sItemKarazhanMgr->GetEnchantConfig(
+            targetLevel, ENHANCE_TYPE_MELEE);
+        KarazhanEnchantConfig const* casterConfig = sItemKarazhanMgr->GetEnchantConfig(
+            targetLevel, ENHANCE_TYPE_CASTER);
+        KarazhanEnchantConfig const* healerConfig = sItemKarazhanMgr->GetEnchantConfig(
+            targetLevel, ENHANCE_TYPE_HEALER);
+        KarazhanEnchantConfig const* tankConfig = sItemKarazhanMgr->GetEnchantConfig(
+            targetLevel, ENHANCE_TYPE_TANK);
+
         AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[밀리 선택]",
-            GOSSIP_SENDER_MAIN,
-            EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_MELEE));
+            GOSSIP_SENDER_MAIN, meleeAction);
+        AddEnhanceConfigPreview(player, meleeAction, meleeConfig);
+
         AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[캐스터 선택]",
-            GOSSIP_SENDER_MAIN,
-            EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_CASTER));
+            GOSSIP_SENDER_MAIN, casterAction);
+        AddEnhanceConfigPreview(player, casterAction, casterConfig);
+
         AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[힐러 선택]",
-            GOSSIP_SENDER_MAIN,
-            EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_HEALER));
+            GOSSIP_SENDER_MAIN, healerAction);
+        AddEnhanceConfigPreview(player, healerAction, healerConfig);
+
         AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[탱커 선택]",
-            GOSSIP_SENDER_MAIN,
-            EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_TANK));
+            GOSSIP_SENDER_MAIN, tankAction);
+        AddEnhanceConfigPreview(player, tankAction, tankConfig);
         AddGossipItemFor(player, GOSSIP_ICON_TALK, "<- 취소", GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
 
         SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());

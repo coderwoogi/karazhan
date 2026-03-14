@@ -149,7 +149,7 @@ void ItemKarazhanMgr::LoadEnchantConfigs()
     _enchantConfigs.clear();
 
     QueryResult result = WorldDatabase.Query(
-        "SELECT enchant_level, spell_id, random_property_id, success_rate, fail_rate, "
+        "SELECT enchant_level, enhance_type, spell_id, random_property_id, success_rate, fail_rate, "
         "gold_cost, material_1, material_1_count, material_2, material_2_count, "
         "material_3, material_3_count FROM karazhan_enchant_config"
     );
@@ -167,19 +167,20 @@ void ItemKarazhanMgr::LoadEnchantConfigs()
 
         KarazhanEnchantConfig config;
         config.enchantLevel = fields[0].Get<uint8>();
-        config.spellId = fields[1].Get<uint32>();
-        config.randomPropertyId = fields[2].Get<int32>();
-        config.successRate = fields[3].Get<float>();
-        config.failRate = fields[4].Get<float>();
-        config.goldCost = fields[5].Get<uint32>(); // Stored in gold units in DB
-        config.material1 = fields[6].Get<uint32>();
-        config.material1Count = fields[7].Get<uint32>();
-        config.material2 = fields[8].Get<uint32>();
-        config.material2Count = fields[9].Get<uint32>();
-        config.material3 = fields[10].Get<uint32>();
-        config.material3Count = fields[11].Get<uint32>();
+        config.enhanceType = fields[1].Get<uint8>();
+        config.spellId = fields[2].Get<uint32>();
+        config.randomPropertyId = fields[3].Get<int32>();
+        config.successRate = fields[4].Get<float>();
+        config.failRate = fields[5].Get<float>();
+        config.goldCost = fields[6].Get<uint32>(); // Stored in gold units in DB
+        config.material1 = fields[7].Get<uint32>();
+        config.material1Count = fields[8].Get<uint32>();
+        config.material2 = fields[9].Get<uint32>();
+        config.material2Count = fields[10].Get<uint32>();
+        config.material3 = fields[11].Get<uint32>();
+        config.material3Count = fields[12].Get<uint32>();
 
-        _enchantConfigs[config.enchantLevel] = config;
+        _enchantConfigs[MakeEnchantConfigKey(config.enchantLevel, config.enhanceType)] = config;
         count++;
 
     } while (result->NextRow());
@@ -281,9 +282,15 @@ void ItemKarazhanMgr::LoadItemEnhance(uint32 itemGuid)
     _itemEnhances[itemGuid] = enhance;
 }
 
-KarazhanEnchantConfig const* ItemKarazhanMgr::GetEnchantConfig(uint8 level) const
+uint16 ItemKarazhanMgr::MakeEnchantConfigKey(uint8 level, uint8 enhanceType) const
 {
-    auto itr = _enchantConfigs.find(level);
+    return static_cast<uint16>((level << 8) | enhanceType);
+}
+
+KarazhanEnchantConfig const* ItemKarazhanMgr::GetEnchantConfig(
+    uint8 level, uint8 enhanceType) const
+{
+    auto itr = _enchantConfigs.find(MakeEnchantConfigKey(level, enhanceType));
     return (itr != _enchantConfigs.end()) ? &itr->second : nullptr;
 }
 
@@ -788,7 +795,8 @@ void ItemKarazhanMgr::RequestEnhancement(Player* player, Item* item,
     }
 
     // Load target enhancement config
-    KarazhanEnchantConfig const* config = GetEnchantConfig(targetLevel);
+    KarazhanEnchantConfig const* config = GetEnchantConfig(targetLevel,
+        enhanceType);
     if (!config)
     {
         if (WorldSession* session = player->GetSession())

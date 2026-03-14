@@ -44,6 +44,7 @@ struct KarazhanSlotConfig
 struct KarazhanEnchantConfig
 {
     uint8 enchantLevel;
+    uint8 enhanceType;
     uint32 spellId;
     int32 randomPropertyId;
     float successRate;
@@ -135,7 +136,8 @@ public:
     void SetItemEnhanceLevel(uint32 itemGuid, uint32 ownerGuid, uint32 itemEntry, uint8 level);
     void DeleteItemEnhance(uint32 itemGuid);
 
-    KarazhanEnchantConfig const* GetEnchantConfig(uint8 level) const;
+    KarazhanEnchantConfig const* GetEnchantConfig(uint8 level,
+        uint8 enhanceType) const;
     KarazhanSlotConfig const* GetSlotConfig(uint8 slotId) const;
 
     // Queue an enhancement request
@@ -166,9 +168,10 @@ private:
     ItemStateBackup BackupItemState(Item const* item);
     Item* CreateItemWithRandomProperty(Player* player, uint32 entry, int32 randomPropertyId);
     bool RestoreItemState(Item* newItem, ItemStateBackup const& backup, Player* player);
+    uint16 MakeEnchantConfigKey(uint8 level, uint8 enhanceType) const;
 
     std::unordered_map<uint8, KarazhanSlotConfig> _slotConfigs;
-    std::unordered_map<uint8, KarazhanEnchantConfig> _enchantConfigs;
+    std::unordered_map<uint16, KarazhanEnchantConfig> _enchantConfigs;
     std::unordered_map<uint32, KarazhanItemEnhance> _itemEnhances;
 
     // Pending enhancement queue
