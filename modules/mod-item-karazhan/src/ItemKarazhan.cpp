@@ -777,6 +777,7 @@ void ItemKarazhanMgr::RequestEnhancement(Player* player, Item* item,
     uint32 itemEntry = item->GetEntry();
     uint8 currentLevel = GetItemEnhanceLevel(oldItemGuid);
     uint8 targetLevel = currentLevel + 1;
+    uint8 currentType = GetItemEnhanceType(item);
 
     LOG_INFO("module", "Karazhan: RequestEnhancement - Player: {}, Item: {}, GUID: {}, Bag: {}, Slot: {}, Level: {} -> {}, Type: {}",
              player->GetName(), itemEntry, oldItemGuid, bag, slot, currentLevel,
@@ -791,6 +792,27 @@ void ItemKarazhanMgr::RequestEnhancement(Player* player, Item* item,
             ChatHandler(session).PSendSysMessage(
                 "|cffff0000강화 타입을 먼저 선택해야 합니다.|r");
 
+        return;
+    }
+
+    if (currentLevel > 0 &&
+        currentType != ENHANCE_TYPE_NONE &&
+        currentType != ENHANCE_TYPE_ALL_STATS &&
+        currentType != enhanceType)
+    {
+        if (WorldSession* session = player->GetSession())
+        {
+            ChatHandler handler(session);
+            std::string msg = Acore::StringFormat(
+                "|cffff0000이 아이템은 {} 계열로 고정되어 있습니다.|r",
+                GetEnhanceTypeName(currentType));
+            handler.PSendSysMessage(msg.c_str());
+        }
+
+        LOG_WARN("module",
+            "Karazhan: Player {} tried to change enhance type from {} to {}",
+            player->GetName(), GetEnhanceTypeName(currentType),
+            GetEnhanceTypeName(enhanceType));
         return;
     }
 
@@ -847,16 +869,6 @@ void ItemKarazhanMgr::RequestEnhancement(Player* player, Item* item,
     _pendingQueue.push(pending);
 
     LOG_INFO("module", "Karazhan: Enhancement queued - Queue size: {}", _pendingQueue.size());
-
-    // Notify player
-    if (WorldSession* session = player->GetSession())
-    {
-        ChatHandler handler(session);
-        handler.PSendSysMessage("|cff00ff00==============================================|r");
-        handler.PSendSysMessage("|cffffcc00[카라잔 강화]|r 강화를 시작합니다...");
-        handler.PSendSysMessage("|cff00ff00잠시 후 결과가 표시됩니다.|r");
-        handler.PSendSysMessage("|cff00ff00==============================================|r");
-    }
 }
 
 void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pending)

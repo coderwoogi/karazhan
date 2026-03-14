@@ -422,6 +422,18 @@ private:
         AddGossipItemFor(player, GOSSIP_ICON_DOT, typeMsg.str(),
             GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
 
+        bool lockedType = currentLevel > 0 &&
+            currentType != ENHANCE_TYPE_NONE;
+        if (lockedType)
+        {
+            std::ostringstream lockMsg;
+            lockMsg << "이 아이템은 "
+                    << sItemKarazhanMgr->GetEnhanceTypeName(currentType)
+                    << " 계열로 고정됩니다";
+            AddGossipItemFor(player, GOSSIP_ICON_DOT, lockMsg.str(),
+                GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
+        }
+
         AddGossipItemFor(player, GOSSIP_ICON_CHAT,
             "------------------------------",
             GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
@@ -440,21 +452,48 @@ private:
         KarazhanEnchantConfig const* tankConfig = sItemKarazhanMgr->GetEnchantConfig(
             targetLevel, ENHANCE_TYPE_TANK);
 
-        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[밀리 선택]",
-            GOSSIP_SENDER_MAIN, meleeAction);
-        AddEnhanceConfigPreview(player, meleeAction, meleeConfig);
+        if (lockedType && currentType == ENHANCE_TYPE_MELEE)
+        {
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[밀리 선택]",
+                GOSSIP_SENDER_MAIN, meleeAction);
+            AddEnhanceConfigPreview(player, meleeAction, meleeConfig);
+        }
+        else if (lockedType && currentType == ENHANCE_TYPE_CASTER)
+        {
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[캐스터 선택]",
+                GOSSIP_SENDER_MAIN, casterAction);
+            AddEnhanceConfigPreview(player, casterAction, casterConfig);
+        }
+        else if (lockedType && currentType == ENHANCE_TYPE_HEALER)
+        {
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[힐러 선택]",
+                GOSSIP_SENDER_MAIN, healerAction);
+            AddEnhanceConfigPreview(player, healerAction, healerConfig);
+        }
+        else if (lockedType && currentType == ENHANCE_TYPE_TANK)
+        {
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[탱커 선택]",
+                GOSSIP_SENDER_MAIN, tankAction);
+            AddEnhanceConfigPreview(player, tankAction, tankConfig);
+        }
+        else
+        {
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[밀리 선택]",
+                GOSSIP_SENDER_MAIN, meleeAction);
+            AddEnhanceConfigPreview(player, meleeAction, meleeConfig);
 
-        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[캐스터 선택]",
-            GOSSIP_SENDER_MAIN, casterAction);
-        AddEnhanceConfigPreview(player, casterAction, casterConfig);
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[캐스터 선택]",
+                GOSSIP_SENDER_MAIN, casterAction);
+            AddEnhanceConfigPreview(player, casterAction, casterConfig);
 
-        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[힐러 선택]",
-            GOSSIP_SENDER_MAIN, healerAction);
-        AddEnhanceConfigPreview(player, healerAction, healerConfig);
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[힐러 선택]",
+                GOSSIP_SENDER_MAIN, healerAction);
+            AddEnhanceConfigPreview(player, healerAction, healerConfig);
 
-        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[탱커 선택]",
-            GOSSIP_SENDER_MAIN, tankAction);
-        AddEnhanceConfigPreview(player, tankAction, tankConfig);
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[탱커 선택]",
+                GOSSIP_SENDER_MAIN, tankAction);
+            AddEnhanceConfigPreview(player, tankAction, tankConfig);
+        }
         AddGossipItemFor(player, GOSSIP_ICON_TALK, "<- 취소", GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
 
         SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
@@ -473,29 +512,9 @@ private:
             return;
         }
 
-        std::string itemName = sItemKarazhanMgr->GetItemNameLocale(item->GetEntry(), player);
-        uint8 currentLevel = sItemKarazhanMgr->GetItemEnhanceLevel(item->GetGUID().GetCounter());
-
         sItemKarazhanMgr->RequestEnhancement(player, item, enhanceType);
 
         CloseGossipMenuFor(player);
-
-        if (WorldSession* session = player->GetSession())
-        {
-            ChatHandler handler(session);
-            handler.PSendSysMessage("|cff00ff00==============================================|r");
-            
-            // StringFormat ??
-            std::string msg = Acore::StringFormat(
-                "|cffffcc00[카라잔 강화]|r {} +{} ({}) 강화를 시작합니다...",
-                itemName, currentLevel,
-                sItemKarazhanMgr->GetEnhanceTypeName(enhanceType)
-            );
-            handler.PSendSysMessage(msg.c_str());
-            
-            handler.PSendSysMessage("|cff00ff00잠시 후 결과가 표시됩니다.|r");
-            handler.PSendSysMessage("|cff00ff00==============================================|r");
-        }
     }
 };
 
