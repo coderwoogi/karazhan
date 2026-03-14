@@ -1,17 +1,41 @@
--- =====================================================
+﻿-- =====================================================
 -- Karazhan Item Enhancement System
 -- Typed enhance config migration
 -- =====================================================
 
-ALTER TABLE `karazhan_enchant_config`
-    ADD COLUMN `enhance_type` TINYINT UNSIGNED NOT NULL DEFAULT 0
-        COMMENT '강화 타입 (1=밀리, 2=캐스터, 3=힐러, 4=탱커)'
-        AFTER `enchant_level`;
+SET @has_enhance_type := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'karazhan_enchant_config'
+      AND COLUMN_NAME = 'enhance_type'
+);
 
-ALTER TABLE `karazhan_enchant_config`
-    ADD COLUMN `comment` VARCHAR(255) DEFAULT NULL
-        COMMENT '비고'
-        AFTER `material_3_count`;
+SET @sql := IF(
+    @has_enhance_type = 0,
+    'ALTER TABLE `karazhan_enchant_config` ADD COLUMN `enhance_type` TINYINT UNSIGNED NOT NULL DEFAULT 0 COMMENT ''강화 타입 (1=밀리, 2=캐스터, 3=힐러, 4=탱커)'' AFTER `enchant_level`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @has_comment := (
+    SELECT COUNT(*)
+    FROM INFORMATION_SCHEMA.COLUMNS
+    WHERE TABLE_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'karazhan_enchant_config'
+      AND COLUMN_NAME = 'comment'
+);
+
+SET @sql := IF(
+    @has_comment = 0,
+    'ALTER TABLE `karazhan_enchant_config` ADD COLUMN `comment` VARCHAR(255) DEFAULT NULL COMMENT ''비고'' AFTER `material_3_count`',
+    'SELECT 1'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 ALTER TABLE `karazhan_enchant_config`
     DROP PRIMARY KEY,
