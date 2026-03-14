@@ -33,23 +33,24 @@ enum GossipActions
 
     ACTION_ITEM_SELECT = 100,
     ACTION_ENHANCE_CONFIRM = 200,
-    ACTION_ENHANCE_DO = 300,
-    ACTION_ENHANCE_TYPE = 400
+    ACTION_ENHANCE_DO = 300
 };
 
-static uint32 EncodeEnhanceTypeAction(uint8 slot, uint8 enhanceType)
+static uint32 EncodeTypedAction(uint32 baseAction, uint8 slot,
+    uint8 enhanceType)
 {
-    return ACTION_ENHANCE_TYPE + (slot * 10) +
+    return baseAction + (slot * 10) +
         static_cast<uint32>(enhanceType);
 }
 
-static bool DecodeEnhanceTypeAction(uint32 action, uint8& slot,
+static bool DecodeTypedAction(uint32 action, uint32 baseAction,
+    uint8& slot,
     uint8& enhanceType)
 {
-    if (action < ACTION_ENHANCE_TYPE)
+    if (action < baseAction || action >= (baseAction + 100))
         return false;
 
-    uint32 value = action - ACTION_ENHANCE_TYPE;
+    uint32 value = action - baseAction;
     slot = value / 10;
 
     uint32 typeValue = value % 10;
@@ -139,27 +140,20 @@ public:
         if (action >= ACTION_ITEM_SELECT && action < ACTION_ENHANCE_CONFIRM)
         {
             uint8 slot = action - ACTION_ITEM_SELECT;
-            ShowItemDetails(player, creature, slot);
-            return true;
-        }
-
-        if (action >= ACTION_ENHANCE_CONFIRM && action < ACTION_ENHANCE_DO)
-        {
-            uint8 slot = action - ACTION_ENHANCE_CONFIRM;
-            ShowEnhanceConfirm(player, creature, slot);
-            return true;
-        }
-
-        if (action >= ACTION_ENHANCE_DO && action < ACTION_ENHANCE_TYPE)
-        {
-            uint8 slot = action - ACTION_ENHANCE_DO;
-            DoEnhancement(player, creature, slot);
+            ShowTypeSelection(player, creature, slot);
             return true;
         }
 
         uint8 slot = 0;
         uint8 enhanceType = ENHANCE_TYPE_NONE;
-        if (DecodeEnhanceTypeAction(action, slot, enhanceType))
+        if (DecodeTypedAction(action, ACTION_ENHANCE_CONFIRM, slot,
+            enhanceType))
+        {
+            ShowEnhanceConfirm(player, creature, slot, enhanceType);
+            return true;
+        }
+
+        if (DecodeTypedAction(action, ACTION_ENHANCE_DO, slot, enhanceType))
         {
             DoEnhancement(player, creature, slot, enhanceType);
             return true;
@@ -298,7 +292,7 @@ private:
         SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
     }
 
-    void ShowItemDetails(Player* player, Creature* creature, uint8 slot)
+    void ShowTypeSelection(Player* player, Creature* creature, uint8 slot)
     {
         Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
         if (!item)
@@ -323,48 +317,78 @@ private:
 
         uint8 enhanceLevel = result ? result->Fetch()[0].Get<uint8>() : 0;
 
-        LOG_INFO("module", "Karazhan: ShowItemDetails - GUID: {}, Level from DB: {}", itemGuid, enhanceLevel);
+        LOG_INFO("module", "Karazhan: ShowTypeSelection - GUID: {}, Level from DB: {}", itemGuid, enhanceLevel);
 
         uint8 maxLevel = sItemKarazhanMgr->GetMaxEnhanceLevel(proto->InventoryType);
+        uint8 currentType = sItemKarazhanMgr->GetItemEnhanceType(item);
+        bool lockedType = enhanceLevel > 0 && currentType != ENHANCE_TYPE_NONE;
 
-        // Resolve localized item name
         std::string itemName = sItemKarazhanMgr->GetItemNameLocale(item->GetEntry(), player);
 
         std::ostringstream titleMsg;
-        titleMsg << "=== " << itemName;
+        titleMsg << "=== 타입 선택 ===";
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, titleMsg.str(),
+            GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
+
+        std::ostringstream itemMsg;
+        itemMsg << "아이템: " << itemName;
         if (enhanceLevel > 0)
-        {
-            titleMsg << " +" << uint32(enhanceLevel);
-        }
-        titleMsg << " ===";
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, titleMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
-
-        const char* qualityNames[] = {
-            "불량", "일반", "고급", "희귀", "영웅", "전설", "유물", "계승품"
-        };
-
-        if (proto->Quality < 8)
-        {
-            std::ostringstream qualityMsg;
-            qualityMsg << "품질: " << qualityNames[proto->Quality];
-            AddGossipItemFor(player, GOSSIP_ICON_DOT, qualityMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
-        }
-
-        std::ostringstream itemLevelMsg;
-        itemLevelMsg << "아이템 레벨: " << proto->ItemLevel;
-        AddGossipItemFor(player, GOSSIP_ICON_DOT, itemLevelMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
+            itemMsg << " +" << uint32(enhanceLevel);
+        AddGossipItemFor(player, GOSSIP_ICON_DOT, itemMsg.str(),
+            GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
 
         std::ostringstream enhanceLevelMsg;
         enhanceLevelMsg << "현재 강화: +" << uint32(enhanceLevel) << " / 최대 +" << uint32(maxLevel);
-        AddGossipItemFor(player, GOSSIP_ICON_DOT, enhanceLevelMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
+        AddGossipItemFor(player, GOSSIP_ICON_DOT, enhanceLevelMsg.str(),
+            GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
 
-        if (enhanceLevel < maxLevel)
+        if (lockedType)
         {
-            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "[이 아이템을 강화합니다]", GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
+            std::ostringstream lockMsg;
+            lockMsg << "현재 유형: "
+                    << sItemKarazhanMgr->GetEnhanceTypeName(currentType)
+                    << " (고정)";
+            AddGossipItemFor(player, GOSSIP_ICON_DOT, lockMsg.str(),
+                GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
+        }
+
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "------------------------------",
+            GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
+
+        auto addTypeOption = [&](uint8 type, char const* label)
+        {
+            uint32 confirmAction = EncodeTypedAction(ACTION_ENHANCE_CONFIRM,
+                slot, type);
+            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, label,
+                GOSSIP_SENDER_MAIN, confirmAction);
+        };
+
+        if (lockedType)
+        {
+            switch (currentType)
+            {
+                case ENHANCE_TYPE_MELEE:
+                    addTypeOption(ENHANCE_TYPE_MELEE, "[밀리]");
+                    break;
+                case ENHANCE_TYPE_CASTER:
+                    addTypeOption(ENHANCE_TYPE_CASTER, "[캐스터]");
+                    break;
+                case ENHANCE_TYPE_HEALER:
+                    addTypeOption(ENHANCE_TYPE_HEALER, "[힐러]");
+                    break;
+                case ENHANCE_TYPE_TANK:
+                    addTypeOption(ENHANCE_TYPE_TANK, "[탱커]");
+                    break;
+                default:
+                    break;
+            }
         }
         else
         {
-            AddGossipItemFor(player, GOSSIP_ICON_CHAT, "이미 최대 강화 단계입니다", GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
+            addTypeOption(ENHANCE_TYPE_MELEE, "[밀리]");
+            addTypeOption(ENHANCE_TYPE_CASTER, "[캐스터]");
+            addTypeOption(ENHANCE_TYPE_HEALER, "[힐러]");
+            addTypeOption(ENHANCE_TYPE_TANK, "[탱커]");
         }
 
         AddGossipItemFor(player, GOSSIP_ICON_TALK, "<- 뒤로 가기", GOSSIP_SENDER_MAIN, ACTION_SHOW_ITEMS);
@@ -372,7 +396,8 @@ private:
         SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
     }
 
-    void ShowEnhanceConfirm(Player* player, Creature* creature, uint8 slot)
+    void ShowEnhanceConfirm(Player* player, Creature* creature, uint8 slot,
+        uint8 enhanceType)
     {
         Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
         if (!item)
@@ -395,11 +420,25 @@ private:
         uint8 targetLevel = currentLevel + 1;
         uint8 maxLevel = sItemKarazhanMgr->GetMaxEnhanceLevel(proto->InventoryType);
         uint8 currentType = sItemKarazhanMgr->GetItemEnhanceType(item);
+        bool lockedType = currentLevel > 0 &&
+            currentType != ENHANCE_TYPE_NONE;
+
+        if (lockedType && currentType != enhanceType)
+        {
+            ShowTypeSelection(player, creature, slot);
+            return;
+        }
 
         LOG_INFO("module", "Karazhan: ShowEnhanceConfirm - GUID: {}, Current: {}, Target: {}",
             itemGuid, currentLevel, targetLevel);
 
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "=== 강화 확인 ===", GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
+        uint32 sameAction = EncodeTypedAction(ACTION_ENHANCE_CONFIRM, slot,
+            enhanceType);
+        uint32 doAction = EncodeTypedAction(ACTION_ENHANCE_DO, slot,
+            enhanceType);
+
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "=== 강화 확인 ===",
+            GOSSIP_SENDER_MAIN, sameAction);
 
         // Resolve localized item name
         std::string itemName = sItemKarazhanMgr->GetItemNameLocale(item->GetEntry(), player);
@@ -410,20 +449,20 @@ private:
         {
             itemMsg << " +" << uint32(currentLevel);
         }
-        AddGossipItemFor(player, GOSSIP_ICON_DOT, itemMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
+        AddGossipItemFor(player, GOSSIP_ICON_DOT, itemMsg.str(),
+            GOSSIP_SENDER_MAIN, sameAction);
 
         std::ostringstream levelMsg;
         levelMsg << "다음 강화: +" << uint32(currentLevel) << " -> +" << uint32(targetLevel) << " (최대: +" << uint32(maxLevel) << ")";
-        AddGossipItemFor(player, GOSSIP_ICON_DOT, levelMsg.str(), GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
+        AddGossipItemFor(player, GOSSIP_ICON_DOT, levelMsg.str(),
+            GOSSIP_SENDER_MAIN, sameAction);
 
         std::ostringstream typeMsg;
-        typeMsg << "현재 유형: "
-                << sItemKarazhanMgr->GetEnhanceTypeName(currentType);
+        typeMsg << "선택 유형: "
+                << sItemKarazhanMgr->GetEnhanceTypeName(enhanceType);
         AddGossipItemFor(player, GOSSIP_ICON_DOT, typeMsg.str(),
-            GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
+            GOSSIP_SENDER_MAIN, sameAction);
 
-        bool lockedType = currentLevel > 0 &&
-            currentType != ENHANCE_TYPE_NONE;
         if (lockedType)
         {
             std::ostringstream lockMsg;
@@ -431,70 +470,28 @@ private:
                     << sItemKarazhanMgr->GetEnhanceTypeName(currentType)
                     << " 계열로 고정됩니다";
             AddGossipItemFor(player, GOSSIP_ICON_DOT, lockMsg.str(),
-                GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
+                GOSSIP_SENDER_MAIN, sameAction);
         }
 
-        AddGossipItemFor(player, GOSSIP_ICON_CHAT,
-            "------------------------------",
-            GOSSIP_SENDER_MAIN, ACTION_ENHANCE_CONFIRM + slot);
+        KarazhanEnchantConfig const* selectedConfig =
+            sItemKarazhanMgr->GetEnchantConfig(targetLevel, enhanceType);
 
-        uint32 meleeAction = EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_MELEE);
-        uint32 casterAction = EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_CASTER);
-        uint32 healerAction = EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_HEALER);
-        uint32 tankAction = EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_TANK);
-
-        KarazhanEnchantConfig const* meleeConfig = sItemKarazhanMgr->GetEnchantConfig(
-            targetLevel, ENHANCE_TYPE_MELEE);
-        KarazhanEnchantConfig const* casterConfig = sItemKarazhanMgr->GetEnchantConfig(
-            targetLevel, ENHANCE_TYPE_CASTER);
-        KarazhanEnchantConfig const* healerConfig = sItemKarazhanMgr->GetEnchantConfig(
-            targetLevel, ENHANCE_TYPE_HEALER);
-        KarazhanEnchantConfig const* tankConfig = sItemKarazhanMgr->GetEnchantConfig(
-            targetLevel, ENHANCE_TYPE_TANK);
-
-        if (lockedType && currentType == ENHANCE_TYPE_MELEE)
+        AddGossipItemFor(player, GOSSIP_ICON_CHAT, "------------------------------",
+            GOSSIP_SENDER_MAIN, sameAction);
+        if (selectedConfig)
         {
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[밀리 선택]",
-                GOSSIP_SENDER_MAIN, meleeAction);
-            AddEnhanceConfigPreview(player, meleeAction, meleeConfig);
-        }
-        else if (lockedType && currentType == ENHANCE_TYPE_CASTER)
-        {
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[캐스터 선택]",
-                GOSSIP_SENDER_MAIN, casterAction);
-            AddEnhanceConfigPreview(player, casterAction, casterConfig);
-        }
-        else if (lockedType && currentType == ENHANCE_TYPE_HEALER)
-        {
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[힐러 선택]",
-                GOSSIP_SENDER_MAIN, healerAction);
-            AddEnhanceConfigPreview(player, healerAction, healerConfig);
-        }
-        else if (lockedType && currentType == ENHANCE_TYPE_TANK)
-        {
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[탱커 선택]",
-                GOSSIP_SENDER_MAIN, tankAction);
-            AddEnhanceConfigPreview(player, tankAction, tankConfig);
+            AddEnhanceConfigPreview(player, sameAction, selectedConfig);
+            AddGossipItemFor(player, GOSSIP_ICON_MONEY_BAG, "[강화 진행]",
+                GOSSIP_SENDER_MAIN, doAction);
         }
         else
         {
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[밀리 선택]",
-                GOSSIP_SENDER_MAIN, meleeAction);
-            AddEnhanceConfigPreview(player, meleeAction, meleeConfig);
-
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[캐스터 선택]",
-                GOSSIP_SENDER_MAIN, casterAction);
-            AddEnhanceConfigPreview(player, casterAction, casterConfig);
-
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[힐러 선택]",
-                GOSSIP_SENDER_MAIN, healerAction);
-            AddEnhanceConfigPreview(player, healerAction, healerConfig);
-
-            AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[탱커 선택]",
-                GOSSIP_SENDER_MAIN, tankAction);
-            AddEnhanceConfigPreview(player, tankAction, tankConfig);
+            AddGossipItemFor(player, GOSSIP_ICON_CHAT,
+                "해당 강화 설정을 찾을 수 없습니다",
+                GOSSIP_SENDER_MAIN, sameAction);
         }
-        AddGossipItemFor(player, GOSSIP_ICON_TALK, "<- 취소", GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
+        AddGossipItemFor(player, GOSSIP_ICON_TALK, "<- 타입 다시 선택",
+            GOSSIP_SENDER_MAIN, ACTION_ITEM_SELECT + slot);
 
         SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE, creature->GetGUID());
     }
