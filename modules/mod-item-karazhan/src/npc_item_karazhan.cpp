@@ -18,7 +18,8 @@ namespace
 {
     constexpr uint8 ENHANCE_TYPE_NONE = 0;
     constexpr uint8 ENHANCE_TYPE_MELEE = 1;
-    constexpr uint8 ENHANCE_TYPE_CASTER_HEALER = 2;
+    constexpr uint8 ENHANCE_TYPE_CASTER = 2;
+    constexpr uint8 ENHANCE_TYPE_HEALER = 3;
     constexpr uint8 ENHANCE_TYPE_TANK = 4;
     
 }
@@ -53,7 +54,8 @@ static bool DecodeEnhanceTypeAction(uint32 action, uint8& slot,
 
     uint32 typeValue = value % 10;
     if (typeValue != ENHANCE_TYPE_MELEE &&
-        typeValue != ENHANCE_TYPE_CASTER_HEALER &&
+        typeValue != ENHANCE_TYPE_CASTER &&
+        typeValue != ENHANCE_TYPE_HEALER &&
         typeValue != ENHANCE_TYPE_TANK)
         return false;
 
@@ -466,9 +468,12 @@ private:
         AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[밀리 선택]",
             GOSSIP_SENDER_MAIN,
             EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_MELEE));
-        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[캐힐 선택]",
+        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[캐스터 선택]",
             GOSSIP_SENDER_MAIN,
-            EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_CASTER_HEALER));
+            EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_CASTER));
+        AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[힐러 선택]",
+            GOSSIP_SENDER_MAIN,
+            EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_HEALER));
         AddGossipItemFor(player, GOSSIP_ICON_BATTLE, "[탱커 선택]",
             GOSSIP_SENDER_MAIN,
             EncodeEnhanceTypeAction(slot, ENHANCE_TYPE_TANK));

@@ -20,7 +20,8 @@ namespace
 {
     constexpr uint8 ENHANCE_TYPE_NONE = 0;
     constexpr uint8 ENHANCE_TYPE_MELEE = 1;
-    constexpr uint8 ENHANCE_TYPE_CASTER_HEALER = 2;
+    constexpr uint8 ENHANCE_TYPE_CASTER = 2;
+    constexpr uint8 ENHANCE_TYPE_HEALER = 3;
     constexpr uint8 ENHANCE_TYPE_TANK = 4;
     constexpr uint8 ENHANCE_TYPE_ALL_STATS = 5;
 }
@@ -644,8 +645,9 @@ uint8 ItemKarazhanMgr::GetItemEnhanceType(Item const* item) const
             case 0:
                 return ENHANCE_TYPE_MELEE;
             case 1:
+                return ENHANCE_TYPE_CASTER;
             case 2:
-                return ENHANCE_TYPE_CASTER_HEALER;
+                return ENHANCE_TYPE_HEALER;
             case 3:
                 return ENHANCE_TYPE_TANK;
             default:
@@ -662,8 +664,10 @@ char const* ItemKarazhanMgr::GetEnhanceTypeName(uint8 enhanceType) const
     {
         case ENHANCE_TYPE_MELEE:
             return "밀리";
-        case ENHANCE_TYPE_CASTER_HEALER:
-            return "캐힐";
+        case ENHANCE_TYPE_CASTER:
+            return "캐스터";
+        case ENHANCE_TYPE_HEALER:
+            return "힐러";
         case ENHANCE_TYPE_TANK:
             return "탱커";
         case ENHANCE_TYPE_ALL_STATS:
@@ -683,7 +687,8 @@ uint32 ItemKarazhanMgr::GetEnhanceSpellId(uint8 level, uint8 enhanceType) const
         case ENHANCE_TYPE_ALL_STATS:
             return 201180 + level;
         case ENHANCE_TYPE_MELEE:
-        case ENHANCE_TYPE_CASTER_HEALER:
+        case ENHANCE_TYPE_CASTER:
+        case ENHANCE_TYPE_HEALER:
         case ENHANCE_TYPE_TANK:
             return 201201 + ((level - 1) * 4) +
                 (static_cast<uint32>(enhanceType) - 1);
@@ -771,7 +776,8 @@ void ItemKarazhanMgr::RequestEnhancement(Player* player, Item* item,
              targetLevel, GetEnhanceTypeName(enhanceType));
 
     if (enhanceType != ENHANCE_TYPE_MELEE &&
-        enhanceType != ENHANCE_TYPE_CASTER_HEALER &&
+        enhanceType != ENHANCE_TYPE_CASTER &&
+        enhanceType != ENHANCE_TYPE_HEALER &&
         enhanceType != ENHANCE_TYPE_TANK)
     {
         if (WorldSession* session = player->GetSession())
