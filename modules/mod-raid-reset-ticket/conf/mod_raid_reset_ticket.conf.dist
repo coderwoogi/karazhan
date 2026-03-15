@@ -1,0 +1,8 @@
+[worldserver]
+
+#
+#    RaidResetTicket.Enable
+#        Description: Enable raid reset ticket module.
+#        Default:     1
+#
+RaidResetTicket.Enable = 1
