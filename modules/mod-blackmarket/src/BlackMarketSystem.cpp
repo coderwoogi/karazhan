@@ -66,32 +66,19 @@ void BlackMarketSystem::Initialize()
     LoadSpawnPoints();
     LoadItemPool();
     LoadCurrentState();
-    
-    if (_isActive)
-    {
-        bool npcExists = false;
-        for (auto const& point : _spawnPoints)
-        {
-            Map* map = sMapMgr->FindMap(point.map, 0);
-            if (map && map->GetCreature(_currentMerchantGUID))
-            {
-                npcExists = true;
-                break;
-            }
-        }
 
-        if (!npcExists)
-        {
-            LOG_WARN("module", ">> BlackMarket active in DB but no NPC found. Resetting state.");
-            DespawnMerchant();
-            _events.ScheduleEvent(EVENT_BLACKMARKET_CYCLE, Seconds(10));
-        }
-    }
-    else
+    _events.CancelEvent(EVENT_BLACKMARKET_CYCLE);
+    _events.CancelEvent(EVENT_BLACKMARKET_ANNOUNCE);
+
+    // Always start a fresh random session on server startup.
+    if (_isActive || !_currentMerchantGUID.IsEmpty() || !_currentItems.empty())
     {
-        _events.ScheduleEvent(EVENT_BLACKMARKET_CYCLE, Minutes(_spawnCycle));
-        LOG_INFO("module", ">> BlackMarket next spawn in {} min", _spawnCycle);
+        LOG_INFO("module", ">> BlackMarket restoring state skipped, resetting for fresh startup spawn");
+        DespawnMerchant();
     }
+
+    _events.ScheduleEvent(EVENT_BLACKMARKET_CYCLE, Seconds(1));
+    LOG_INFO("module", ">> BlackMarket initial random spawn scheduled");
     
     LOG_INFO("module", ">> BlackMarket initialization complete (Spawns: {}, Items: {}, Active: {})",
         _spawnPoints.size(), _itemPool.size(), _isActive);
@@ -792,8 +779,9 @@ void BlackMarketSystem::SetEnabled(bool enabled)
     {
         if (!_isActive)
         {
-            _events.ScheduleEvent(EVENT_BLACKMARKET_CYCLE, Minutes(_spawnCycle));
-            LOG_INFO("module", ">> BlackMarket system enabled: Next spawn in {} minutes", _spawnCycle);
+            _events.CancelEvent(EVENT_BLACKMARKET_CYCLE);
+            _events.ScheduleEvent(EVENT_BLACKMARKET_CYCLE, Seconds(1));
+            LOG_INFO("module", ">> BlackMarket system enabled: Initial random spawn scheduled");
         }
         else
         {
