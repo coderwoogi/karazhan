@@ -32,8 +32,8 @@ enum GossipActions
     ACTION_GOODBYE = 4,
 
     ACTION_ITEM_SELECT = 100,
-    ACTION_ENHANCE_CONFIRM = 200,
-    ACTION_ENHANCE_DO = 300
+    ACTION_ENHANCE_CONFIRM = 1000,
+    ACTION_ENHANCE_DO = 2000
 };
 
 static uint32 EncodeTypedAction(uint32 baseAction, uint8 slot,
@@ -47,7 +47,7 @@ static bool DecodeTypedAction(uint32 action, uint32 baseAction,
     uint8& slot,
     uint8& enhanceType)
 {
-    if (action < baseAction || action >= (baseAction + 100))
+    if (action < baseAction || action >= (baseAction + 1000))
         return false;
 
     uint32 value = action - baseAction;
