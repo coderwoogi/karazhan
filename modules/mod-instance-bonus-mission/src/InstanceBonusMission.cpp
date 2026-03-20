@@ -4,11 +4,9 @@
 #include "DatabaseEnv.h"
 #include "GameTime.h"
 #include "Group.h"
-#include "InstanceMap.h"
+#include "Item.h"
 #include "Log.h"
 #include "Map.h"
-#include "ObjectAccessor.h"
-#include "ObjectGuid.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
@@ -19,13 +17,6 @@
 
 namespace
 {
-    enum MissionType : uint8
-    {
-        MISSION_KILL_ENTRY = 1,
-        MISSION_KILL_TYPE = 2,
-        MISSION_KILL_BOSS = 3,
-    };
-
     struct MissionDefinition
     {
         uint32 mapId = 0;
@@ -48,6 +39,10 @@ namespace
         uint32 targetCount = 0;
         uint32 currentCount = 0;
         uint32 timeLimitSec = 0;
+        uint32 rewardItem = 0;
+        uint32 rewardCount = 0;
+        std::string title;
+        std::string announcement;
         time_t startTime = 0;
         time_t expireTime = 0;
         bool completed = false;
@@ -56,6 +51,11 @@ namespace
         bool announcedFive = false;
         bool announcedThree = false;
         bool announcedOne = false;
+        bool announcedTenMinute = false;
+        bool announcedFiveMinute = false;
+        bool announcedThreeMinute = false;
+        bool announcedOneMinute = false;
+        bool announcedThirtySec = false;
     };
 
     class MissionStore
@@ -71,6 +71,11 @@ namespace
         {
             _enabled = sConfigMgr->GetOption<bool>(
                 "InstanceBonusMission.Enable", true);
+            _llmEnabled = sConfigMgr->GetOption<bool>(
+                "InstanceBonusMission.LLM.Enable", false);
+            _llmUrl = sConfigMgr->GetOption<std::string>(
+                "InstanceBonusMission.LLM.Url",
+                "http://127.0.0.1:8000");
             _definitions.clear();
 
             if (!_enabled)
@@ -113,6 +118,16 @@ namespace
             return _enabled;
         }
 
+        bool IsLlmEnabled() const
+        {
+            return _llmEnabled;
+        }
+
+        std::string const& GetLlmUrl() const
+        {
+            return _llmUrl;
+        }
+
         std::vector<MissionDefinition> const* GetByMap(uint32 mapId) const
         {
             auto itr = _definitions.find(mapId);
@@ -124,6 +139,8 @@ namespace
 
     private:
         bool _enabled = true;
+        bool _llmEnabled = false;
+        std::string _llmUrl;
         std::unordered_map<uint32, std::vector<MissionDefinition>>
             _definitions;
     };
@@ -156,6 +173,10 @@ namespace
             state.targetCount = definition.targetCount;
             state.currentCount = 0;
             state.timeLimitSec = definition.timeLimitSec;
+            state.rewardItem = definition.rewardItem;
+            state.rewardCount = definition.rewardCount;
+            state.title = definition.title;
+            state.announcement = definition.fallbackAnnouncement;
             state.startTime = GameTime::GetGameTime().count();
             state.expireTime = state.startTime + state.timeLimitSec;
             state.completed = false;
@@ -164,17 +185,26 @@ namespace
             state.announcedFive = false;
             state.announcedThree = false;
             state.announcedOne = false;
+            state.announcedTenMinute = false;
+            state.announcedFiveMinute = false;
+            state.announcedThreeMinute = false;
+            state.announcedOneMinute = false;
+            state.announcedThirtySec = false;
             return state;
-        }
-
-        void Remove(uint32 instanceId)
-        {
-            _states.erase(instanceId);
         }
 
     private:
         std::unordered_map<uint32, MissionState> _states;
     };
+
+
+    void SendMissionMessageToPlayer(Player* player, std::string const& msg)
+    {
+        if (!player)
+            return;
+
+        ChatHandler(player->GetSession()).SendSysMessage(msg.c_str());
+    }
 
     void SendMissionMessageToGroup(Player* player, std::string const& msg)
     {
@@ -187,24 +217,136 @@ namespace
                  itr = itr->next())
             {
                 if (Player* member = itr->GetSource())
-                {
-                    ChatHandler(member->GetSession()).SendSysMessage(
-                        msg.c_str());
-                }
+                    SendMissionMessageToPlayer(member, msg);
             }
             return;
         }
 
-        ChatHandler(player->GetSession()).SendSysMessage(msg.c_str());
+        SendMissionMessageToPlayer(player, msg);
     }
 
-    MissionDefinition const* SelectFallbackMission(uint32 mapId)
+    void SendMissionMessageToMap(Map* map, std::string const& msg)
+    {
+        if (!map)
+            return;
+
+        Map::PlayerList const& players = map->GetPlayers();
+        for (auto const& ref : players)
+        {
+            if (Player* player = ref.GetSource())
+                SendMissionMessageToPlayer(player, msg);
+        }
+    }
+
+    MissionDefinition const* SelectMission(uint32 mapId)
     {
         auto definitions = MissionStore::Instance().GetByMap(mapId);
         if (!definitions || definitions->empty())
             return nullptr;
 
+        if (MissionStore::Instance().IsLlmEnabled())
+        {
+            LOG_INFO(
+                "module.instance_bonus_mission",
+                "LLM is enabled. Fallback selection is used until HTTP "
+                "bridge is connected. url={}",
+                MissionStore::Instance().GetLlmUrl());
+        }
+
         return &definitions->front();
+    }
+
+    void RewardMissionToMap(Map* map, MissionState const& state)
+    {
+        if (!map || !state.rewardItem || !state.rewardCount)
+            return;
+
+        Map::PlayerList const& players = map->GetPlayers();
+        for (auto const& ref : players)
+        {
+            Player* player = ref.GetSource();
+            if (!player)
+                continue;
+
+            player->AddItem(state.rewardItem, state.rewardCount);
+        }
+    }
+
+    void UpdateMissionProgress(Player* killer, Creature* killed)
+    {
+        if (!killer || !killed)
+            return;
+
+        Map* map = killer->GetMap();
+        if (!map || !map->IsDungeon() || !map->GetInstanceId())
+            return;
+
+        MissionState* state = MissionStateStore::Instance().Get(
+            map->GetInstanceId());
+        if (!state || state->completed || state->failed)
+            return;
+
+        if (state->targetEntry != killed->GetEntry())
+            return;
+
+        ++state->currentCount;
+
+        uint32 remaining = 0;
+        if (state->targetCount > state->currentCount)
+            remaining = state->targetCount - state->currentCount;
+
+        if (!state->announcedHalf &&
+            state->targetCount > 1 &&
+            state->currentCount >= (state->targetCount / 2))
+        {
+            state->announcedHalf = true;
+            SendMissionMessageToGroup(
+                killer,
+                Acore::StringFormat(
+                    "[추가 임무] 목표의 절반을 달성했습니다. {} / {}",
+                    state->currentCount, state->targetCount));
+        }
+
+        if (!state->announcedFive && remaining == 5)
+        {
+            state->announcedFive = true;
+            SendMissionMessageToGroup(
+                killer,
+                Acore::StringFormat(
+                    "[추가 임무] {} 중 {}마리 남았습니다.",
+                    state->targetCount, remaining));
+        }
+
+        if (!state->announcedThree && remaining == 3)
+        {
+            state->announcedThree = true;
+            SendMissionMessageToGroup(
+                killer,
+                Acore::StringFormat(
+                    "[추가 임무] {} 중 {}마리 남았습니다.",
+                    state->targetCount, remaining));
+        }
+
+        if (!state->announcedOne && remaining == 1)
+        {
+            state->announcedOne = true;
+            SendMissionMessageToGroup(
+                killer,
+                Acore::StringFormat(
+                    "[추가 임무] {} 중 {}마리 남았습니다.",
+                    state->targetCount, remaining));
+        }
+
+        if (state->currentCount < state->targetCount)
+            return;
+
+        state->completed = true;
+        RewardMissionToMap(map, *state);
+        SendMissionMessageToMap(
+            map,
+            Acore::StringFormat(
+                "[추가 임무] {} 임무를 완수했습니다. 추가 보상이 지급됩니다.",
+                state->title));
     }
 }
 
@@ -236,94 +378,27 @@ public:
             return;
 
         Map* map = player->GetMap();
-        if (!map || !map->IsDungeon())
-            return;
-
-        if (!map->GetInstanceId())
+        if (!map || !map->IsDungeon() || !map->GetInstanceId())
             return;
 
         uint32 instanceId = map->GetInstanceId();
         if (MissionStateStore::Instance().Get(instanceId))
             return;
 
-        MissionDefinition const* definition =
-            SelectFallbackMission(map->GetId());
+        MissionDefinition const* definition = SelectMission(map->GetId());
         if (!definition)
             return;
 
-        MissionStateStore::Instance().Create(instanceId, *definition);
-        SendMissionMessageToGroup(player, definition->fallbackAnnouncement);
+        MissionState& state = MissionStateStore::Instance().Create(
+            instanceId, *definition);
+
+        SendMissionMessageToGroup(
+            player,
+            Acore::StringFormat(
+                "[추가 임무] {}",
+                state.announcement));
     }
 };
-
-    void UpdateMissionProgress(Player* killer, Creature* killed)
-    {
-        if (!killer || !killed)
-            return;
-
-        Map* map = killer->GetMap();
-        if (!map || !map->IsDungeon() || !map->GetInstanceId())
-            return;
-
-        MissionState* state = MissionStateStore::Instance().Get(
-            map->GetInstanceId());
-        if (!state || state->completed || state->failed)
-            return;
-
-        if (state->targetEntry != killed->GetEntry())
-            return;
-
-        ++state->currentCount;
-
-        uint32 remaining = 0;
-        if (state->targetCount > state->currentCount)
-            remaining = state->targetCount - state->currentCount;
-
-        if (!state->announcedHalf &&
-            state->currentCount >= (state->targetCount / 2))
-        {
-            state->announcedHalf = true;
-            SendMissionMessageToGroup(
-                killer,
-                Acore::StringFormat(
-                    "추가 보상 임무 진행 중: 목표의 절반을 달성했습니다."));
-        }
-
-        if (!state->announcedFive && remaining == 5)
-        {
-            state->announcedFive = true;
-            SendMissionMessageToGroup(
-                killer,
-                Acore::StringFormat(
-                    "현재 목표까지 {}마리 남았습니다.", remaining));
-        }
-
-        if (!state->announcedThree && remaining == 3)
-        {
-            state->announcedThree = true;
-            SendMissionMessageToGroup(
-                killer,
-                Acore::StringFormat(
-                    "현재 목표까지 {}마리 남았습니다.", remaining));
-        }
-
-        if (!state->announcedOne && remaining == 1)
-        {
-            state->announcedOne = true;
-            SendMissionMessageToGroup(
-                killer,
-                Acore::StringFormat(
-                    "현재 목표까지 {}마리 남았습니다.", remaining));
-        }
-
-        if (state->currentCount < state->targetCount)
-            return;
-
-        state->completed = true;
-        SendMissionMessageToGroup(
-            killer, "추가 보상 임무를 완수했습니다.");
-    }
-}
 
 class InstanceBonusMissionKillScript : public PlayerScript
 {
@@ -358,9 +433,56 @@ public:
             return;
 
         time_t now = GameTime::GetGameTime().count();
-        if (state->timeLimitSec && now >= state->expireTime)
+        if (state->timeLimitSec == 0)
+            return;
+
+        if (now >= state->expireTime)
         {
             state->failed = true;
+            SendMissionMessageToMap(
+                map,
+                Acore::StringFormat(
+                    "[추가 임무] {} 임무가 시간 초과로 실패했습니다.",
+                    state->title));
+            return;
+        }
+
+        uint32 remaining = uint32(state->expireTime - now);
+
+        if (!state->announcedTenMinute && remaining <= 600 &&
+            state->timeLimitSec > 600)
+        {
+            state->announcedTenMinute = true;
+            SendMissionMessageToMap(
+                map, "[추가 임무] 시간이 10분 남았습니다.");
+        }
+
+        if (!state->announcedFiveMinute && remaining <= 300)
+        {
+            state->announcedFiveMinute = true;
+            SendMissionMessageToMap(
+                map, "[추가 임무] 시간이 5분 남았습니다.");
+        }
+
+        if (!state->announcedThreeMinute && remaining <= 180)
+        {
+            state->announcedThreeMinute = true;
+            SendMissionMessageToMap(
+                map, "[추가 임무] 시간이 3분 남았습니다.");
+        }
+
+        if (!state->announcedOneMinute && remaining <= 60)
+        {
+            state->announcedOneMinute = true;
+            SendMissionMessageToMap(
+                map, "[추가 임무] 시간이 1분 남았습니다.");
+        }
+
+        if (!state->announcedThirtySec && remaining <= 30)
+        {
+            state->announcedThirtySec = true;
+            SendMissionMessageToMap(
+                map, "[추가 임무] 시간이 30초 남았습니다.");
         }
     }
 };

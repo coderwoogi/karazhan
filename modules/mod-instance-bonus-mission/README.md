@@ -1,122 +1,14 @@
 # mod-instance-bonus-mission
 
-## 개요
+This module adds bonus mission content for dungeon and raid instances.
 
-이 모듈은 던전 또는 공격대 입장 시 파티/공격대에
-`추가 보상 미션`을 부여하는 시스템이다.
+Core responsibilities:
+- detect party entry into an instance
+- load candidate missions for the instance
+- create one active mission per instance
+- track progress and time limits
+- announce progress and failure states
+- reward the party when the mission is completed
 
-로컬 저사양 LLM은 미션을 자유 생성하지 않고,
-서버가 준비한 후보 미션 중 하나를 선택하고
-플레이어에게 보여줄 브리핑 문구를 만드는 역할만 맡는다.
-
-실제 판정, 진행도 관리, 시간 제한, 성공/실패, 보상 지급은
-모두 AzerothCore 모듈이 담당한다.
-
-## 1차 목표
-
-- 특정 인스턴스 입장 감지
-- 해당 인스턴스용 미션 후보 로드
-- 인스턴스 상태 저장
-- 시간 제한 시작
-- 몬스터/보스 처치 카운트 추적
-- 공격대 경고 스타일 진행도 안내
-- 성공/실패 판정
-- 기본 fallback 랜덤 선택 지원
-- 이후 로컬 LLM 브리지 연결
-
-## 전체 구조
-
-```text
-파티 입장
--> 인스턴스 식별
--> 후보 미션 로드
--> LLM 브리지 호출 또는 fallback 랜덤 선택
--> 인스턴스 상태 저장
--> 공격대 경고로 임무 시작 공지
--> 처치 시 진행도 갱신
--> 남은 시간/남은 목표 수 공지
--> 완료 시 보상
--> 시간 초과 시 실패
-```
-
-## 역할 분리
-
-### 모듈
-
-- 인스턴스 입장 감지
-- 후보 미션 조회
-- 인스턴스별 현재 미션 저장
-- 시간 제한 관리
-- 처치 이벤트 추적
-- 공지 출력
-- 완료/실패 처리
-- 보상 지급
-
-### 로컬 LLM
-
-- 후보 미션 중 하나 선택
-- 입장 브리핑 문구 생성
-
-### 브리지 서버
-
-- Ollama 호출
-- 프롬프트 구성
-- JSON 응답 반환
-- 타임아웃/예외 처리
-
-## 미션 타입
-
-- 특정 몬스터 엔트리 N마리 처치
-- 특정 크리처 타입 N마리 처치
-- 특정 보스 처치
-- 특정 몬스터 N마리 처치 후 특정 보스 처치
-
-## 시간 제한
-
-모든 미션은 선택적으로 시간 제한을 가진다.
-
-예:
-- 10분 안에 언데드 10마리 처치
-- 15분 안에 특정 보스 처치
-
-## 공지 규칙
-
-### 시작 공지
-
-- 인스턴스 입장 직후 1회
-- LLM 브리핑 또는 fallback 문구 출력
-
-### 시간 경고
-
-- 10분
-- 5분
-- 3분
-- 1분
-- 30초
-
-### 진행도 경고
-
-- 목표 절반 도달
-- 남은 수량 5
-- 남은 수량 3
-- 남은 수량 1
-
-## 1차 대상 던전
-
-- 마나 무덤
-
-## fallback 정책
-
-LLM 서버가 꺼져 있거나 응답이 실패하면
-서버가 후보 미션 중 하나를 랜덤으로 선택한다.
-
-이 모듈은 LLM 없이도 동작 가능해야 한다.
-
-## 개발 단계
-
-1. DB 테이블 추가
-2. 모듈 골격 생성
-3. 입장/처치/시간 제한 상태 관리 구현
-4. fallback 랜덤 미션 동작 구현
-5. 로컬 LLM 브리지 연결
-6. 마나 무덤 1차 테스트
+The local LLM is only responsible for mission selection and briefing text.
+The AzerothCore module is responsible for all gameplay rules.
