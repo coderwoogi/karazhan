@@ -1,0 +1,24 @@
+#
+# mod-instance-bonus-mission
+#
+
+InstanceBonusMission.Enable = 1
+
+# Enable LLM bridge calls.
+# If disabled, the module uses fallback random mission selection.
+InstanceBonusMission.LLM.Enable = 0
+
+# Local bridge URL.
+InstanceBonusMission.LLM.Url = "http://127.0.0.1:8000"
+
+# Request timeout in milliseconds.
+InstanceBonusMission.LLM.TimeoutMs = 3000
+
+# Enable raid warning style progress announcements.
+InstanceBonusMission.Announce.Enable = 1
+
+# Default reward item entry used for the first prototype.
+InstanceBonusMission.Reward.Item = 49426
+
+# Default reward item count.
+InstanceBonusMission.Reward.Count = 1
