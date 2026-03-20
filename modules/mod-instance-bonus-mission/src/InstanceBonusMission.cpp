@@ -8,6 +8,7 @@
 #include "Log.h"
 #include "Map.h"
 #include "Player.h"
+#include "Random.h"
 #include "ScriptMgr.h"
 #include "StringFormat.h"
 #include "WorldSession.h"
@@ -26,6 +27,7 @@ namespace
         uint32 targetCount = 0;
         uint32 timeLimitSec = 0;
         std::string title;
+        std::string targetLabel;
         std::string fallbackAnnouncement;
         uint32 rewardItem = 0;
         uint32 rewardCount = 0;
@@ -42,6 +44,7 @@ namespace
         uint32 rewardItem = 0;
         uint32 rewardCount = 0;
         std::string title;
+        std::string targetLabel;
         std::string announcement;
         time_t startTime = 0;
         time_t expireTime = 0;
@@ -71,11 +74,17 @@ namespace
         {
             _enabled = sConfigMgr->GetOption<bool>(
                 "InstanceBonusMission.Enable", true);
+            _announceEnabled = sConfigMgr->GetOption<bool>(
+                "InstanceBonusMission.Announce.Enable", true);
             _llmEnabled = sConfigMgr->GetOption<bool>(
                 "InstanceBonusMission.LLM.Enable", false);
             _llmUrl = sConfigMgr->GetOption<std::string>(
                 "InstanceBonusMission.LLM.Url",
                 "http://127.0.0.1:8000");
+            _defaultRewardItem = sConfigMgr->GetOption<uint32>(
+                "InstanceBonusMission.Reward.Item", 49426);
+            _defaultRewardCount = sConfigMgr->GetOption<uint32>(
+                "InstanceBonusMission.Reward.Count", 1);
             _definitions.clear();
 
             if (!_enabled)
@@ -83,7 +92,7 @@ namespace
 
             QueryResult result = WorldDatabase.Query(
                 "SELECT map_id, mission_id, mission_type, target_entry, "
-                "target_count, time_limit_sec, title, "
+                "target_count, time_limit_sec, title, target_label, "
                 "fallback_announcement, reward_item, reward_count "
                 "FROM instance_bonus_mission_pool "
                 "WHERE enabled = 1 "
@@ -104,10 +113,20 @@ namespace
                 definition.targetCount = fields[4].Get<uint32>();
                 definition.timeLimitSec = fields[5].Get<uint32>();
                 definition.title = fields[6].Get<std::string>();
+                definition.targetLabel = fields[7].Get<std::string>();
                 definition.fallbackAnnouncement =
-                    fields[7].Get<std::string>();
-                definition.rewardItem = fields[8].Get<uint32>();
-                definition.rewardCount = fields[9].Get<uint32>();
+                    fields[8].Get<std::string>();
+                definition.rewardItem = fields[9].Get<uint32>();
+                definition.rewardCount = fields[10].Get<uint32>();
+
+                if (definition.targetLabel.empty())
+                    definition.targetLabel = definition.title;
+
+                if (!definition.rewardItem)
+                    definition.rewardItem = _defaultRewardItem;
+
+                if (!definition.rewardCount)
+                    definition.rewardCount = _defaultRewardCount;
 
                 _definitions[definition.mapId].push_back(definition);
             } while (result->NextRow());
@@ -116,6 +135,11 @@ namespace
         bool IsEnabled() const
         {
             return _enabled;
+        }
+
+        bool IsAnnounceEnabled() const
+        {
+            return _announceEnabled;
         }
 
         bool IsLlmEnabled() const
@@ -139,8 +163,11 @@ namespace
 
     private:
         bool _enabled = true;
+        bool _announceEnabled = true;
         bool _llmEnabled = false;
         std::string _llmUrl;
+        uint32 _defaultRewardItem = 49426;
+        uint32 _defaultRewardCount = 1;
         std::unordered_map<uint32, std::vector<MissionDefinition>>
             _definitions;
     };
@@ -176,6 +203,7 @@ namespace
             state.rewardItem = definition.rewardItem;
             state.rewardCount = definition.rewardCount;
             state.title = definition.title;
+            state.targetLabel = definition.targetLabel;
             state.announcement = definition.fallbackAnnouncement;
             state.startTime = GameTime::GetGameTime().count();
             state.expireTime = state.startTime + state.timeLimitSec;
@@ -197,10 +225,9 @@ namespace
         std::unordered_map<uint32, MissionState> _states;
     };
 
-
     void SendMissionMessageToPlayer(Player* player, std::string const& msg)
     {
-        if (!player)
+        if (!player || !MissionStore::Instance().IsAnnounceEnabled())
             return;
 
         ChatHandler(player->GetSession()).SendSysMessage(msg.c_str());
@@ -248,12 +275,15 @@ namespace
         {
             LOG_INFO(
                 "module.instance_bonus_mission",
-                "LLM is enabled. Fallback selection is used until HTTP "
-                "bridge is connected. url={}",
+                "LLM is enabled. Fallback random selection is used until "
+                "HTTP bridge is connected. url={}",
                 MissionStore::Instance().GetLlmUrl());
         }
 
-        return &definitions->front();
+        if (definitions->size() == 1)
+            return &definitions->front();
+
+        return &definitions->at(urand(0, uint32(definitions->size() - 1)));
     }
 
     void RewardMissionToMap(Map* map, MissionState const& state)
@@ -303,8 +333,9 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[추가 임무] 목표의 절반을 달성했습니다. {} / {}",
-                    state->currentCount, state->targetCount));
+                    "[추가 임무] {} 목표를 절반 달성했습니다. {} / {}",
+                    state->targetLabel, state->currentCount,
+                    state->targetCount));
         }
 
         if (!state->announcedFive && remaining == 5)
@@ -313,8 +344,8 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[추가 임무] {} 중 {}마리 남았습니다.",
-                    state->targetCount, remaining));
+                    "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
+                    state->targetLabel, state->targetCount, remaining));
         }
 
         if (!state->announcedThree && remaining == 3)
@@ -323,8 +354,8 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[추가 임무] {} 중 {}마리 남았습니다.",
-                    state->targetCount, remaining));
+                    "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
+                    state->targetLabel, state->targetCount, remaining));
         }
 
         if (!state->announcedOne && remaining == 1)
@@ -333,8 +364,8 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[추가 임무] {} 중 {}마리 남았습니다.",
-                    state->targetCount, remaining));
+                    "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
+                    state->targetLabel, state->targetCount, remaining));
         }
 
         if (state->currentCount < state->targetCount)
