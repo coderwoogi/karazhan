@@ -13,6 +13,10 @@
 #include "StringFormat.h"
 #include "WorldSession.h"
 
+#include "../../mod-ale/src/LuaEngine/libs/httplib.h"
+
+#include <regex>
+#include <sstream>
 #include <unordered_map>
 #include <vector>
 
@@ -33,6 +37,13 @@ namespace
         uint32 rewardCount = 0;
     };
 
+    struct MissionSelection
+    {
+        MissionDefinition const* definition = nullptr;
+        std::string announcement;
+        std::string source = "fallback";
+    };
+
     struct MissionState
     {
         uint32 missionId = 0;
@@ -46,6 +57,7 @@ namespace
         std::string title;
         std::string targetLabel;
         std::string announcement;
+        std::string source;
         time_t startTime = 0;
         time_t expireTime = 0;
         bool completed = false;
@@ -81,6 +93,8 @@ namespace
             _llmUrl = sConfigMgr->GetOption<std::string>(
                 "InstanceBonusMission.LLM.Url",
                 "http://127.0.0.1:8000");
+            _llmTimeoutMs = sConfigMgr->GetOption<uint32>(
+                "InstanceBonusMission.LLM.TimeoutMs", 3000);
             _defaultRewardItem = sConfigMgr->GetOption<uint32>(
                 "InstanceBonusMission.Reward.Item", 49426);
             _defaultRewardCount = sConfigMgr->GetOption<uint32>(
@@ -152,6 +166,11 @@ namespace
             return _llmUrl;
         }
 
+        uint32 GetLlmTimeoutMs() const
+        {
+            return _llmTimeoutMs;
+        }
+
         std::vector<MissionDefinition> const* GetByMap(uint32 mapId) const
         {
             auto itr = _definitions.find(mapId);
@@ -166,6 +185,7 @@ namespace
         bool _announceEnabled = true;
         bool _llmEnabled = false;
         std::string _llmUrl;
+        uint32 _llmTimeoutMs = 3000;
         uint32 _defaultRewardItem = 49426;
         uint32 _defaultRewardCount = 1;
         std::unordered_map<uint32, std::vector<MissionDefinition>>
@@ -191,8 +211,9 @@ namespace
         }
 
         MissionState& Create(
-            uint32 instanceId, MissionDefinition const& definition)
+            uint32 instanceId, MissionSelection const& selection)
         {
+            MissionDefinition const& definition = *selection.definition;
             MissionState& state = _states[instanceId];
             state.missionId = definition.missionId;
             state.mapId = definition.mapId;
@@ -204,7 +225,10 @@ namespace
             state.rewardCount = definition.rewardCount;
             state.title = definition.title;
             state.targetLabel = definition.targetLabel;
-            state.announcement = definition.fallbackAnnouncement;
+            state.announcement = selection.announcement.empty()
+                ? definition.fallbackAnnouncement
+                : selection.announcement;
+            state.source = selection.source;
             state.startTime = GameTime::GetGameTime().count();
             state.expireTime = state.startTime + state.timeLimitSec;
             state.completed = false;
@@ -265,25 +289,243 @@ namespace
         }
     }
 
-    MissionDefinition const* SelectMission(uint32 mapId)
+    std::string EscapeJson(std::string const& text)
     {
-        auto definitions = MissionStore::Instance().GetByMap(mapId);
-        if (!definitions || definitions->empty())
-            return nullptr;
-
-        if (MissionStore::Instance().IsLlmEnabled())
+        std::ostringstream out;
+        for (char c : text)
         {
-            LOG_INFO(
-                "module.instance_bonus_mission",
-                "LLM is enabled. Fallback random selection is used until "
-                "HTTP bridge is connected. url={}",
-                MissionStore::Instance().GetLlmUrl());
+            switch (c)
+            {
+            case '\\': out << "\\\\"; break;
+            case '"': out << "\\\""; break;
+            case '\n': out << "\\n"; break;
+            case '\r': out << "\\r"; break;
+            case '\t': out << "\\t"; break;
+            default: out << c; break;
+            }
         }
 
-        if (definitions->size() == 1)
-            return &definitions->front();
+        return out.str();
+    }
 
-        return &definitions->at(urand(0, uint32(definitions->size() - 1)));
+    bool ParseHttpUrl(
+        std::string const& url, std::string& host, std::string& path)
+    {
+        static std::regex const urlRegex(
+            "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?");
+        std::smatch matches;
+
+        if (!std::regex_search(url, matches, urlRegex))
+            return false;
+
+        std::string scheme = matches[2].str();
+        std::string authority = matches[4].str();
+        std::string query = matches[7].str();
+
+        if (scheme.empty() || authority.empty())
+            return false;
+
+        host = scheme + "://" + authority;
+        path = matches[5].str();
+        if (path.empty())
+            path = "/";
+
+        if (!query.empty())
+            path += "?" + query;
+
+        return true;
+    }
+
+    bool TryExtractUInt(
+        std::string const& body, char const* key, uint32& value)
+    {
+        std::regex pattern(
+            Acore::StringFormat(
+                "\\\"{}\\\"\\s*:\\s*(\\d+)", key));
+        std::smatch match;
+
+        if (!std::regex_search(body, match, pattern))
+            return false;
+
+        value = uint32(std::stoul(match[1].str()));
+        return true;
+    }
+
+    bool TryExtractString(
+        std::string const& body, char const* key, std::string& value)
+    {
+        std::regex pattern(
+            Acore::StringFormat(
+                "\\\"{}\\\"\\s*:\\s*\\\"((?:\\\\.|[^\\\"])*)\\\"",
+                key));
+        std::smatch match;
+
+        if (!std::regex_search(body, match, pattern))
+            return false;
+
+        value = match[1].str();
+        value = std::regex_replace(value, std::regex("\\\\n"), "\n");
+        value = std::regex_replace(value, std::regex("\\\\r"), "\r");
+        value = std::regex_replace(value, std::regex("\\\\t"), "\t");
+        value = std::regex_replace(value, std::regex("\\\\\""), "\"");
+        value = std::regex_replace(value, std::regex("\\\\\\\\"), "\\");
+        return true;
+    }
+
+    MissionSelection SelectMissionFallback(uint32 mapId)
+    {
+        MissionSelection selection;
+        auto definitions = MissionStore::Instance().GetByMap(mapId);
+        if (!definitions || definitions->empty())
+            return selection;
+
+        if (definitions->size() == 1)
+            selection.definition = &definitions->front();
+        else
+            selection.definition =
+                &definitions->at(urand(0, uint32(definitions->size() - 1)));
+
+        selection.announcement = selection.definition->fallbackAnnouncement;
+        selection.source = "fallback";
+        return selection;
+    }
+
+    MissionSelection TrySelectMissionWithLlm(Map* map)
+    {
+        MissionSelection fallback = SelectMissionFallback(map->GetId());
+        if (!fallback.definition)
+            return fallback;
+
+        if (!MissionStore::Instance().IsLlmEnabled())
+            return fallback;
+
+        auto definitions = MissionStore::Instance().GetByMap(map->GetId());
+        if (!definitions || definitions->empty())
+            return fallback;
+
+        std::string host;
+        std::string path;
+        std::string endpoint = MissionStore::Instance().GetLlmUrl() +
+            "/mission/select";
+
+        if (!ParseHttpUrl(endpoint, host, path))
+        {
+            LOG_ERROR(
+                "module.instance_bonus_mission",
+                "Failed to parse LLM URL: {}",
+                endpoint);
+            return fallback;
+        }
+
+        std::ostringstream json;
+        json << "{";
+        json << "\"map_id\":" << map->GetId() << ",";
+        json << "\"instance_name\":\""
+             << EscapeJson(Acore::StringFormat("instance_{}", map->GetId()))
+             << "\",";
+        json << "\"difficulty\":\"normal\",";
+        json << "\"party_size\":" << map->GetPlayersCountExceptGMs()
+             << ",";
+        json << "\"candidates\":[";
+
+        bool first = true;
+        for (MissionDefinition const& definition : *definitions)
+        {
+            if (!first)
+                json << ",";
+
+            first = false;
+            json << "{";
+            json << "\"mission_id\":" << definition.missionId << ",";
+            json << "\"title\":\"" << EscapeJson(definition.title)
+                 << "\",";
+            json << "\"target_label\":\""
+                 << EscapeJson(definition.targetLabel) << "\",";
+            json << "\"target_count\":" << definition.targetCount << ",";
+            json << "\"time_limit_sec\":" << definition.timeLimitSec;
+            json << "}";
+        }
+
+        json << "]}";
+
+        try
+        {
+            httplib::Client cli(host);
+            uint32 timeoutMs = MissionStore::Instance().GetLlmTimeoutMs();
+            time_t timeoutSec = std::max<time_t>(1, timeoutMs / 1000);
+            time_t timeoutUsec = (timeoutMs % 1000) * 1000;
+            cli.set_connection_timeout(timeoutSec, timeoutUsec);
+            cli.set_read_timeout(timeoutSec, timeoutUsec);
+            cli.set_write_timeout(timeoutSec, timeoutUsec);
+
+            httplib::Headers headers = {
+                { "Content-Type", "application/json; charset=utf-8" }
+            };
+            httplib::Result result = cli.Post(
+                path.c_str(), headers, json.str(),
+                "application/json; charset=utf-8");
+
+            if (!result)
+            {
+                LOG_ERROR(
+                    "module.instance_bonus_mission",
+                    "LLM request failed: {}",
+                    httplib::to_string(result.error()));
+                return fallback;
+            }
+
+            if (result->status != 200)
+            {
+                LOG_ERROR(
+                    "module.instance_bonus_mission",
+                    "LLM request returned status {}",
+                    result->status);
+                return fallback;
+            }
+
+            uint32 selectedMissionId = 0;
+            std::string announcement;
+            if (!TryExtractUInt(
+                    result->body, "selected_mission_id",
+                    selectedMissionId))
+            {
+                LOG_ERROR(
+                    "module.instance_bonus_mission",
+                    "LLM response missing selected_mission_id: {}",
+                    result->body);
+                return fallback;
+            }
+
+            TryExtractString(result->body, "announcement", announcement);
+
+            for (MissionDefinition const& definition : *definitions)
+            {
+                if (definition.missionId != selectedMissionId)
+                    continue;
+
+                MissionSelection selection;
+                selection.definition = &definition;
+                selection.announcement = announcement.empty()
+                    ? definition.fallbackAnnouncement
+                    : announcement;
+                selection.source = "llm";
+                return selection;
+            }
+
+            LOG_ERROR(
+                "module.instance_bonus_mission",
+                "LLM selected unknown mission_id {} for map {}",
+                selectedMissionId, map->GetId());
+            return fallback;
+        }
+        catch (std::exception const& ex)
+        {
+            LOG_ERROR(
+                "module.instance_bonus_mission",
+                "LLM request exception: {}",
+                ex.what());
+            return fallback;
+        }
     }
 
     void RewardMissionToMap(Map* map, MissionState const& state)
@@ -416,18 +658,16 @@ public:
         if (MissionStateStore::Instance().Get(instanceId))
             return;
 
-        MissionDefinition const* definition = SelectMission(map->GetId());
-        if (!definition)
+        MissionSelection selection = TrySelectMissionWithLlm(map);
+        if (!selection.definition)
             return;
 
         MissionState& state = MissionStateStore::Instance().Create(
-            instanceId, *definition);
+            instanceId, selection);
 
         SendMissionMessageToGroup(
             player,
-            Acore::StringFormat(
-                "[추가 임무] {}",
-                state.announcement));
+            Acore::StringFormat("[추가 임무] {}", state.announcement));
     }
 };
 
