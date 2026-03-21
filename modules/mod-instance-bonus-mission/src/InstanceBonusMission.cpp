@@ -1,4 +1,5 @@
-﻿#include "Chat.h"
+﻿
+#include "Chat.h"
 #include "Config.h"
 #include "Creature.h"
 #include "DatabaseEnv.h"
@@ -10,11 +11,13 @@
 #include "Player.h"
 #include "Random.h"
 #include "ScriptMgr.h"
+#include "SharedDefines.h"
 #include "StringFormat.h"
 #include "WorldSession.h"
 
 #include "../../mod-ale/src/LuaEngine/libs/httplib.h"
 
+#include <algorithm>
 #include <regex>
 #include <sstream>
 #include <unordered_map>
@@ -37,6 +40,41 @@ namespace
         uint32 rewardCount = 0;
     };
 
+    struct ThemeDefinition
+    {
+        uint32 mapId = 0;
+        uint32 themeId = 0;
+        std::string themeKey;
+        std::string name;
+        std::string description;
+        uint8 minPartySize = 1;
+        uint8 maxPartySize = 5;
+        uint32 minAvgItemLevel = 0;
+        uint32 maxAvgItemLevel = 9999;
+        bool requiredTank = false;
+        bool requiredHealer = false;
+        uint32 weight = 100;
+    };
+
+    struct PartyContext
+    {
+        uint32 partySize = 0;
+        uint32 averageItemLevel = 0;
+        bool hasTank = false;
+        bool hasHealer = false;
+        uint32 likelyTankCount = 0;
+        uint32 likelyHealerCount = 0;
+        std::string difficulty = "normal";
+        std::unordered_map<uint8, uint32> classCounts;
+    };
+
+    struct ThemeSelection
+    {
+        ThemeDefinition const* definition = nullptr;
+        std::string briefing;
+        std::string source = "fallback";
+    };
+
     struct MissionSelection
     {
         MissionDefinition const* definition = nullptr;
@@ -48,6 +86,8 @@ namespace
     {
         uint32 missionId = 0;
         uint32 mapId = 0;
+        uint32 themeId = 0;
+        uint8 missionType = 0;
         uint32 targetEntry = 0;
         uint32 targetCount = 0;
         uint32 currentCount = 0;
@@ -56,6 +96,9 @@ namespace
         uint32 rewardCount = 0;
         std::string title;
         std::string targetLabel;
+        std::string themeKey;
+        std::string themeName;
+        std::string briefing;
         std::string announcement;
         std::string source;
         time_t startTime = 0;
@@ -72,6 +115,63 @@ namespace
         bool announcedOneMinute = false;
         bool announcedThirtySec = false;
     };
+
+    char const* GetClassToken(uint8 classId)
+    {
+        switch (classId)
+        {
+        case CLASS_WARRIOR:
+            return "warrior";
+        case CLASS_PALADIN:
+            return "paladin";
+        case CLASS_HUNTER:
+            return "hunter";
+        case CLASS_ROGUE:
+            return "rogue";
+        case CLASS_PRIEST:
+            return "priest";
+        case CLASS_DEATH_KNIGHT:
+            return "death_knight";
+        case CLASS_SHAMAN:
+            return "shaman";
+        case CLASS_MAGE:
+            return "mage";
+        case CLASS_WARLOCK:
+            return "warlock";
+        case CLASS_DRUID:
+            return "druid";
+        default:
+            return "unknown";
+        }
+    }
+
+    bool IsLikelyTankClass(uint8 classId)
+    {
+        switch (classId)
+        {
+        case CLASS_WARRIOR:
+        case CLASS_PALADIN:
+        case CLASS_DEATH_KNIGHT:
+        case CLASS_DRUID:
+            return true;
+        default:
+            return false;
+        }
+    }
+
+    bool IsLikelyHealerClass(uint8 classId)
+    {
+        switch (classId)
+        {
+        case CLASS_PALADIN:
+        case CLASS_PRIEST:
+        case CLASS_SHAMAN:
+        case CLASS_DRUID:
+            return true;
+        default:
+            return false;
+        }
+    }
 
     class MissionStore
     {
@@ -100,10 +200,77 @@ namespace
             _defaultRewardCount = sConfigMgr->GetOption<uint32>(
                 "InstanceBonusMission.Reward.Count", 1);
             _definitions.clear();
+            _themes.clear();
+            _themeMissionIds.clear();
 
             if (!_enabled)
                 return;
 
+            LoadMissions();
+            LoadThemes();
+            LoadThemeMissionLinks();
+        }
+
+        bool IsEnabled() const
+        {
+            return _enabled;
+        }
+
+        bool IsAnnounceEnabled() const
+        {
+            return _announceEnabled;
+        }
+
+        bool IsLlmEnabled() const
+        {
+            return _llmEnabled;
+        }
+
+        std::string const& GetLlmUrl() const
+        {
+            return _llmUrl;
+        }
+
+        uint32 GetLlmTimeoutMs() const
+        {
+            return _llmTimeoutMs;
+        }
+
+        std::vector<MissionDefinition> const* GetByMap(uint32 mapId) const
+        {
+            auto itr = _definitions.find(mapId);
+            if (itr == _definitions.end())
+                return nullptr;
+
+            return &itr->second;
+        }
+
+        std::vector<ThemeDefinition> const* GetThemesByMap(uint32 mapId) const
+        {
+            auto itr = _themes.find(mapId);
+            if (itr == _themes.end())
+                return nullptr;
+
+            return &itr->second;
+        }
+
+        std::vector<uint32> const* GetMissionIdsForTheme(
+            uint32 mapId, uint32 themeId) const
+        {
+            auto mapItr = _themeMissionIds.find(mapId);
+            if (mapItr == _themeMissionIds.end())
+                return nullptr;
+
+            auto themeItr = mapItr->second.find(themeId);
+            if (themeItr == mapItr->second.end())
+                return nullptr;
+
+            return &themeItr->second;
+        }
+
+    private:
+        void LoadMissions()
+        {
             QueryResult result = WorldDatabase.Query(
                 "SELECT map_id, mission_id, mission_type, target_entry, "
                 "target_count, time_limit_sec, title, target_label, "
@@ -146,41 +313,62 @@ namespace
             } while (result->NextRow());
         }
 
-        bool IsEnabled() const
+        void LoadThemes()
         {
-            return _enabled;
+            QueryResult result = WorldDatabase.Query(
+                "SELECT map_id, theme_id, theme_key, name, description, "
+                "min_party_size, max_party_size, min_avg_item_level, "
+                "max_avg_item_level, required_tank, required_healer, "
+                "weight "
+                "FROM instance_bonus_theme_pool "
+                "WHERE enabled = 1 "
+                "ORDER BY map_id, theme_id");
+
+            if (!result)
+                return;
+
+            do
+            {
+                Field* fields = result->Fetch();
+
+                ThemeDefinition definition;
+                definition.mapId = fields[0].Get<uint32>();
+                definition.themeId = fields[1].Get<uint32>();
+                definition.themeKey = fields[2].Get<std::string>();
+                definition.name = fields[3].Get<std::string>();
+                definition.description = fields[4].Get<std::string>();
+                definition.minPartySize = fields[5].Get<uint8>();
+                definition.maxPartySize = fields[6].Get<uint8>();
+                definition.minAvgItemLevel = fields[7].Get<uint32>();
+                definition.maxAvgItemLevel = fields[8].Get<uint32>();
+                definition.requiredTank = fields[9].Get<uint8>() != 0;
+                definition.requiredHealer = fields[10].Get<uint8>() != 0;
+                definition.weight = fields[11].Get<uint32>();
+
+                _themes[definition.mapId].push_back(definition);
+            } while (result->NextRow());
         }
 
-        bool IsAnnounceEnabled() const
+        void LoadThemeMissionLinks()
         {
-            return _announceEnabled;
+            QueryResult result = WorldDatabase.Query(
+                "SELECT map_id, theme_id, mission_id "
+                "FROM instance_bonus_theme_mission "
+                "ORDER BY map_id, theme_id, slot, mission_id");
+
+            if (!result)
+                return;
+
+            do
+            {
+                Field* fields = result->Fetch();
+                uint32 mapId = fields[0].Get<uint32>();
+                uint32 themeId = fields[1].Get<uint32>();
+                uint32 missionId = fields[2].Get<uint32>();
+                _themeMissionIds[mapId][themeId].push_back(missionId);
+            } while (result->NextRow());
         }
 
-        bool IsLlmEnabled() const
-        {
-            return _llmEnabled;
-        }
-
-        std::string const& GetLlmUrl() const
-        {
-            return _llmUrl;
-        }
-
-        uint32 GetLlmTimeoutMs() const
-        {
-            return _llmTimeoutMs;
-        }
-
-        std::vector<MissionDefinition> const* GetByMap(uint32 mapId) const
-        {
-            auto itr = _definitions.find(mapId);
-            if (itr == _definitions.end())
-                return nullptr;
-
-            return &itr->second;
-        }
-
-    private:
         bool _enabled = true;
         bool _announceEnabled = true;
         bool _llmEnabled = false;
@@ -190,6 +378,11 @@ namespace
         uint32 _defaultRewardCount = 1;
         std::unordered_map<uint32, std::vector<MissionDefinition>>
             _definitions;
+        std::unordered_map<uint32, std::vector<ThemeDefinition>> _themes;
+        std::unordered_map<
+            uint32,
+            std::unordered_map<uint32, std::vector<uint32>>>
+            _themeMissionIds;
     };
 
     class MissionStateStore
@@ -211,24 +404,37 @@ namespace
         }
 
         MissionState& Create(
-            uint32 instanceId, MissionSelection const& selection)
+            uint32 instanceId,
+            ThemeSelection const& themeSelection,
+            MissionSelection const& missionSelection)
         {
-            MissionDefinition const& definition = *selection.definition;
+            MissionDefinition const& mission = *missionSelection.definition;
             MissionState& state = _states[instanceId];
-            state.missionId = definition.missionId;
-            state.mapId = definition.mapId;
-            state.targetEntry = definition.targetEntry;
-            state.targetCount = definition.targetCount;
+            state.missionId = mission.missionId;
+            state.mapId = mission.mapId;
+            state.themeId = themeSelection.definition
+                ? themeSelection.definition->themeId
+                : 0;
+            state.missionType = mission.missionType;
+            state.targetEntry = mission.targetEntry;
+            state.targetCount = mission.targetCount;
             state.currentCount = 0;
-            state.timeLimitSec = definition.timeLimitSec;
-            state.rewardItem = definition.rewardItem;
-            state.rewardCount = definition.rewardCount;
-            state.title = definition.title;
-            state.targetLabel = definition.targetLabel;
-            state.announcement = selection.announcement.empty()
-                ? definition.fallbackAnnouncement
-                : selection.announcement;
-            state.source = selection.source;
+            state.timeLimitSec = mission.timeLimitSec;
+            state.rewardItem = mission.rewardItem;
+            state.rewardCount = mission.rewardCount;
+            state.title = mission.title;
+            state.targetLabel = mission.targetLabel;
+            state.themeKey = themeSelection.definition
+                ? themeSelection.definition->themeKey
+                : std::string();
+            state.themeName = themeSelection.definition
+                ? themeSelection.definition->name
+                : std::string();
+            state.briefing = themeSelection.briefing;
+            state.announcement = missionSelection.announcement.empty()
+                ? mission.fallbackAnnouncement
+                : missionSelection.announcement;
+            state.source = missionSelection.source;
             state.startTime = GameTime::GetGameTime().count();
             state.expireTime = state.startTime + state.timeLimitSec;
             state.completed = false;
@@ -335,13 +541,11 @@ namespace
 
         return true;
     }
-
     bool TryExtractUInt(
         std::string const& body, char const* key, uint32& value)
     {
         std::regex pattern(
-            Acore::StringFormat(
-                "\\\"{}\\\"\\s*:\\s*(\\d+)", key));
+            Acore::StringFormat("\\\"{}\\\"\\s*:\\s*(\\d+)", key));
         std::smatch match;
 
         if (!std::regex_search(body, match, pattern))
@@ -372,41 +576,177 @@ namespace
         return true;
     }
 
-    MissionSelection SelectMissionFallback(uint32 mapId)
+    std::vector<Player*> GetInstancePlayers(Map* map)
     {
-        MissionSelection selection;
-        auto definitions = MissionStore::Instance().GetByMap(mapId);
-        if (!definitions || definitions->empty())
+        std::vector<Player*> players;
+        if (!map)
+            return players;
+
+        Map::PlayerList const& refs = map->GetPlayers();
+        for (auto const& ref : refs)
+        {
+            Player* player = ref.GetSource();
+            if (!player || player->IsGameMaster())
+                continue;
+
+            players.push_back(player);
+        }
+
+        return players;
+    }
+
+    PartyContext BuildPartyContext(Map* map)
+    {
+        PartyContext context;
+        std::vector<Player*> players = GetInstancePlayers(map);
+        context.partySize = uint32(players.size());
+        if (players.empty())
+            return context;
+
+        float totalItemLevel = 0.0f;
+        Player* anchor = players.front();
+        if (map->IsRaid())
+            context.difficulty = Acore::StringFormat(
+                "raid_{}", uint32(anchor->GetRaidDifficulty()));
+        else
+            context.difficulty = Acore::StringFormat(
+                "dungeon_{}", uint32(anchor->GetDungeonDifficulty()));
+
+        for (Player* player : players)
+        {
+            uint8 classId = player->getClass();
+            ++context.classCounts[classId];
+            totalItemLevel += player->GetAverageItemLevel();
+
+            if (IsLikelyTankClass(classId))
+                ++context.likelyTankCount;
+            if (IsLikelyHealerClass(classId))
+                ++context.likelyHealerCount;
+        }
+
+        context.averageItemLevel = uint32(
+            (totalItemLevel / float(players.size())) + 0.5f);
+        context.hasTank = context.likelyTankCount > 0;
+        context.hasHealer = context.likelyHealerCount > 0;
+        return context;
+    }
+
+    bool IsThemeEligible(
+        ThemeDefinition const& definition,
+        PartyContext const& context)
+    {
+        if (context.partySize < definition.minPartySize)
+            return false;
+
+        if (context.partySize > definition.maxPartySize)
+            return false;
+
+        if (context.averageItemLevel < definition.minAvgItemLevel)
+            return false;
+
+        if (context.averageItemLevel > definition.maxAvgItemLevel)
+            return false;
+
+        if (definition.requiredTank && !context.hasTank)
+            return false;
+
+        if (definition.requiredHealer && !context.hasHealer)
+            return false;
+
+        return true;
+    }
+
+    std::string BuildClassCountsJson(PartyContext const& context)
+    {
+        std::ostringstream json;
+        json << "{";
+        bool first = true;
+        for (auto const& entry : context.classCounts)
+        {
+            if (!first)
+                json << ",";
+
+            first = false;
+            json << "\"" << GetClassToken(entry.first) << "\":"
+                 << entry.second;
+        }
+        json << "}";
+        return json.str();
+    }
+
+    ThemeSelection SelectThemeFallback(uint32 mapId, PartyContext const& ctx)
+    {
+        ThemeSelection selection;
+        auto themes = MissionStore::Instance().GetThemesByMap(mapId);
+        if (!themes || themes->empty())
             return selection;
 
-        if (definitions->size() == 1)
-            selection.definition = &definitions->front();
-        else
-            selection.definition =
-                &definitions->at(urand(0, uint32(definitions->size() - 1)));
+        std::vector<ThemeDefinition const*> eligible;
+        for (ThemeDefinition const& theme : *themes)
+        {
+            if (IsThemeEligible(theme, ctx))
+                eligible.push_back(&theme);
+        }
 
-        selection.announcement = selection.definition->fallbackAnnouncement;
+        if (!eligible.empty())
+        {
+            uint32 totalWeight = 0;
+            for (ThemeDefinition const* theme : eligible)
+                totalWeight += std::max<uint32>(1, theme->weight);
+
+            uint32 roll = urand(1, std::max<uint32>(1, totalWeight));
+            for (ThemeDefinition const* theme : eligible)
+            {
+                uint32 weight = std::max<uint32>(1, theme->weight);
+                if (roll <= weight)
+                {
+                    selection.definition = theme;
+                    break;
+                }
+                roll -= weight;
+            }
+        }
+
+        if (!selection.definition)
+            selection.definition = &themes->front();
+
+        selection.briefing = Acore::StringFormat(
+            "이번 판의 추가 임무 유형은 {}입니다.",
+            selection.definition->name);
         selection.source = "fallback";
         return selection;
     }
 
-    MissionSelection TrySelectMissionWithLlm(Map* map)
+    ThemeSelection TrySelectThemeWithLlm(Map* map, PartyContext const& ctx)
     {
-        MissionSelection fallback = SelectMissionFallback(map->GetId());
+        ThemeSelection fallback = SelectThemeFallback(map->GetId(), ctx);
         if (!fallback.definition)
             return fallback;
 
         if (!MissionStore::Instance().IsLlmEnabled())
             return fallback;
 
-        auto definitions = MissionStore::Instance().GetByMap(map->GetId());
-        if (!definitions || definitions->empty())
+        auto themes = MissionStore::Instance().GetThemesByMap(map->GetId());
+        if (!themes || themes->empty())
             return fallback;
+
+        std::vector<ThemeDefinition const*> candidates;
+        for (ThemeDefinition const& theme : *themes)
+        {
+            if (IsThemeEligible(theme, ctx))
+                candidates.push_back(&theme);
+        }
+
+        if (candidates.empty())
+        {
+            for (ThemeDefinition const& theme : *themes)
+                candidates.push_back(&theme);
+        }
 
         std::string host;
         std::string path;
         std::string endpoint = MissionStore::Instance().GetLlmUrl() +
-            "/mission/select";
+            "/theme/select";
 
         if (!ParseHttpUrl(endpoint, host, path))
         {
@@ -423,29 +763,39 @@ namespace
         json << "\"instance_name\":\""
              << EscapeJson(Acore::StringFormat("instance_{}", map->GetId()))
              << "\",";
-        json << "\"difficulty\":\"normal\",";
-        json << "\"party_size\":" << map->GetPlayersCountExceptGMs()
+        json << "\"difficulty\":\"" << EscapeJson(ctx.difficulty)
+             << "\",";
+        json << "\"party_size\":" << ctx.partySize << ",";
+        json << "\"average_item_level\":" << ctx.averageItemLevel
              << ",";
+        json << "\"has_tank\":" << (ctx.hasTank ? "true" : "false")
+             << ",";
+        json << "\"has_healer\":"
+             << (ctx.hasHealer ? "true" : "false") << ",";
+        json << "\"likely_tank_count\":" << ctx.likelyTankCount
+             << ",";
+        json << "\"likely_healer_count\":" << ctx.likelyHealerCount
+             << ",";
+        json << "\"class_counts\":" << BuildClassCountsJson(ctx) << ",";
         json << "\"candidates\":[";
 
         bool first = true;
-        for (MissionDefinition const& definition : *definitions)
+        for (ThemeDefinition const* theme : candidates)
         {
             if (!first)
                 json << ",";
 
             first = false;
             json << "{";
-            json << "\"mission_id\":" << definition.missionId << ",";
-            json << "\"title\":\"" << EscapeJson(definition.title)
+            json << "\"theme_id\":" << theme->themeId << ",";
+            json << "\"theme_key\":\""
+                 << EscapeJson(theme->themeKey) << "\",";
+            json << "\"name\":\"" << EscapeJson(theme->name)
                  << "\",";
-            json << "\"target_label\":\""
-                 << EscapeJson(definition.targetLabel) << "\",";
-            json << "\"target_count\":" << definition.targetCount << ",";
-            json << "\"time_limit_sec\":" << definition.timeLimitSec;
+            json << "\"description\":\""
+                 << EscapeJson(theme->description) << "\"";
             json << "}";
         }
-
         json << "]}";
 
         try
@@ -469,7 +819,7 @@ namespace
             {
                 LOG_ERROR(
                     "module.instance_bonus_mission",
-                    "LLM request failed: {}",
+                    "Theme LLM request failed: {}",
                     httplib::to_string(result.error()));
                 return fallback;
             }
@@ -478,7 +828,212 @@ namespace
             {
                 LOG_ERROR(
                     "module.instance_bonus_mission",
-                    "LLM request returned status {}",
+                    "Theme LLM returned status {}",
+                    result->status);
+                return fallback;
+            }
+
+            uint32 selectedThemeId = 0;
+            std::string briefing;
+            if (!TryExtractUInt(
+                    result->body, "selected_theme_id",
+                    selectedThemeId))
+            {
+                LOG_ERROR(
+                    "module.instance_bonus_mission",
+                    "Theme LLM response missing selected_theme_id: {}",
+                    result->body);
+                return fallback;
+            }
+
+            TryExtractString(result->body, "briefing", briefing);
+
+            for (ThemeDefinition const* theme : candidates)
+            {
+                if (theme->themeId != selectedThemeId)
+                    continue;
+
+                ThemeSelection selection;
+                selection.definition = theme;
+                selection.briefing = briefing.empty()
+                    ? Acore::StringFormat(
+                        "이번 판의 추가 임무 유형은 {}입니다.",
+                        theme->name)
+                    : briefing;
+                selection.source = "llm";
+                return selection;
+            }
+
+            LOG_ERROR(
+                "module.instance_bonus_mission",
+                "Theme LLM selected unknown theme_id {} for map {}",
+                selectedThemeId, map->GetId());
+            return fallback;
+        }
+        catch (std::exception const& ex)
+        {
+            LOG_ERROR(
+                "module.instance_bonus_mission",
+                "Theme LLM request exception: {}",
+                ex.what());
+            return fallback;
+        }
+    }
+
+    std::vector<MissionDefinition const*> CollectThemeMissions(
+        uint32 mapId, uint32 themeId)
+    {
+        std::vector<MissionDefinition const*> missions;
+        auto definitions = MissionStore::Instance().GetByMap(mapId);
+        auto missionIds = MissionStore::Instance().GetMissionIdsForTheme(
+            mapId, themeId);
+        if (!definitions || !missionIds)
+            return missions;
+
+        for (uint32 missionId : *missionIds)
+        {
+            for (MissionDefinition const& definition : *definitions)
+            {
+                if (definition.missionId == missionId)
+                    missions.push_back(&definition);
+            }
+        }
+
+        return missions;
+    }
+
+    MissionSelection SelectMissionFallback(
+        uint32 mapId,
+        ThemeSelection const& themeSelection)
+    {
+        MissionSelection selection;
+        std::vector<MissionDefinition const*> candidates =
+            CollectThemeMissions(mapId, themeSelection.definition
+                ? themeSelection.definition->themeId
+                : 0);
+        if (candidates.empty())
+            return selection;
+
+        if (candidates.size() == 1)
+            selection.definition = candidates.front();
+        else
+            selection.definition = candidates.at(
+                urand(0, uint32(candidates.size() - 1)));
+
+        selection.announcement = selection.definition->fallbackAnnouncement;
+        selection.source = "fallback";
+        return selection;
+    }
+
+    MissionSelection TrySelectMissionWithLlm(
+        Map* map,
+        PartyContext const& ctx,
+        ThemeSelection const& themeSelection)
+    {
+        MissionSelection fallback = SelectMissionFallback(
+            map->GetId(), themeSelection);
+        if (!fallback.definition)
+            return fallback;
+
+        if (!MissionStore::Instance().IsLlmEnabled())
+            return fallback;
+
+        std::vector<MissionDefinition const*> definitions =
+            CollectThemeMissions(
+                map->GetId(),
+                themeSelection.definition ? themeSelection.definition->themeId : 0);
+        if (definitions.empty())
+            return fallback;
+
+        std::string host;
+        std::string path;
+        std::string endpoint = MissionStore::Instance().GetLlmUrl() +
+            "/mission/select";
+
+        if (!ParseHttpUrl(endpoint, host, path))
+        {
+            LOG_ERROR(
+                "module.instance_bonus_mission",
+                "Failed to parse LLM URL: {}",
+                endpoint);
+            return fallback;
+        }
+
+        std::ostringstream json;
+        json << "{";
+        json << "\"map_id\":" << map->GetId() << ",";
+        json << "\"instance_name\":\""
+             << EscapeJson(Acore::StringFormat("instance_{}", map->GetId()))
+             << "\",";
+        json << "\"difficulty\":\"" << EscapeJson(ctx.difficulty)
+             << "\",";
+        json << "\"party_size\":" << ctx.partySize << ",";
+        json << "\"theme_key\":\""
+             << EscapeJson(themeSelection.definition
+                    ? themeSelection.definition->themeKey
+                    : std::string())
+             << "\",";
+        json << "\"theme_name\":\""
+             << EscapeJson(themeSelection.definition
+                    ? themeSelection.definition->name
+                    : std::string())
+             << "\",";
+        json << "\"candidates\":[";
+
+        bool first = true;
+        for (MissionDefinition const* definition : definitions)
+        {
+            if (!first)
+                json << ",";
+
+            first = false;
+            json << "{";
+            json << "\"mission_id\":" << definition->missionId << ",";
+            json << "\"mission_type\":"
+                 << uint32(definition->missionType) << ",";
+            json << "\"title\":\"" << EscapeJson(definition->title)
+                 << "\",";
+            json << "\"target_label\":\""
+                 << EscapeJson(definition->targetLabel) << "\",";
+            json << "\"target_count\":" << definition->targetCount
+                 << ",";
+            json << "\"time_limit_sec\":"
+                 << definition->timeLimitSec;
+            json << "}";
+        }
+        json << "]}";
+
+        try
+        {
+            httplib::Client cli(host);
+            uint32 timeoutMs = MissionStore::Instance().GetLlmTimeoutMs();
+            time_t timeoutSec = std::max<time_t>(1, timeoutMs / 1000);
+            time_t timeoutUsec = (timeoutMs % 1000) * 1000;
+            cli.set_connection_timeout(timeoutSec, timeoutUsec);
+            cli.set_read_timeout(timeoutSec, timeoutUsec);
+            cli.set_write_timeout(timeoutSec, timeoutUsec);
+
+            httplib::Headers headers = {
+                { "Content-Type", "application/json; charset=utf-8" }
+            };
+            httplib::Result result = cli.Post(
+                path.c_str(), headers, json.str(),
+                "application/json; charset=utf-8");
+
+            if (!result)
+            {
+                LOG_ERROR(
+                    "module.instance_bonus_mission",
+                    "Mission LLM request failed: {}",
+                    httplib::to_string(result.error()));
+                return fallback;
+            }
+
+            if (result->status != 200)
+            {
+                LOG_ERROR(
+                    "module.instance_bonus_mission",
+                    "Mission LLM request returned status {}",
                     result->status);
                 return fallback;
             }
@@ -491,22 +1046,22 @@ namespace
             {
                 LOG_ERROR(
                     "module.instance_bonus_mission",
-                    "LLM response missing selected_mission_id: {}",
+                    "Mission LLM response missing selected_mission_id: {}",
                     result->body);
                 return fallback;
             }
 
             TryExtractString(result->body, "announcement", announcement);
 
-            for (MissionDefinition const& definition : *definitions)
+            for (MissionDefinition const* definition : definitions)
             {
-                if (definition.missionId != selectedMissionId)
+                if (definition->missionId != selectedMissionId)
                     continue;
 
                 MissionSelection selection;
-                selection.definition = &definition;
+                selection.definition = definition;
                 selection.announcement = announcement.empty()
-                    ? definition.fallbackAnnouncement
+                    ? definition->fallbackAnnouncement
                     : announcement;
                 selection.source = "llm";
                 return selection;
@@ -514,7 +1069,7 @@ namespace
 
             LOG_ERROR(
                 "module.instance_bonus_mission",
-                "LLM selected unknown mission_id {} for map {}",
+                "Mission LLM selected unknown mission_id {} for map {}",
                 selectedMissionId, map->GetId());
             return fallback;
         }
@@ -522,7 +1077,7 @@ namespace
         {
             LOG_ERROR(
                 "module.instance_bonus_mission",
-                "LLM request exception: {}",
+                "Mission LLM request exception: {}",
                 ex.what());
             return fallback;
         }
@@ -542,6 +1097,33 @@ namespace
 
             player->AddItem(state.rewardItem, state.rewardCount);
         }
+    }
+
+    void CompleteMission(Map* map, MissionState& state)
+    {
+        if (!map || state.completed || state.failed)
+            return;
+
+        state.completed = true;
+        RewardMissionToMap(map, state);
+        SendMissionMessageToMap(
+            map,
+            Acore::StringFormat(
+                "[추가 임무] {} 임무를 완수했습니다. 추가 보상이 지급됩니다.",
+                state.title));
+    }
+
+    void FailMission(Map* map, MissionState& state, std::string const& reason)
+    {
+        if (!map || state.completed || state.failed)
+            return;
+
+        state.failed = true;
+        SendMissionMessageToMap(
+            map,
+            Acore::StringFormat(
+                "[추가 임무] {} 임무가 실패했습니다. {}",
+                state.title, reason));
     }
 
     void UpdateMissionProgress(Player* killer, Creature* killed)
@@ -567,6 +1149,13 @@ namespace
         if (state->targetCount > state->currentCount)
             remaining = state->targetCount - state->currentCount;
 
+        if (state->missionType == 2)
+        {
+            if (state->currentCount >= std::max<uint32>(1, state->targetCount))
+                CompleteMission(map, *state);
+            return;
+        }
+
         if (!state->announcedHalf &&
             state->targetCount > 1 &&
             state->currentCount >= (state->targetCount / 2))
@@ -576,7 +1165,8 @@ namespace
                 killer,
                 Acore::StringFormat(
                     "[추가 임무] {} 목표를 절반 달성했습니다. {} / {}",
-                    state->targetLabel, state->currentCount,
+                    state->targetLabel,
+                    state->currentCount,
                     state->targetCount));
         }
 
@@ -587,7 +1177,9 @@ namespace
                 killer,
                 Acore::StringFormat(
                     "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
-                    state->targetLabel, state->targetCount, remaining));
+                    state->targetLabel,
+                    state->targetCount,
+                    remaining));
         }
 
         if (!state->announcedThree && remaining == 3)
@@ -597,7 +1189,9 @@ namespace
                 killer,
                 Acore::StringFormat(
                     "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
-                    state->targetLabel, state->targetCount, remaining));
+                    state->targetLabel,
+                    state->targetCount,
+                    remaining));
         }
 
         if (!state->announcedOne && remaining == 1)
@@ -607,19 +1201,13 @@ namespace
                 killer,
                 Acore::StringFormat(
                     "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
-                    state->targetLabel, state->targetCount, remaining));
+                    state->targetLabel,
+                    state->targetCount,
+                    remaining));
         }
 
-        if (state->currentCount < state->targetCount)
-            return;
-
-        state->completed = true;
-        RewardMissionToMap(map, *state);
-        SendMissionMessageToMap(
-            map,
-            Acore::StringFormat(
-                "[추가 임무] {} 임무를 완수했습니다. 추가 보상이 지급됩니다.",
-                state->title));
+        if (state->currentCount >= state->targetCount)
+            CompleteMission(map, *state);
     }
 }
 
@@ -658,16 +1246,51 @@ public:
         if (MissionStateStore::Instance().Get(instanceId))
             return;
 
-        MissionSelection selection = TrySelectMissionWithLlm(map);
-        if (!selection.definition)
+        PartyContext context = BuildPartyContext(map);
+        ThemeSelection themeSelection = TrySelectThemeWithLlm(map, context);
+        if (!themeSelection.definition)
+            return;
+
+        MissionSelection missionSelection = TrySelectMissionWithLlm(
+            map, context, themeSelection);
+        if (!missionSelection.definition)
             return;
 
         MissionState& state = MissionStateStore::Instance().Create(
-            instanceId, selection);
+            instanceId,
+            themeSelection,
+            missionSelection);
+
+        if (!state.briefing.empty())
+        {
+            SendMissionMessageToGroup(
+                player,
+                Acore::StringFormat("[추가 임무] {}", state.briefing));
+        }
 
         SendMissionMessageToGroup(
             player,
             Acore::StringFormat("[추가 임무] {}", state.announcement));
+    }
+
+    void OnPlayerJustDied(Player* player) override
+    {
+        if (!player)
+            return;
+
+        Map* map = player->GetMap();
+        if (!map || !map->IsDungeon() || !map->GetInstanceId())
+            return;
+
+        MissionState* state = MissionStateStore::Instance().Get(
+            map->GetInstanceId());
+        if (!state || state->completed || state->failed)
+            return;
+
+        if (state->missionType != 2)
+            return;
+
+        FailMission(map, *state, "파티 사망이 발생했습니다.");
     }
 };
 
@@ -709,12 +1332,7 @@ public:
 
         if (now >= state->expireTime)
         {
-            state->failed = true;
-            SendMissionMessageToMap(
-                map,
-                Acore::StringFormat(
-                    "[추가 임무] {} 임무가 시간 초과로 실패했습니다.",
-                    state->title));
+            FailMission(map, *state, "제한 시간이 지났습니다.");
             return;
         }
 
@@ -765,3 +1383,4 @@ void AddInstanceBonusMissionScripts()
     new InstanceBonusMissionKillScript();
     new InstanceBonusMissionMapScript();
 }
+
