@@ -1,4 +1,4 @@
-local addonName = ...
+﻿local addonName = ...
 
 local KBM = CreateFrame("Frame", "KarazhanBonusMissionFrame", UIParent)
 KBM:SetSize(344, 246)
@@ -75,14 +75,14 @@ end
 
 local function GetStatusText(status)
   if status == "complete" then
-    return "??"
+    return "완료"
   elseif status == "failed" then
-    return "??"
+    return "실패"
   elseif status == "active" then
-    return "?? ?"
+    return "진행 중"
   end
 
-  return "??"
+  return "대기"
 end
 
 local function GetThemeText(themeKey, themeName)
@@ -91,16 +91,16 @@ local function GetThemeText(themeKey, themeName)
   end
 
   if themeKey == "slaughter" then
-    return "???"
+    return "학살형"
   elseif themeKey == "clean_run" then
-    return "????"
+    return "무사고형"
   elseif themeKey == "speed_run" then
-    return "?????"
+    return "속전속결형"
   elseif themeKey == "boss_focus" then
-    return "?? ???"
+    return "보스 집중형"
   end
 
-  return "???"
+  return "미지정"
 end
 
 local function ShowRaidAlert(message)
@@ -118,8 +118,8 @@ local function ShowRaidAlert(message)
 end
 
 KBM:SetBackdrop({
-  bgFile = "Interface\DialogFrame\UI-DialogBox-Background-Dark",
-  edgeFile = "Interface\AchievementFrame\UI-Achievement-WoodBorder",
+  bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+  edgeFile = "Interface\\AchievementFrame\\UI-Achievement-WoodBorder",
   tile = true,
   tileSize = 16,
   edgeSize = 16,
@@ -132,8 +132,8 @@ KBM.header:SetPoint("TOPLEFT", KBM, "TOPLEFT", 14, -14)
 KBM.header:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -14, -14)
 KBM.header:SetHeight(36)
 KBM.header:SetBackdrop({
-  bgFile = "Interface\AchievementFrame\UI-Achievement-Parchment-Horizontal",
-  edgeFile = "Interface\Tooltips\UI-Tooltip-Border",
+  bgFile = "Interface\\AchievementFrame\\UI-Achievement-Parchment-Horizontal",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   tile = true,
   tileSize = 32,
   edgeSize = 10,
@@ -144,18 +144,18 @@ KBM.header:SetBackdropBorderColor(0.70, 0.58, 0.22, 0.85)
 
 KBM.headerTitle = CreateFont(KBM.header, 14, 1.0, 0.86, 0.22)
 KBM.headerTitle:SetPoint("TOPLEFT", KBM.header, "TOPLEFT", 12, -8)
-KBM.headerTitle:SetText("?? ??")
+KBM.headerTitle:SetText("추가 임무")
 
 KBM.headerSub = CreateFont(KBM.header, 9, 0.78, 0.74, 0.64)
 KBM.headerSub:SetPoint("TOPLEFT", KBM.headerTitle, "BOTTOMLEFT", 0, -3)
-KBM.headerSub:SetText("?? ?? ??")
+KBM.headerSub:SetText("던전 추가 목표")
 
 KBM.themeBadge = CreateFrame("Frame", nil, KBM.header)
 KBM.themeBadge:SetSize(104, 20)
 KBM.themeBadge:SetPoint("RIGHT", KBM.header, "RIGHT", -28, 0)
 KBM.themeBadge:SetBackdrop({
-  bgFile = "Interface\Buttons\WHITE8x8",
-  edgeFile = "Interface\Tooltips\UI-Tooltip-Border",
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   tile = true,
   tileSize = 8,
   edgeSize = 8,
@@ -164,7 +164,7 @@ KBM.themeBadge:SetBackdrop({
 
 KBM.themeBadgeText = CreateFont(KBM.themeBadge, 10, 1, 1, 1, "CENTER")
 KBM.themeBadgeText:SetPoint("CENTER", KBM.themeBadge, "CENTER", 0, 0)
-KBM.themeBadgeText:SetText("??")
+KBM.themeBadgeText:SetText("대기")
 
 local close = CreateFrame("Button", nil, KBM, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -4, -4)
@@ -176,7 +176,7 @@ end)
 KBM.reopen = CreateFrame("Button", "KarazhanBonusMissionReopenButton", UIParent, "UIPanelButtonTemplate")
 KBM.reopen:SetSize(92, 22)
 KBM.reopen:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -98, -138)
-KBM.reopen:SetText("?? ??")
+KBM.reopen:SetText("임무 보기")
 KBM.reopen:SetScript("OnClick", function()
   KBM:Show()
   KBM.reopen:Hide()
@@ -188,8 +188,8 @@ KBM.body:SetPoint("TOPLEFT", KBM.header, "BOTTOMLEFT", 0, -10)
 KBM.body:SetPoint("TOPRIGHT", KBM.header, "BOTTOMRIGHT", 0, -10)
 KBM.body:SetHeight(154)
 KBM.body:SetBackdrop({
-  bgFile = "Interface\Buttons\WHITE8x8",
-  edgeFile = "Interface\Tooltips\UI-Tooltip-Border",
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   tile = true,
   tileSize = 8,
   edgeSize = 8,
@@ -200,11 +200,11 @@ KBM.body:SetBackdropBorderColor(0.32, 0.28, 0.20, 0.75)
 
 KBM.currentLabel = CreateFont(KBM.body, 10, 1.0, 0.82, 0.15)
 KBM.currentLabel:SetPoint("TOPLEFT", KBM.body, "TOPLEFT", 12, -10)
-KBM.currentLabel:SetText("?? ??")
+KBM.currentLabel:SetText("현재 임무")
 
 KBM.status = CreateFont(KBM.body, 10, 0.60, 0.60, 0.60, "RIGHT")
 KBM.status:SetPoint("TOPRIGHT", KBM.body, "TOPRIGHT", -12, -10)
-KBM.status:SetText("??: ??")
+KBM.status:SetText("상태: 대기")
 
 KBM.mission = CreateFont(KBM.body, 13, 1.0, 1.0, 1.0)
 KBM.mission:SetPoint("TOPLEFT", KBM.currentLabel, "BOTTOMLEFT", 0, -6)
@@ -215,8 +215,8 @@ KBM.timerBox = CreateFrame("Frame", nil, KBM.body)
 KBM.timerBox:SetSize(124, 24)
 KBM.timerBox:SetPoint("TOPLEFT", KBM.mission, "BOTTOMLEFT", 0, -10)
 KBM.timerBox:SetBackdrop({
-  bgFile = "Interface\Buttons\WHITE8x8",
-  edgeFile = "Interface\Tooltips\UI-Tooltip-Border",
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   tile = true,
   tileSize = 8,
   edgeSize = 8,
@@ -227,11 +227,11 @@ KBM.timerBox:SetBackdropBorderColor(0.25, 0.45, 0.86, 0.86)
 
 KBM.timer = CreateFont(KBM.timerBox, 11, 0.88, 0.94, 1.0, "CENTER")
 KBM.timer:SetPoint("CENTER", KBM.timerBox, "CENTER", 0, 0)
-KBM.timer:SetText("?? ?? 00:00")
+KBM.timer:SetText("남은 시간 00:00")
 
 KBM.progressLabel = CreateFont(KBM.body, 10, 1.0, 0.82, 0.15)
 KBM.progressLabel:SetPoint("TOPLEFT", KBM.timerBox, "BOTTOMLEFT", 0, -12)
-KBM.progressLabel:SetText("???")
+KBM.progressLabel:SetText("진행도")
 
 KBM.progressText = CreateFont(KBM.body, 10, 0.94, 0.94, 0.94, "RIGHT")
 KBM.progressText:SetPoint("RIGHT", KBM.body, "RIGHT", -12, -78)
@@ -241,8 +241,8 @@ KBM.progressBarBG = CreateFrame("Frame", nil, KBM.body)
 KBM.progressBarBG:SetPoint("TOPLEFT", KBM.progressLabel, "BOTTOMLEFT", 0, -6)
 KBM.progressBarBG:SetSize(300, 16)
 KBM.progressBarBG:SetBackdrop({
-  bgFile = "Interface\Buttons\WHITE8x8",
-  edgeFile = "Interface\Tooltips\UI-Tooltip-Border",
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   tile = true,
   tileSize = 8,
   edgeSize = 8,
@@ -252,7 +252,7 @@ KBM.progressBarBG:SetBackdropColor(0.03, 0.03, 0.03, 0.96)
 KBM.progressBarBG:SetBackdropBorderColor(0.34, 0.34, 0.34, 0.76)
 
 KBM.progressBar = KBM.progressBarBG:CreateTexture(nil, "ARTWORK")
-KBM.progressBar:SetTexture("Interface\TARGETINGFRAME\UI-StatusBar")
+KBM.progressBar:SetTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
 KBM.progressBar:SetVertexColor(0.16, 0.76, 1.00, 0.96)
 KBM.progressBar:SetPoint("TOPLEFT", KBM.progressBarBG, "TOPLEFT", 2, -2)
 KBM.progressBar:SetPoint("BOTTOMLEFT", KBM.progressBarBG, "BOTTOMLEFT", 2, 2)
@@ -261,24 +261,24 @@ KBM.progressBar:SetWidth(1)
 KBM.objective = CreateFont(KBM.body, 11, 0.92, 0.92, 0.92)
 KBM.objective:SetPoint("TOPLEFT", KBM.progressBarBG, "BOTTOMLEFT", 0, -10)
 KBM.objective:SetWidth(300)
-KBM.objective:SetText("??: -")
+KBM.objective:SetText("목표: -")
 
 KBM.briefingTitle = CreateFont(KBM.body, 10, 1.0, 0.82, 0.15)
 KBM.briefingTitle:SetPoint("TOPLEFT", KBM.objective, "BOTTOMLEFT", 0, -10)
-KBM.briefingTitle:SetText("?? ???")
+KBM.briefingTitle:SetText("작전 브리핑")
 
 KBM.briefing = CreateFont(KBM.body, 11, 0.86, 0.88, 0.94)
 KBM.briefing:SetPoint("TOPLEFT", KBM.briefingTitle, "BOTTOMLEFT", 0, -4)
 KBM.briefing:SetWidth(300)
-KBM.briefing:SetText("?? ??? ?? ???? ?????.")
+KBM.briefing:SetText("추가 임무가 아직 배정되지 않았습니다.")
 
 KBM.noticePanel = CreateFrame("Frame", nil, KBM)
 KBM.noticePanel:SetPoint("TOPLEFT", KBM.body, "BOTTOMLEFT", 0, -10)
 KBM.noticePanel:SetPoint("TOPRIGHT", KBM.body, "BOTTOMRIGHT", 0, -10)
 KBM.noticePanel:SetHeight(32)
 KBM.noticePanel:SetBackdrop({
-  bgFile = "Interface\Buttons\WHITE8x8",
-  edgeFile = "Interface\Tooltips\UI-Tooltip-Border",
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   tile = true,
   tileSize = 8,
   edgeSize = 8,
@@ -303,12 +303,11 @@ end
 
 local function Refresh()
   UpdateThemeVisuals()
-
   KBM.mission:SetText(KBM.state.title or "-")
-  KBM.objective:SetText(string.format("??: %s", KBM.state.targetLabel or "-"))
+  KBM.objective:SetText(string.format("목표: %s", KBM.state.targetLabel or "-"))
   KBM.progressText:SetText(string.format("%d / %d", KBM.state.currentCount or 0, KBM.state.targetCount or 0))
-  KBM.timer:SetText("?? ?? " .. FormatRemaining(KBM.state.remaining or 0))
-  KBM.status:SetText("??: " .. GetStatusText(KBM.state.status))
+  KBM.timer:SetText("남은 시간 " .. FormatRemaining(KBM.state.remaining or 0))
+  KBM.status:SetText("상태: " .. GetStatusText(KBM.state.status))
   KBM.briefing:SetText(KBM.state.briefing or "")
 
   local statusColor = statusColors[KBM.state.status] or statusColors.inactive
@@ -385,7 +384,7 @@ KBM:SetScript("OnUpdate", function(self, elapsed)
   if self.state.expiresAt then
     local remaining = math.max(0, math.floor(self.state.expiresAt - GetTime()))
     self.state.remaining = remaining
-    self.timer:SetText("?? ?? " .. FormatRemaining(remaining))
+    self.timer:SetText("남은 시간 " .. FormatRemaining(remaining))
   end
 end)
 
