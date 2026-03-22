@@ -70,6 +70,41 @@ local function CreateText(parent, layer, template, size, r, g, b, justify)
   return fs
 end
 
+local PortraitUpdater = CreateFrame("Frame")
+PortraitUpdater.queue = {}
+
+local function SetSafePortraitTexture(textureObject, unit)
+  if not textureObject or not unit or not UnitExists(unit) then
+    return false
+  end
+
+  if IsUnitModelReadyForUI and IsUnitModelReadyForUI(unit) then
+    PortraitUpdater.queue[textureObject] = nil
+    SetPortraitTexture(textureObject, unit)
+    return true
+  end
+
+  PortraitUpdater.queue[textureObject] = unit
+  PortraitUpdater.t = 0
+  PortraitUpdater:SetScript("OnUpdate", function(self, elapsed)
+    self.t = self.t + elapsed
+    if self.t < 0.4 then
+      return
+    end
+
+    self.t = 0
+    self:SetScript("OnUpdate", nil)
+    for texture, queuedUnit in pairs(self.queue) do
+      if texture:IsVisible() and UnitExists(queuedUnit) then
+        SetPortraitTexture(texture, queuedUnit)
+      end
+    end
+    wipe(self.queue)
+  end)
+
+  return true
+end
+
 local function SkinActionButton(button)
   button:SetNormalTexture("")
   button:SetPushedTexture("")
@@ -133,29 +168,30 @@ frame.close:SetScript("OnClick", function()
 end)
 
 frame.iconBorder = CreateFrame("Frame", nil, frame)
-frame.iconBorder:SetSize(54, 54)
+frame.iconBorder:SetSize(56, 56)
 frame.iconBorder:SetPoint("TOPLEFT", frame, "TOPLEFT", 34, -32)
-frame.iconBorder:SetBackdrop({
-  bgFile = "Interface\\Buttons\\WHITE8x8",
-  edgeFile = "Interface\\AddOns\\HeroStoneUI\\Art\\RewardChoice-ItemBorder.tga",
-  tile = false,
-  edgeSize = 14,
-  insets = { left = 3, right = 3, top = 3, bottom = 3 },
-})
-frame.iconBorder:SetBackdropColor(0.09, 0.09, 0.09, 0.95)
 
 frame.icon = frame.iconBorder:CreateTexture(nil, "ARTWORK")
-frame.icon:SetPoint("TOPLEFT", frame.iconBorder, "TOPLEFT", 5, -5)
-frame.icon:SetPoint("BOTTOMRIGHT", frame.iconBorder, "BOTTOMRIGHT", -5, 5)
+frame.icon:SetPoint("TOPLEFT", frame.iconBorder, "TOPLEFT", 8, -8)
+frame.icon:SetPoint("BOTTOMRIGHT", frame.iconBorder, "BOTTOMRIGHT", -8, 8)
 frame.icon:SetTexture(frame.state.icon)
+
+frame.iconFront = frame.iconBorder:CreateTexture(nil, "OVERLAY")
+frame.iconFront:SetAllPoints(frame.iconBorder)
+frame.iconFront:SetTexture("Interface\\AddOns\\HeroStoneUI\\Art\\Parchment.tga")
+frame.iconFront:SetTexCoord(0, 0.3125, 0.84375, 1)
 
 local function UpdateHeaderIcon()
   if frame.state.icon == "PORTRAIT_NPC" then
-    if UnitExists("npc") then
-      SetPortraitTexture(frame.icon, "npc")
-    elseif UnitExists("target") then
-      SetPortraitTexture(frame.icon, "target")
-    elseif frame.state.npcDisplayId and frame.state.npcDisplayId > 0 and SetPortraitTextureFromCreatureDisplayID then
+    if SetSafePortraitTexture(frame.icon, "npc") then
+      return
+    end
+
+    if SetSafePortraitTexture(frame.icon, "target") then
+      return
+    end
+
+    if frame.state.npcDisplayId and frame.state.npcDisplayId > 0 and SetPortraitTextureFromCreatureDisplayID then
       SetPortraitTextureFromCreatureDisplayID(frame.icon, frame.state.npcDisplayId)
     else
       frame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
@@ -193,13 +229,12 @@ frame.subtitle:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
 frame.subtitle:SetText(frame.state.subtitle)
 
 frame.divider = frame:CreateTexture(nil, "ARTWORK")
-frame.divider:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\SubHeaderBackground.tga"
-)
+frame.divider:SetTexture("Interface\\AddOns\\HeroStoneUI\\Art\\Parchment.tga")
+frame.divider:SetTexCoord(0, 0.65625, 0.56640625, 0.61328125)
 frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 34, -106)
 frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -34, -106)
-frame.divider:SetHeight(16)
-frame.divider:SetAlpha(0.85)
+frame.divider:SetHeight(14)
+frame.divider:SetAlpha(0.95)
 
 frame.body = CreateText(
   frame,
