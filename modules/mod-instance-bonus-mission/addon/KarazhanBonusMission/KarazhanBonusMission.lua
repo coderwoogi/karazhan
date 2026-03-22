@@ -331,7 +331,7 @@ KBM.voteInfo:SetText("찬성 0 / 1, 반대 0")
 
 KBM.body = CreateFrame("Frame", nil, KBM)
 KBM.body:SetPoint("TOPLEFT", KBM, "TOPLEFT", 38, -164)
-KBM.body:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -38, 118)
+KBM.body:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -38, 138)
 
 KBM.status = CreateText(
   KBM.body,
@@ -482,14 +482,14 @@ KBM.notice = CreateText(
   0.20,
   0.10
 )
-KBM.notice:SetPoint("TOPLEFT", KBM.rewardLeft, "BOTTOMLEFT", 0, -26)
+KBM.notice:SetPoint("TOPLEFT", KBM.rewardLeft, "BOTTOMLEFT", 0, -12)
 KBM.notice:SetWidth(300)
 KBM.notice:SetSpacing(4)
 KBM.notice:SetText("")
 
-KBM.voteOverlay = CreateFrame("Frame", nil, KBM.body)
-KBM.voteOverlay:SetPoint("TOPLEFT", KBM.body, "TOPLEFT", -10, -2)
-KBM.voteOverlay:SetPoint("BOTTOMRIGHT", KBM.body, "BOTTOMRIGHT", 10, 12)
+KBM.voteOverlay = CreateFrame("Frame", nil, KBM)
+KBM.voteOverlay:SetPoint("TOPLEFT", KBM, "TOPLEFT", 18, -46)
+KBM.voteOverlay:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -18, 72)
 KBM.voteOverlay:SetFrameStrata("DIALOG")
 KBM.voteOverlay:Hide()
 
@@ -508,8 +508,8 @@ KBM.voteOverlayText = CreateText(
   0.72,
   "CENTER"
 )
-KBM.voteOverlayText:SetPoint("CENTER", KBM.voteOverlay, "CENTER", 0, -6)
-KBM.voteOverlayText:SetWidth(260)
+KBM.voteOverlayText:SetPoint("CENTER", KBM.voteOverlay, "CENTER", 0, 4)
+KBM.voteOverlayText:SetWidth(290)
 KBM.voteOverlayText:SetSpacing(5)
 KBM.voteOverlayText:SetText("")
 
