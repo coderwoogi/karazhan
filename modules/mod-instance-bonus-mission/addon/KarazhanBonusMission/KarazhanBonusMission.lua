@@ -161,7 +161,7 @@ end
 
 KBM.parchment = KBM:CreateTexture(nil, "BACKGROUND")
 KBM.parchment:SetTexture(
-  "Interface\\AddOns\\KarazhanBonusMission\\Art\\bg_canvas_1024.tga"
+  "Interface\\AddOns\\KarazhanBonusMission\\Art\\bg_512x1024.tga"
 )
 KBM.parchment:SetAllPoints(KBM)
 KBM.parchment:SetTexCoord(0, 1, 0, 1)
