@@ -178,8 +178,9 @@ frame.icon:SetTexture(frame.state.icon)
 
 frame.iconFront = frame.iconBorder:CreateTexture(nil, "OVERLAY")
 frame.iconFront:SetAllPoints(frame.iconBorder)
-frame.iconFront:SetTexture("Interface\\AddOns\\HeroStoneUI\\Art\\Parchment.tga")
-frame.iconFront:SetTexCoord(0, 0.3125, 0.84375, 1)
+frame.iconFront:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\ParchmentPortraitFrame.tga"
+)
 
 local function UpdateHeaderIcon()
   if frame.state.icon == "PORTRAIT_NPC" then
@@ -229,8 +230,9 @@ frame.subtitle:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
 frame.subtitle:SetText(frame.state.subtitle)
 
 frame.divider = frame:CreateTexture(nil, "ARTWORK")
-frame.divider:SetTexture("Interface\\AddOns\\HeroStoneUI\\Art\\Parchment.tga")
-frame.divider:SetTexCoord(0, 0.65625, 0.56640625, 0.61328125)
+frame.divider:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\ParchmentDivider.tga"
+)
 frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 34, -106)
 frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -34, -106)
 frame.divider:SetHeight(14)
