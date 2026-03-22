@@ -26,8 +26,8 @@
 
 namespace
 {
-    char const* const kBriefingPrefix = u8"[작전 브리핑] ";
-    char const* const kMissionPrefix = u8"[추가 미션] ";
+    std::string const kBriefingPrefix = "[작전 브리핑] ";
+    std::string const kMissionPrefix = "[추가 미션] ";
 
     struct MissionDefinition
     {
@@ -1081,9 +1081,9 @@ namespace
         if (!selection.definition)
             selection.definition = &themes->front();
 
-        selection.briefing = Acore::StringFormat(
-            u8"이번 판의 추가 미션 유형은 {}입니다.",
-            selection.definition->name);
+        selection.briefing =
+            "이번 판의 추가 미션 유형은 " +
+            selection.definition->name + "입니다.";
         selection.source = "fallback";
         return selection;
     }
@@ -1227,9 +1227,8 @@ namespace
                 ThemeSelection selection;
                 selection.definition = theme;
                 selection.briefing = briefing.empty()
-                    ? Acore::StringFormat(
-                        u8"이번 판의 추가 미션 유형은 {}입니다.",
-                        theme->name)
+                    ? "이번 판의 추가 미션 유형은 " +
+                        theme->name + "입니다."
                     : briefing;
                 selection.source = "llm";
                 return selection;
