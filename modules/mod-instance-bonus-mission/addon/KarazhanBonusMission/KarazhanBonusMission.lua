@@ -115,9 +115,10 @@ end
 
 local function CreateSectionHeader(parent, text, anchor, offsetY)
   local texture = parent:CreateTexture(nil, "BORDER")
-  texture:SetTexture("Interface\\AddOns\\KarazhanBonusMission\\Art\\SubHeaderBackground")
+  texture:SetTexture("Interface\\Buttons\\WHITE8x8")
   texture:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", -4, offsetY)
   texture:SetSize(390, 24)
+  texture:SetVertexColor(0.76, 0.66, 0.46, 0.28)
 
   local label = CreateText(parent, "ARTWORK", "GameFontNormal", 16, 0.26, 0.17, 0.08)
   label:SetPoint("LEFT", texture, "LEFT", 10, 0)
@@ -127,14 +128,13 @@ local function CreateSectionHeader(parent, text, anchor, offsetY)
 end
 
 KBM:SetBackdrop({
-  bgFile = "Interface\\AddOns\\KarazhanBonusMission\\Art\\Parchment",
-  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+  bgFile = "Interface\\QuestFrame\\UI-QuestLogDualPane-Left",
+  edgeFile = nil,
   tile = false,
-  edgeSize = 16,
+  edgeSize = 0,
   insets = { left = 5, right = 5, top = 5, bottom = 5 },
 })
 KBM:SetBackdropColor(1, 1, 1, 1)
-KBM:SetBackdropBorderColor(0.42, 0.27, 0.11, 0.90)
 
 KBM.headerLine = KBM:CreateTexture(nil, "ARTWORK")
 KBM.headerLine:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
@@ -166,7 +166,7 @@ KBM.iconBorder:SetSize(58, 58)
 KBM.iconBorder:SetPoint("TOPLEFT", KBM, "TOPLEFT", 24, -48)
 KBM.iconBorder:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
-  edgeFile = "Interface\\AddOns\\KarazhanBonusMission\\Art\\RewardChoice-ItemBorder",
+  edgeFile = "Interface\\Buttons\\UI-Quickslot2",
   tile = false,
   edgeSize = 12,
   insets = { left = 3, right = 3, top = 3, bottom = 3 },
@@ -258,12 +258,12 @@ KBM.rewardLeft:SetSize(176, 48)
 KBM.rewardLeft:SetPoint("TOPLEFT", KBM.rewardHeaderTexture, "BOTTOMLEFT", 0, -12)
 
 KBM.rewardLeftHighlight = KBM.rewardLeft:CreateTexture(nil, "BACKGROUND")
-KBM.rewardLeftHighlight:SetTexture("Interface\\AddOns\\KarazhanBonusMission\\Art\\RewardChoice-Highlight")
+KBM.rewardLeftHighlight:SetTexture("Interface\\Buttons\\WHITE8x8")
 KBM.rewardLeftHighlight:SetAllPoints(KBM.rewardLeft)
-KBM.rewardLeftHighlight:SetAlpha(0.55)
+KBM.rewardLeftHighlight:SetVertexColor(0.85, 0.77, 0.58, 0.18)
 
 KBM.rewardLeftBorder = KBM.rewardLeft:CreateTexture(nil, "BORDER")
-KBM.rewardLeftBorder:SetTexture("Interface\\AddOns\\KarazhanBonusMission\\Art\\RewardChoice-ItemBorder")
+KBM.rewardLeftBorder:SetTexture("Interface\\Buttons\\UI-Quickslot2")
 KBM.rewardLeftBorder:SetPoint("TOPLEFT", KBM.rewardLeft, "TOPLEFT", 2, -2)
 KBM.rewardLeftBorder:SetSize(42, 42)
 
@@ -283,12 +283,12 @@ KBM.rewardRight:SetSize(176, 48)
 KBM.rewardRight:SetPoint("TOPRIGHT", KBM.body, "TOPRIGHT", -10, -316)
 
 KBM.rewardRightHighlight = KBM.rewardRight:CreateTexture(nil, "BACKGROUND")
-KBM.rewardRightHighlight:SetTexture("Interface\\AddOns\\KarazhanBonusMission\\Art\\RewardChoice-Highlight")
+KBM.rewardRightHighlight:SetTexture("Interface\\Buttons\\WHITE8x8")
 KBM.rewardRightHighlight:SetAllPoints(KBM.rewardRight)
-KBM.rewardRightHighlight:SetAlpha(0.55)
+KBM.rewardRightHighlight:SetVertexColor(0.85, 0.77, 0.58, 0.18)
 
 KBM.rewardRightBorder = KBM.rewardRight:CreateTexture(nil, "BORDER")
-KBM.rewardRightBorder:SetTexture("Interface\\AddOns\\KarazhanBonusMission\\Art\\RewardChoice-ItemBorder")
+KBM.rewardRightBorder:SetTexture("Interface\\Buttons\\UI-Quickslot2")
 KBM.rewardRightBorder:SetPoint("TOPLEFT", KBM.rewardRight, "TOPLEFT", 2, -2)
 KBM.rewardRightBorder:SetSize(42, 42)
 
