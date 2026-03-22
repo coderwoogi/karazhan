@@ -107,24 +107,6 @@ local function GetThemeText(themeKey, themeName)
   return "미지정"
 end
 
-local function GetVoteOverlayText(state)
-  if state.voteState == "approved" then
-    return ""
-  end
-
-  if state.voteState == "rejected" then
-    return "과반수 반대로 잠금 상태입니다."
-  end
-
-  if state.playerVote == "yes" then
-    return "찬성 투표를 완료했습니다.\n과반수 찬성이 모이면 시작됩니다."
-  elseif state.playerVote == "no" then
-    return "반대를 선택했습니다.\n과반수 찬성이 모일 때까지 진행할 수 없습니다."
-  end
-
-  return "과반수 찬성이 필요합니다.\n하단 버튼으로 찬성 또는 반대를 선택하세요."
-end
-
 local function ShowRaidAlert(message)
   if not message or message == "" then
     return
@@ -318,15 +300,15 @@ KBM.theme:SetText("미지정")
 KBM.voteInfo = CreateText(
   KBM,
   "OVERLAY",
-  "GameFontNormalSmall",
-  12,
-  0.34,
-  0.23,
-  0.11,
-  "RIGHT"
+  "GameFontNormal",
+  14,
+  0.28,
+  0.19,
+  0.10,
+  "CENTER"
 )
-KBM.voteInfo:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -40, -142)
-KBM.voteInfo:SetWidth(178)
+KBM.voteInfo:SetPoint("CENTER", KBM, "CENTER", 0, 48)
+KBM.voteInfo:SetWidth(280)
 KBM.voteInfo:SetText("찬성 0 / 1, 반대 0")
 
 KBM.body = CreateFrame("Frame", nil, KBM)
@@ -487,31 +469,39 @@ KBM.notice:SetWidth(300)
 KBM.notice:SetSpacing(4)
 KBM.notice:SetText("")
 
-KBM.voteOverlay = CreateFrame("Frame", nil, KBM)
-KBM.voteOverlay:SetPoint("TOPLEFT", KBM, "TOPLEFT", 18, -46)
-KBM.voteOverlay:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -18, 72)
-KBM.voteOverlay:SetFrameStrata("DIALOG")
-KBM.voteOverlay:Hide()
+KBM.votePanel = CreateFrame("Frame", nil, KBM)
+KBM.votePanel:SetPoint("TOPLEFT", KBM, "TOPLEFT", 36, -120)
+KBM.votePanel:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -36, 112)
+KBM.votePanel:Hide()
 
-KBM.voteOverlayBg = KBM.voteOverlay:CreateTexture(nil, "BACKGROUND")
-KBM.voteOverlayBg:SetTexture("Interface\\Buttons\\WHITE8x8")
-KBM.voteOverlayBg:SetAllPoints(KBM.voteOverlay)
-KBM.voteOverlayBg:SetVertexColor(0.15, 0.11, 0.07, 0.46)
-
-KBM.voteOverlayText = CreateText(
-  KBM.voteOverlay,
+KBM.votePanelTitle = CreateText(
+  KBM.votePanel,
   "OVERLAY",
-  "GameFontHighlight",
-  14,
-  0.93,
-  0.86,
-  0.72,
+  "GameFontHighlightLarge",
+  20,
+  0.23,
+  0.16,
+  0.10,
   "CENTER"
 )
-KBM.voteOverlayText:SetPoint("CENTER", KBM.voteOverlay, "CENTER", 0, 4)
-KBM.voteOverlayText:SetWidth(290)
-KBM.voteOverlayText:SetSpacing(5)
-KBM.voteOverlayText:SetText("")
+KBM.votePanelTitle:SetPoint("TOP", KBM.votePanel, "TOP", 0, -34)
+KBM.votePanelTitle:SetWidth(260)
+KBM.votePanelTitle:SetText("추가 미션 진행 투표")
+
+KBM.votePanelHint = CreateText(
+  KBM.votePanel,
+  "OVERLAY",
+  "GameFontNormal",
+  15,
+  0.26,
+  0.18,
+  0.10,
+  "CENTER"
+)
+KBM.votePanelHint:SetPoint("TOP", KBM.votePanelTitle, "BOTTOM", 0, -28)
+KBM.votePanelHint:SetWidth(290)
+KBM.votePanelHint:SetSpacing(6)
+KBM.votePanelHint:SetText("과반수 찬성이 모이면\n추가 미션이 시작됩니다.")
 
 KBM.accept = CreateFrame("Button", nil, KBM, "UIPanelButtonTemplate")
 KBM.accept:SetSize(126, 28)
@@ -528,6 +518,30 @@ SkinDialogueButton(KBM.fold, "반대")
 KBM.fold:SetScript("OnClick", function()
   SendVote("NO")
 end)
+
+local function SetQuestModeVisible(visible)
+  if visible then
+    KBM.headerLine:Show()
+    KBM.iconBorder:Show()
+    KBM.title:Show()
+    KBM.theme:Show()
+    KBM.body:Show()
+    KBM.votePanel:Hide()
+    KBM.voteInfo:Hide()
+    KBM.accept:Hide()
+    KBM.fold:Hide()
+  else
+    KBM.headerLine:Hide()
+    KBM.iconBorder:Hide()
+    KBM.title:Hide()
+    KBM.theme:Hide()
+    KBM.body:Hide()
+    KBM.votePanel:Show()
+    KBM.voteInfo:Show()
+    KBM.accept:Show()
+    KBM.fold:Show()
+  end
+end
 
 local function UpdateThemeVisuals()
   KBM.theme:SetText(GetThemeText(KBM.state.themeKey, KBM.state.themeName))
@@ -552,27 +566,51 @@ end
 local function RefreshVoteUi()
   local pending = KBM.state.voteState ~= "approved"
   local rejected = KBM.state.voteState == "rejected"
+  local yes = KBM.state.voteYes or 0
+  local no = KBM.state.voteNo or 0
+  local required = KBM.state.voteRequired or 1
 
   KBM.voteInfo:SetText(
     string.format(
       "찬성 %d / %d, 반대 %d",
-      KBM.state.voteYes or 0,
-      KBM.state.voteRequired or 1,
-      KBM.state.voteNo or 0
+      yes,
+      required,
+      no
     )
   )
 
   if pending then
-    KBM.voteOverlay:Show()
-    KBM.voteOverlayText:SetText(GetVoteOverlayText(KBM.state))
+    SetQuestModeVisible(false)
+    KBM.accept:ClearAllPoints()
+    KBM.accept:SetPoint("CENTER", KBM, "CENTER", -84, -28)
+    KBM.fold:ClearAllPoints()
+    KBM.fold:SetPoint("CENTER", KBM, "CENTER", 84, -28)
+
+    if rejected then
+      KBM.votePanelHint:SetText(
+        "과반수 반대로 이번 추가 미션은\n진행할 수 없습니다."
+      )
+    elseif KBM.state.playerVote == "yes" then
+      KBM.votePanelHint:SetText(
+        "찬성 투표를 완료했습니다.\n다른 파티원의 결정을 기다리고 있습니다."
+      )
+    elseif KBM.state.playerVote == "no" then
+      KBM.votePanelHint:SetText(
+        "반대를 선택했습니다.\n과반수 찬성이 모이면 진행됩니다."
+      )
+    else
+      KBM.votePanelHint:SetText(
+        "과반수 찬성이 모이면\n추가 미션이 시작됩니다."
+      )
+    end
   else
-    KBM.voteOverlay:Hide()
+    SetQuestModeVisible(true)
   end
 
-  if KBM.state.voteState == "approved" then
+  if rejected then
     SetButtonEnabled(KBM.accept, false)
     SetButtonEnabled(KBM.fold, false)
-  elseif rejected then
+  elseif KBM.state.voteState == "approved" then
     SetButtonEnabled(KBM.accept, false)
     SetButtonEnabled(KBM.fold, false)
   else
@@ -652,6 +690,10 @@ end
 
 local function ResetState()
   KBM.state = NewState()
+  KBM.accept:ClearAllPoints()
+  KBM.accept:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", 42, 36)
+  KBM.fold:ClearAllPoints()
+  KBM.fold:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -42, 36)
   Refresh()
 end
 
