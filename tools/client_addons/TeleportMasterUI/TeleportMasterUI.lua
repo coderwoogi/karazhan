@@ -1,10 +1,10 @@
 local addonName = ...
 
 local PREFIX = "TELEPORT_MASTER_UI"
-local frame = CreateFrame("Frame", "TeleportMasterUIFrame", UIParent)
 
-frame:SetSize(470, 650)
-frame:SetPoint("RIGHT", UIParent, "RIGHT", -84, -8)
+local frame = CreateFrame("Frame", "TeleportMasterUIFrame", UIParent)
+frame:SetSize(486, 706)
+frame:SetPoint("RIGHT", UIParent, "RIGHT", -84, -6)
 frame:SetScale(0.74)
 frame:SetFrameStrata("DIALOG")
 frame:SetToplevel(true)
@@ -15,9 +15,8 @@ table.insert(UISpecialFrames, frame:GetName())
 
 frame.state = {
   title = "이동술사",
-  subtitle = "",
+  subtitle = "The Karazhan",
   body = "",
-  icon = "PORTRAIT_NPC",
   npcDisplayId = 0,
   section = "이동 가능한 지역",
   closeText = "닫기",
@@ -79,7 +78,7 @@ local function SetSafePortraitTexture(textureObject, unit)
   PortraitUpdater.t = 0
   PortraitUpdater:SetScript("OnUpdate", function(self, elapsed)
     self.t = self.t + elapsed
-    if self.t < 0.4 then
+    if self.t < 0.35 then
       return
     end
 
@@ -103,22 +102,22 @@ local function SkinMainButton(button, texturePath)
   button:SetDisabledTexture("")
 
   button.bg = button:CreateTexture(nil, "BACKGROUND")
-  button.bg:SetTexture(texturePath)
   button.bg:SetAllPoints(button)
+  button.bg:SetTexture(texturePath)
 
   button.hl = button:CreateTexture(nil, "HIGHLIGHT")
+  button.hl:SetAllPoints(button)
   button.hl:SetTexture(
     "Interface\\AddOns\\TeleportMasterUI\\Art\\ButtonHighlight-Add.tga"
   )
-  button.hl:SetAllPoints(button)
   button.hl:SetBlendMode("ADD")
-  button.hl:SetAlpha(0.28)
+  button.hl:SetAlpha(0.26)
 
-  local fs = button:GetFontString()
-  if fs then
-    fs:SetFont(STANDARD_TEXT_FONT, 13, "")
-    fs:SetTextColor(0.95, 0.92, 0.84)
-    fs:SetShadowOffset(1, -1)
+  local text = button:GetFontString()
+  if text then
+    text:SetFont(STANDARD_TEXT_FONT, 14, "")
+    text:SetTextColor(0.95, 0.92, 0.84)
+    text:SetShadowOffset(1, -1)
   end
 end
 
@@ -129,48 +128,30 @@ local function SkinListButton(button)
   button:SetDisabledTexture("")
 
   button.bg = button:CreateTexture(nil, "BACKGROUND")
+  button.bg:SetAllPoints(button)
   button.bg:SetTexture(
     "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundCommon.tga"
   )
-  button.bg:SetAllPoints(button)
-  button.bg:SetAlpha(0.82)
+  button.bg:SetAlpha(0.88)
 
   button.hl = button:CreateTexture(nil, "HIGHLIGHT")
+  button.hl:SetAllPoints(button)
   button.hl:SetTexture(
     "Interface\\AddOns\\TeleportMasterUI\\Art\\RewardChoice-Highlight.tga"
   )
-  button.hl:SetAllPoints(button)
   button.hl:SetBlendMode("ADD")
-  button.hl:SetAlpha(0.24)
+  button.hl:SetAlpha(0.18)
 end
 
-frame.bgTop = frame:CreateTexture(nil, "BACKGROUND")
-frame.bgTop:SetTexture(
-  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentTop.tga"
+frame.bg = frame:CreateTexture(nil, "BACKGROUND")
+frame.bg:SetAllPoints(frame)
+frame.bg:SetTexture(
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentFull.tga"
 )
-frame.bgTop:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
-frame.bgTop:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
-frame.bgTop:SetHeight(164)
-
-frame.bgMid = frame:CreateTexture(nil, "BACKGROUND")
-frame.bgMid:SetTexture(
-  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentMid.tga"
-)
-frame.bgMid:SetPoint("TOPLEFT", frame.bgTop, "BOTTOMLEFT", 0, 0)
-frame.bgMid:SetPoint("TOPRIGHT", frame.bgTop, "BOTTOMRIGHT", 0, 0)
-frame.bgMid:SetPoint("BOTTOM", frame, "BOTTOM", 0, 132)
-
-frame.bgBottom = frame:CreateTexture(nil, "BACKGROUND")
-frame.bgBottom:SetTexture(
-  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentBottom.tga"
-)
-frame.bgBottom:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
-frame.bgBottom:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
-frame.bgBottom:SetHeight(132)
 
 frame.close = CreateFrame("Button", nil, frame)
 frame.close:SetSize(26, 26)
-frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -18, -16)
+frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -24, -18)
 frame.close.tex = frame.close:CreateTexture(nil, "ARTWORK")
 frame.close.tex:SetAllPoints(frame.close)
 frame.close.tex:SetTexture(
@@ -184,8 +165,8 @@ frame.close:SetScript("OnClick", function()
 end)
 
 frame.iconBorder = CreateFrame("Frame", nil, frame)
-frame.iconBorder:SetSize(58, 58)
-frame.iconBorder:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -30)
+frame.iconBorder:SetSize(56, 56)
+frame.iconBorder:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -26)
 
 frame.icon = frame.iconBorder:CreateTexture(nil, "ARTWORK")
 frame.icon:SetPoint("TOPLEFT", frame.iconBorder, "TOPLEFT", 8, -8)
@@ -203,11 +184,11 @@ frame.subtitle = CreateText(
   "OVERLAY",
   "GameFontNormal",
   13,
-  0.43,
+  0.44,
   0.35,
-  0.25
+  0.24
 )
-frame.subtitle:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 16, -1)
+frame.subtitle:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 14, -2)
 frame.subtitle:SetPoint("RIGHT", frame, "RIGHT", -56, 0)
 
 frame.title = CreateText(
@@ -226,8 +207,8 @@ frame.divider = frame:CreateTexture(nil, "ARTWORK")
 frame.divider:SetTexture(
   "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownDivider.tga"
 )
-frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -96)
-frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -28, -96)
+frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -94)
+frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -28, -94)
 frame.divider:SetHeight(12)
 
 frame.body = CreateText(
@@ -235,33 +216,33 @@ frame.body = CreateText(
   "OVERLAY",
   "GameFontNormal",
   14,
-  0.20,
+  0.21,
   0.16,
   0.11
 )
-frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 38, -118)
+frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 40, -118)
 frame.body:SetWidth(392)
-frame.body:SetSpacing(9)
+frame.body:SetSpacing(8)
 
 frame.section = CreateText(
   frame,
   "OVERLAY",
   "GameFontHighlight",
   15,
-  0.33,
-  0.24,
+  0.34,
+  0.25,
   0.14
 )
 frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -24)
 
 frame.options = CreateFrame("Frame", nil, frame)
-frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -14)
-frame.options:SetSize(392, 276)
+frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -16)
+frame.options:SetSize(392, 300)
 
 frame.optionButtons = {}
 for index = 1, 6 do
   local button = CreateFrame("Button", nil, frame.options, "UIPanelButtonTemplate")
-  button:SetSize(392, 42)
+  button:SetSize(392, 44)
   if index == 1 then
     button:SetPoint("TOPLEFT", frame.options, "TOPLEFT", 0, 0)
   else
@@ -276,11 +257,11 @@ for index = 1, 6 do
   SkinListButton(button)
 
   button.iconBg = button:CreateTexture(nil, "ARTWORK")
+  button.iconBg:SetSize(30, 30)
+  button.iconBg:SetPoint("LEFT", button, "LEFT", 10, 0)
   button.iconBg:SetTexture(
     "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownItemButtonBackground.tga"
   )
-  button.iconBg:SetSize(30, 30)
-  button.iconBg:SetPoint("LEFT", button, "LEFT", 8, 0)
 
   button.icon = button:CreateTexture(nil, "BORDER")
   button.icon:SetSize(18, 18)
@@ -288,18 +269,18 @@ for index = 1, 6 do
   button.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 
   button.iconBorder = button:CreateTexture(nil, "OVERLAY")
+  button.iconBorder:SetSize(34, 34)
+  button.iconBorder:SetPoint("CENTER", button.iconBg, "CENTER", 0, 0)
   button.iconBorder:SetTexture(
     "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownRewardChoiceItemBorder.tga"
   )
-  button.iconBorder:SetSize(34, 34)
-  button.iconBorder:SetPoint("CENTER", button.iconBg, "CENTER", 0, 0)
 
   button.label = CreateText(
     button,
     "OVERLAY",
     "GameFontNormal",
     13,
-    0.21,
+    0.20,
     0.16,
     0.10
   )
@@ -311,8 +292,8 @@ for index = 1, 6 do
     "OVERLAY",
     "GameFontDisableSmall",
     11,
-    0.42,
-    0.34,
+    0.45,
+    0.35,
     0.24
   )
   button.desc:SetPoint("TOPLEFT", button.label, "BOTTOMLEFT", 0, -2)
@@ -337,8 +318,8 @@ frame.footerDivider:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -28, 120)
 frame.footerDivider:SetHeight(12)
 
 frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-frame.closeButton:SetSize(186, 38)
-frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 38, 30)
+frame.closeButton:SetSize(186, 40)
+frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 40, 28)
 SkinMainButton(
   frame.closeButton,
   "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundCommon.tga"
@@ -349,8 +330,8 @@ frame.closeButton:SetScript("OnClick", function()
 end)
 
 frame.refreshButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-frame.refreshButton:SetSize(186, 38)
-frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -38, 30)
+frame.refreshButton:SetSize(186, 40)
+frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -40, 28)
 SkinMainButton(
   frame.refreshButton,
   "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundGrey.tga"
@@ -419,9 +400,8 @@ end
 
 local function ResetState()
   frame.state.title = "이동술사"
-  frame.state.subtitle = ""
+  frame.state.subtitle = "The Karazhan"
   frame.state.body = ""
-  frame.state.icon = "PORTRAIT_NPC"
   frame.state.npcDisplayId = 0
   frame.state.section = "이동 가능한 지역"
   frame.state.closeText = "닫기"
@@ -479,7 +459,6 @@ frame:SetScript("OnEvent", function(self, event, prefix, message)
   if kind == "HEADER" then
     frame.state.title = parts[2] or frame.state.title
     frame.state.subtitle = parts[3] or ""
-    frame.state.icon = parts[4] or "PORTRAIT_NPC"
     frame.state.npcDisplayId = tonumber(parts[5]) or 0
     Refresh()
     return
