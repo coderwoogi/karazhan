@@ -4,6 +4,7 @@ local PREFIX = "HERO_STONE_UI"
 local frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
 frame:SetSize(438, 608)
 frame:SetPoint("CENTER", UIParent, "CENTER", 0, -10)
+frame:SetScale(0.70)
 frame:SetFrameStrata("DIALOG")
 frame:SetToplevel(true)
 frame:SetClampedToScreen(true)
@@ -15,13 +16,13 @@ frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 frame:Hide()
 
 frame.state = {
-  title = "Hero Stone",
+  title = "영웅석",
   subtitle = "",
   body = "",
-  icon = "Interface\\Icons\\INV_Misc_QuestionMark",
-  section = "Options",
-  closeText = "Close",
-  refreshText = "Refresh",
+  icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga",
+  section = "사용 가능한 기능",
+  closeText = "닫기",
+  refreshText = "새로고침",
   items = {},
 }
 
@@ -283,24 +284,24 @@ frame.refreshButton:SetScript("OnClick", function()
 end)
 
 local function ResetState()
-  frame.state.title = "Hero Stone"
+  frame.state.title = "영웅석"
   frame.state.subtitle = ""
   frame.state.body = ""
-  frame.state.icon = "Interface\\Icons\\INV_Misc_QuestionMark"
-  frame.state.section = "Options"
-  frame.state.closeText = "Close"
-  frame.state.refreshText = "Refresh"
+  frame.state.icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga"
+  frame.state.section = "사용 가능한 기능"
+  frame.state.closeText = "닫기"
+  frame.state.refreshText = "새로고침"
   frame.state.items = {}
 end
 
 local function Refresh()
   frame.icon:SetTexture(frame.state.icon)
-  frame.title:SetText(frame.state.title or "Hero Stone")
+  frame.title:SetText(frame.state.title or "영웅석")
   frame.subtitle:SetText(frame.state.subtitle or "")
   frame.body:SetText(frame.state.body or "")
-  frame.section:SetText(frame.state.section or "Options")
-  frame.closeButton:SetText(frame.state.closeText or "Close")
-  frame.refreshButton:SetText(frame.state.refreshText or "Refresh")
+  frame.section:SetText(frame.state.section or "사용 가능한 기능")
+  frame.closeButton:SetText(frame.state.closeText or "닫기")
+  frame.refreshButton:SetText(frame.state.refreshText or "새로고침")
 
   for index, button in ipairs(frame.optionButtons) do
     local item = frame.state.items[index]

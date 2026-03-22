@@ -239,9 +239,9 @@ local function OpenHeroStoneUi(player)
     SendUi(
         player,
         "HEADER",
-        "현자석",
+        "영웅석",
         subtitle,
-        "Interface\\ICONS\\INV_Misc_Gem_Diamond_07"
+        "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga"
     )
     SendUi(player, "BODY", body)
     SendUi(player, "SECTION", "사용 가능한 기능")
