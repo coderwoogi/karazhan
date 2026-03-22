@@ -28,6 +28,7 @@ frame.state = {
   body = "",
   icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga",
   npcDisplayId = 0,
+  theme = "dark",
   section = "Options",
   closeText = "Close",
   refreshText = "Refresh",
@@ -140,11 +141,71 @@ local function SkinActionButton(button)
   end
 end
 
+local function SetButtonTheme(button, theme, isSecondary)
+  local common = "Interface\\AddOns\\HeroStoneUI\\Art\\OptionBackground-Common.tga"
+  local grey = "Interface\\AddOns\\HeroStoneUI\\Art\\OptionBackground-Common.tga"
+  local hotkey = "Interface\\AddOns\\HeroStoneUI\\Art\\HotkeyBackground.tga"
+  local textColor = { 0.92, 0.91, 0.86 }
+
+  if theme == "brown" then
+    common =
+      "Interface\\AddOns\\HeroStoneUI\\Art\\BrownOptionBackgroundCommon.tga"
+    grey =
+      "Interface\\AddOns\\HeroStoneUI\\Art\\BrownOptionBackgroundGrey.tga"
+    hotkey =
+      "Interface\\AddOns\\HeroStoneUI\\Art\\BrownHotkeyBackground.tga"
+    textColor = isSecondary and { 0.78, 0.75, 0.70 } or { 0.94, 0.89, 0.82 }
+  end
+
+  button.bg:SetTexture(isSecondary and grey or common)
+  if button.front then
+    button.front:SetAlpha(theme == "brown" and 0.10 or 0.16)
+  end
+  if button.hl then
+    button.hl:SetAlpha(theme == "brown" and 0.22 or 0.34)
+  end
+
+  local fs = button:GetFontString()
+  if fs then
+    fs:SetTextColor(textColor[1], textColor[2], textColor[3])
+  end
+
+  if button.hotkeyBadge and button.hotkeyBadge.bg then
+    button.hotkeyBadge.bg:SetTexture(hotkey)
+  end
+end
+
 frame.bg = frame:CreateTexture(nil, "BACKGROUND")
 frame.bg:SetTexture(
   "Interface\\AddOns\\HeroStoneUI\\Art\\GenericFrame-Tiled-Large.tga"
 )
 frame.bg:SetAllPoints(frame)
+
+frame.brownTop = frame:CreateTexture(nil, "BACKGROUND")
+frame.brownTop:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\BrownParchmentTop.tga"
+)
+frame.brownTop:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+frame.brownTop:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+frame.brownTop:SetHeight(116)
+frame.brownTop:Hide()
+
+frame.brownBottom = frame:CreateTexture(nil, "BACKGROUND")
+frame.brownBottom:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\BrownParchmentBottom.tga"
+)
+frame.brownBottom:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+frame.brownBottom:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+frame.brownBottom:SetHeight(116)
+frame.brownBottom:Hide()
+
+frame.brownMid = frame:CreateTexture(nil, "BACKGROUND")
+frame.brownMid:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\BrownParchmentMid.tga"
+)
+frame.brownMid:SetPoint("TOPLEFT", frame.brownTop, "BOTTOMLEFT", 0, 0)
+frame.brownMid:SetPoint("BOTTOMRIGHT", frame.brownBottom, "TOPRIGHT", 0, 0)
+frame.brownMid:Hide()
 
 frame.shadow = frame:CreateTexture(nil, "BORDER")
 frame.shadow:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Background-Dark")
@@ -413,6 +474,8 @@ end
 
 frame.closeKey = CreateHotkeyBadge(frame.closeButton, "Esc")
 frame.refreshKey = CreateHotkeyBadge(frame.refreshButton, "R")
+frame.closeButton.hotkeyBadge = frame.closeKey
+frame.refreshButton.hotkeyBadge = frame.refreshKey
 
 frame.closeButton:GetFontString():SetPoint("LEFT", frame.closeKey, "RIGHT", 8, 0)
 frame.refreshButton:GetFontString():SetPoint(
@@ -429,13 +492,128 @@ local function ResetState()
   frame.state.body = ""
   frame.state.icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga"
   frame.state.npcDisplayId = 0
+  frame.state.theme = activePrefix == "TELEPORT_MASTER_UI" and "brown" or "dark"
   frame.state.section = "Options"
   frame.state.closeText = "Close"
   frame.state.refreshText = "Refresh"
   frame.state.items = {}
 end
 
+local function ApplyTheme()
+  local isBrown = frame.state.theme == "brown"
+
+  frame.bg:SetShown(not isBrown)
+  frame.shadow:SetShown(not isBrown)
+  frame.brownTop:SetShown(isBrown)
+  frame.brownMid:SetShown(isBrown)
+  frame.brownBottom:SetShown(isBrown)
+
+  frame.iconFront:SetTexture(
+    isBrown
+      and "Interface\\AddOns\\HeroStoneUI\\Art\\BrownPortraitFrame.tga"
+      or "Interface\\AddOns\\HeroStoneUI\\Art\\ParchmentPortraitFrame.tga"
+  )
+
+  frame.divider:SetTexture(
+    isBrown
+      and "Interface\\AddOns\\HeroStoneUI\\Art\\BrownDivider.tga"
+      or "Interface\\AddOns\\HeroStoneUI\\Art\\ParchmentDivider.tga"
+  )
+
+  frame.title:ClearAllPoints()
+  frame.subtitle:ClearAllPoints()
+  frame.body:ClearAllPoints()
+  frame.section:ClearAllPoints()
+  frame.options:ClearAllPoints()
+  frame.footerDivider:ClearAllPoints()
+  frame.closeButton:ClearAllPoints()
+  frame.refreshButton:ClearAllPoints()
+
+  if isBrown then
+    frame.title:SetFont(STANDARD_TEXT_FONT, 21, "")
+    frame.title:SetTextColor(0.31, 0.22, 0.15)
+    frame.subtitle:SetFont(STANDARD_TEXT_FONT, 13, "")
+    frame.subtitle:SetTextColor(0.45, 0.33, 0.24)
+    frame.body:SetTextColor(0.34, 0.25, 0.18)
+    frame.section:SetTextColor(0.39, 0.29, 0.20)
+    frame.body:SetWidth(352)
+    frame.body:SetSpacing(5)
+
+    frame.subtitle:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 16, 2)
+    frame.title:SetPoint("TOPLEFT", frame.subtitle, "BOTTOMLEFT", 0, -4)
+    frame.title:SetPoint("RIGHT", frame, "RIGHT", -50, 0)
+
+    frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 40, -150)
+    frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -26)
+    frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", -2, -12)
+    frame.options:SetSize(360, 290)
+
+    frame.sectionBg:Hide()
+    frame.footerDivider:Hide()
+    frame.footerGlow:Hide()
+
+    frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 42, 30)
+    frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -42, 30)
+  else
+    frame.title:SetFont(STANDARD_TEXT_FONT, 23, "")
+    frame.title:SetTextColor(0.95, 0.95, 0.92)
+    frame.subtitle:SetFont(STANDARD_TEXT_FONT, 13, "")
+    frame.subtitle:SetTextColor(0.72, 0.72, 0.68)
+    frame.body:SetTextColor(0.88, 0.88, 0.84)
+    frame.section:SetTextColor(0.96, 0.94, 0.86)
+    frame.body:SetWidth(366)
+    frame.body:SetSpacing(6)
+
+    frame.title:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 16, -2)
+    frame.title:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
+    frame.subtitle:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -8)
+    frame.subtitle:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
+
+    frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 36, -126)
+    frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -24)
+    frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -10)
+    frame.options:SetSize(370, 290)
+
+    frame.sectionBg:Show()
+    frame.footerDivider:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 34, 82)
+    frame.footerDivider:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 82)
+    frame.footerDivider:Show()
+    frame.footerGlow:Show()
+
+    frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 34, 30)
+    frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 30)
+  end
+
+  SetButtonTheme(frame.closeButton, frame.state.theme, false)
+  SetButtonTheme(frame.refreshButton, frame.state.theme, true)
+
+  for _, button in ipairs(frame.optionButtons) do
+    SetButtonTheme(button, frame.state.theme, false)
+    button.iconBg:SetTexture(
+      isBrown
+        and "Interface\\AddOns\\HeroStoneUI\\Art\\BrownItemButtonBackground.tga"
+        or "Interface\\AddOns\\HeroStoneUI\\Art\\ItemButtonBackground.tga"
+    )
+    button.iconBorder:SetTexture(
+      isBrown
+        and "Interface\\AddOns\\HeroStoneUI\\Art\\BrownRewardChoiceItemBorder.tga"
+        or "Interface\\AddOns\\HeroStoneUI\\Art\\ItemBorder.tga"
+    )
+    button.desc:SetTextColor(
+      isBrown and 0.47 or 0.68,
+      isBrown and 0.35 or 0.68,
+      isBrown and 0.25 or 0.66
+    )
+    button.label:SetTextColor(
+      isBrown and 0.30 or 0.96,
+      isBrown and 0.22 or 0.96,
+      isBrown and 0.16 or 0.93
+    )
+  end
+end
+
 local function Refresh()
+  ApplyTheme()
   UpdateHeaderIcon()
   frame.title:SetText(frame.state.title or "Hero Stone")
   frame.subtitle:SetText(frame.state.subtitle or "")
@@ -491,6 +669,7 @@ frame:SetScript("OnEvent", function(self, event, prefix, message)
     frame.state.subtitle = parts[3] or ""
     frame.state.icon = parts[4] or frame.state.icon
     frame.state.npcDisplayId = tonumber(parts[5]) or 0
+    frame.state.theme = activePrefix == "TELEPORT_MASTER_UI" and "brown" or "dark"
     Refresh()
     return
   end
