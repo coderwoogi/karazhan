@@ -1,4 +1,4 @@
-
+﻿
 #include "Chat.h"
 #include "Config.h"
 #include "Creature.h"
@@ -21,6 +21,7 @@
 #include <regex>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace
@@ -114,6 +115,17 @@ namespace
         bool announcedThreeMinute = false;
         bool announcedOneMinute = false;
         bool announcedThirtySec = false;
+        bool voteApproved = false;
+        std::unordered_map<uint32, bool> votes;
+    };
+
+    struct VoteStatus
+    {
+        uint32 eligible = 0;
+        uint32 required = 1;
+        uint32 yes = 0;
+        uint32 no = 0;
+        std::string state = "pending";
     };
 
     char const* GetClassToken(uint8 classId)
@@ -437,8 +449,8 @@ namespace
                 ? mission.fallbackAnnouncement
                 : missionSelection.announcement;
             state.source = missionSelection.source;
-            state.startTime = GameTime::GetGameTime().count();
-            state.expireTime = state.startTime + state.timeLimitSec;
+            state.startTime = 0;
+            state.expireTime = 0;
             state.completed = false;
             state.failed = false;
             state.announcedHalf = false;
@@ -450,6 +462,8 @@ namespace
             state.announcedThreeMinute = false;
             state.announcedOneMinute = false;
             state.announcedThirtySec = false;
+            state.voteApproved = false;
+            state.votes.clear();
             SaveLiveState(instanceId, state);
             return state;
         }
@@ -482,6 +496,9 @@ namespace
 
     uint32 GetRemainingSeconds(MissionState const& state)
     {
+        if (!state.voteApproved)
+            return state.timeLimitSec;
+
         if (!state.timeLimitSec || !state.expireTime)
             return 0;
 
@@ -494,6 +511,9 @@ namespace
 
     std::string GetMissionStatusToken(MissionState const& state)
     {
+        if (!state.voteApproved)
+            return "pending";
+
         if (state.completed)
             return "complete";
 
@@ -501,6 +521,59 @@ namespace
             return "failed";
 
         return "active";
+    }
+
+    uint32 GetVoteKey(Player* player)
+    {
+        if (!player)
+            return 0;
+
+        return uint32(player->GetGUID().GetCounter());
+    }
+
+    VoteStatus BuildVoteStatus(Map* map, MissionState const& state)
+    {
+        VoteStatus vote;
+        if (!map)
+            return vote;
+
+        Map::PlayerList const& players = map->GetPlayers();
+        for (auto const& ref : players)
+        {
+            Player* player = ref.GetSource();
+            if (!player)
+                continue;
+
+            ++vote.eligible;
+            auto itr = state.votes.find(GetVoteKey(player));
+            if (itr == state.votes.end())
+                continue;
+
+            if (itr->second)
+                ++vote.yes;
+            else
+                ++vote.no;
+        }
+
+        vote.required = std::max<uint32>(1, vote.eligible / 2 + 1);
+
+        if (vote.yes >= vote.required)
+            vote.state = "approved";
+        else if (vote.no >= vote.required)
+            vote.state = "rejected";
+        else
+            vote.state = "pending";
+
+        return vote;
+    }
+
+    std::string GetPlayerVoteToken(MissionState const& state, Player* player)
+    {
+        auto itr = state.votes.find(GetVoteKey(player));
+        if (itr == state.votes.end())
+            return "none";
+
+        return itr->second ? "yes" : "no";
     }
 
     void SendAddonPayload(
@@ -542,6 +615,8 @@ namespace
 
     void SendMissionUiState(Player* player, MissionState const& state)
     {
+        VoteStatus vote = BuildVoteStatus(player ? player->GetMap() : nullptr, state);
+
         std::ostringstream payload;
         payload << "STATE\t";
         payload << state.mapId << "\t";
@@ -555,7 +630,12 @@ namespace
         payload << GetRemainingSeconds(state) << "\t";
         payload << state.timeLimitSec << "\t";
         payload << GetMissionStatusToken(state) << "\t";
-        payload << uint32(state.missionType);
+        payload << uint32(state.missionType) << "\t";
+        payload << vote.state << "\t";
+        payload << vote.yes << "\t";
+        payload << vote.no << "\t";
+        payload << vote.required << "\t";
+        payload << GetPlayerVoteToken(state, player);
 
         SendAddonPayload(player, "KBM_UI", payload.str());
         SendAddonPayload(
@@ -622,6 +702,128 @@ namespace
                 SendMissionUiAlert(player, msg);
             }
         }
+    }
+
+    void ApproveMission(Map* map, MissionState& state)
+    {
+        if (!map || state.voteApproved)
+            return;
+
+        state.voteApproved = true;
+        state.startTime = GameTime::GetGameTime().count();
+        state.expireTime = state.startTime + state.timeLimitSec;
+        state.announcement = "異붽? 誘몄뀡??怨쇰컲??李ъ꽦?쇰줈 ?쒖옉?섏뿀?듬땲??";
+        SaveLiveState(map->GetInstanceId(), state);
+        SendMissionUiStateToMap(map, state);
+        SendMissionMessageToMap(
+            map,
+            "[異붽? 誘몄뀡] 怨쇰컲??李ъ꽦?쇰줈 誘몄뀡???쒖옉?섏뿀?듬땲??");
+    }
+
+    bool ApplyVote(Player* player, bool agree)
+    {
+        if (!player)
+            return false;
+
+        Map* map = player->GetMap();
+        if (!map || !map->IsDungeon() || !map->GetInstanceId())
+            return false;
+
+        MissionState* state = MissionStateStore::Instance().Get(
+            map->GetInstanceId());
+        if (!state || state->completed || state->failed)
+            return false;
+
+        state->votes[GetVoteKey(player)] = agree;
+        VoteStatus vote = BuildVoteStatus(map, *state);
+
+        if (vote.state == "approved")
+            ApproveMission(map, *state);
+        else
+        {
+            state->announcement = Acore::StringFormat(
+                "李ъ꽦 {} / {} , 諛섎? {}",
+                vote.yes, vote.required, vote.no);
+            SaveLiveState(map->GetInstanceId(), *state);
+            SendMissionUiStateToMap(map, *state);
+        }
+
+        SendMissionMessageToMap(
+            map,
+            Acore::StringFormat(
+                "[異붽? 誘몄뀡] {}?섏씠 {}瑜??좏깮?덉뒿?덈떎. 李ъ꽦 {} / {}, 諛섎? {}",
+                player->GetName(),
+                agree ? "李ъ꽦" : "諛섎?",
+                vote.yes,
+                vote.required,
+                vote.no));
+        return true;
+    }
+
+    void ApproveMissionVote(Map* map, MissionState& state)
+    {
+        if (!map || state.voteApproved)
+            return;
+
+        state.voteApproved = true;
+        state.startTime = GameTime::GetGameTime().count();
+        state.expireTime = state.startTime + state.timeLimitSec;
+        state.announcement = "과반수 찬성으로 추가 미션이 시작되었습니다.";
+        SaveLiveState(map->GetInstanceId(), state);
+        SendMissionUiStateToMap(map, state);
+        SendMissionMessageToMap(
+            map,
+            "[추가 미션] 과반수 찬성으로 미션이 시작되었습니다.");
+    }
+
+    bool ApplyMissionVote(Player* player, bool agree)
+    {
+        if (!player)
+            return false;
+
+        Map* map = player->GetMap();
+        if (!map || !map->IsDungeon() || !map->GetInstanceId())
+            return false;
+
+        MissionState* state = MissionStateStore::Instance().Get(
+            map->GetInstanceId());
+        if (!state || state->completed || state->failed)
+            return false;
+
+        if (state->voteApproved)
+            return false;
+
+        state->votes[GetVoteKey(player)] = agree;
+        VoteStatus vote = BuildVoteStatus(map, *state);
+
+        if (vote.state == "approved")
+            ApproveMissionVote(map, *state);
+        else
+        {
+            if (vote.state == "rejected")
+                state->announcement =
+                    "과반수 반대로 추가 미션이 잠금 상태가 되었습니다.";
+            else
+            {
+                state->announcement = Acore::StringFormat(
+                    "과반수 찬성이 필요합니다. 찬성 {} / {}, 반대 {}",
+                    vote.yes, vote.required, vote.no);
+            }
+
+            SaveLiveState(map->GetInstanceId(), *state);
+            SendMissionUiStateToMap(map, *state);
+        }
+
+        SendMissionMessageToMap(
+            map,
+            Acore::StringFormat(
+                "[추가 미션] {}님이 {}를 선택했습니다. 찬성 {} / {}, 반대 {}",
+                player->GetName(),
+                agree ? "찬성" : "반대",
+                vote.yes,
+                vote.required,
+                vote.no));
+        return true;
     }
 
     void SaveLiveState(uint32 instanceId, MissionState const& state)
@@ -877,7 +1079,7 @@ namespace
             selection.definition = &themes->front();
 
         selection.briefing = Acore::StringFormat(
-            "이번 판의 추가 임무 유형은 {}입니다.",
+            "?대쾲 ?먯쓽 異붽? ?꾨Т ?좏삎? {}?낅땲??",
             selection.definition->name);
         selection.source = "fallback";
         return selection;
@@ -1023,7 +1225,7 @@ namespace
                 selection.definition = theme;
                 selection.briefing = briefing.empty()
                     ? Acore::StringFormat(
-                        "이번 판의 추가 임무 유형은 {}입니다.",
+                        "?대쾲 ?먯쓽 異붽? ?꾨Т ?좏삎? {}?낅땲??",
                         theme->name)
                     : briefing;
                 selection.source = "llm";
@@ -1277,7 +1479,7 @@ namespace
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
-                "[추가 임무] {} 임무를 완료했습니다. 추가 보상이 지급됩니다.",
+                "[異붽? ?꾨Т] {} ?꾨Т瑜??꾨즺?덉뒿?덈떎. 異붽? 蹂댁긽??吏湲됰맗?덈떎.",
                 state.title));
     }
 
@@ -1292,7 +1494,7 @@ namespace
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
-                "[추가 임무] {} 임무에 실패했습니다. {}",
+                "[異붽? ?꾨Т] {} ?꾨Т???ㅽ뙣?덉뒿?덈떎. {}",
                 state.title, reason));
     }
 
@@ -1308,6 +1510,9 @@ namespace
         MissionState* state = MissionStateStore::Instance().Get(
             map->GetInstanceId());
         if (!state || state->completed || state->failed)
+            return;
+
+        if (!state->voteApproved)
             return;
 
         if (state->targetEntry != killed->GetEntry())
@@ -1336,7 +1541,7 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[추가 임무] {} 목표를 절반 달성했습니다. {} / {}",
+                    "[異붽? ?꾨Т] {} 紐⑺몴瑜??덈컲 ?ъ꽦?덉뒿?덈떎. {} / {}",
                     state->targetLabel,
                     state->currentCount,
                     state->targetCount));
@@ -1348,7 +1553,7 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
+                    "[異붽? ?꾨Т] {} {}留덈━ 以?{}留덈━ ?⑥븯?듬땲??",
                     state->targetLabel,
                     state->targetCount,
                     remaining));
@@ -1360,7 +1565,7 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
+                    "[異붽? ?꾨Т] {} {}留덈━ 以?{}留덈━ ?⑥븯?듬땲??",
                     state->targetLabel,
                     state->targetCount,
                     remaining));
@@ -1372,7 +1577,7 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[추가 임무] {} {}마리 중 {}마리 남았습니다.",
+                    "[異붽? ?꾨Т] {} {}留덈━ 以?{}留덈━ ?⑥븯?듬땲??",
                     state->targetLabel,
                     state->targetCount,
                     remaining));
@@ -1395,13 +1600,19 @@ public:
     {
         MissionStore::Instance().Load();
     }
+
 };
 
 class InstanceBonusMissionPlayerScript : public PlayerScript
 {
 public:
     InstanceBonusMissionPlayerScript()
-        : PlayerScript("InstanceBonusMissionPlayerScript")
+        : PlayerScript(
+            "InstanceBonusMissionPlayerScript",
+            {
+                PLAYERHOOK_CAN_PLAYER_USE_GROUP_CHAT,
+                PLAYERHOOK_CAN_PLAYER_USE_PRIVATE_CHAT,
+            })
     {
     }
 
@@ -1439,16 +1650,19 @@ public:
             themeSelection,
             missionSelection);
 
+        state.announcement = "추가 미션이 제안되었습니다. 과반수 찬성이 필요합니다.";
+        SaveLiveState(instanceId, state);
+
         if (!state.briefing.empty())
         {
             SendMissionMessageToGroup(
                 player,
-                Acore::StringFormat("[던전 지령] {}", state.briefing));
+                Acore::StringFormat("[작전 브리핑] {}", state.briefing));
         }
 
         SendMissionMessageToGroup(
             player,
-            Acore::StringFormat("[던전 지령] {}", state.announcement));
+            Acore::StringFormat("[추가 미션] {}", state.announcement));
         SendMissionUiStateToMap(map, state);
     }
 
@@ -1483,10 +1697,50 @@ public:
         if (!state || state->completed || state->failed)
             return;
 
+        if (!state->voteApproved)
+            return;
+
         if (state->missionType != 2)
             return;
 
-        FailMission(map, *state, "파티 사망이 발생했습니다.");
+        FailMission(map, *state, "?뚰떚 ?щ쭩??諛쒖깮?덉뒿?덈떎.");
+    }
+    bool OnPlayerCanUseChat(
+        Player* player,
+        uint32 /*type*/,
+        uint32 language,
+        std::string& msg,
+        Player* /*receiver*/) override
+    {
+        if (language != LANG_ADDON)
+            return true;
+
+        if (msg == "KBM_VOTE\tYES")
+            return !ApplyMissionVote(player, true);
+
+        if (msg == "KBM_VOTE\tNO")
+            return !ApplyMissionVote(player, false);
+
+        return true;
+    }
+
+    bool OnPlayerCanUseChat(
+        Player* player,
+        uint32 /*type*/,
+        uint32 language,
+        std::string& msg,
+        Group* /*group*/) override
+    {
+        if (language != LANG_ADDON)
+            return true;
+
+        if (msg == "KBM_VOTE\tYES")
+            return !ApplyMissionVote(player, true);
+
+        if (msg == "KBM_VOTE\tNO")
+            return !ApplyMissionVote(player, false);
+
+        return true;
     }
 };
 
@@ -1522,13 +1776,16 @@ public:
         if (!state || state->completed || state->failed)
             return;
 
+        if (!state->voteApproved)
+            return;
+
         time_t now = GameTime::GetGameTime().count();
         if (state->timeLimitSec == 0)
             return;
 
         if (now >= state->expireTime)
         {
-            FailMission(map, *state, "제한 시간이 지났습니다.");
+            FailMission(map, *state, "?쒗븳 ?쒓컙??吏?ъ뒿?덈떎.");
             return;
         }
 
@@ -1539,35 +1796,35 @@ public:
         {
             state->announcedTenMinute = true;
             SendMissionMessageToMap(
-                map, "[추가 임무] 시간이 10분 남았습니다.");
+                map, "[異붽? ?꾨Т] ?쒓컙??10遺??⑥븯?듬땲??");
         }
 
         if (!state->announcedFiveMinute && remaining <= 300)
         {
             state->announcedFiveMinute = true;
             SendMissionMessageToMap(
-                map, "[추가 임무] 시간이 5분 남았습니다.");
+                map, "[異붽? ?꾨Т] ?쒓컙??5遺??⑥븯?듬땲??");
         }
 
         if (!state->announcedThreeMinute && remaining <= 180)
         {
             state->announcedThreeMinute = true;
             SendMissionMessageToMap(
-                map, "[추가 임무] 시간이 3분 남았습니다.");
+                map, "[異붽? ?꾨Т] ?쒓컙??3遺??⑥븯?듬땲??");
         }
 
         if (!state->announcedOneMinute && remaining <= 60)
         {
             state->announcedOneMinute = true;
             SendMissionMessageToMap(
-                map, "[추가 임무] 시간이 1분 남았습니다.");
+                map, "[異붽? ?꾨Т] ?쒓컙??1遺??⑥븯?듬땲??");
         }
 
         if (!state->announcedThirtySec && remaining <= 30)
         {
             state->announcedThirtySec = true;
             SendMissionMessageToMap(
-                map, "[추가 임무] 시간이 30초 남았습니다.");
+                map, "[異붽? ?꾨Т] ?쒓컙??30珥??⑥븯?듬땲??");
         }
     }
 };

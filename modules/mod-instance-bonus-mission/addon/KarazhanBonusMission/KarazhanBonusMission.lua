@@ -12,24 +12,34 @@ KBM:SetScript("OnDragStart", KBM.StartMoving)
 KBM:SetScript("OnDragStop", KBM.StopMovingOrSizing)
 KBM:Hide()
 
-KBM.state = {
-  themeKey = "",
-  themeName = "-",
-  title = "추가 임무",
-  targetLabel = "-",
-  currentCount = 0,
-  targetCount = 0,
-  remaining = 0,
-  timeLimit = 0,
-  status = "inactive",
-  missionType = 0,
-  briefing = "",
-  announcement = "",
-  expiresAt = nil,
-}
+local function NewState()
+  return {
+    themeKey = "",
+    themeName = "-",
+    title = "추가 미션",
+    targetLabel = "-",
+    currentCount = 0,
+    targetCount = 0,
+    remaining = 0,
+    timeLimit = 0,
+    status = "inactive",
+    missionType = 0,
+    briefing = "",
+    announcement = "",
+    expiresAt = nil,
+    voteState = "pending",
+    voteYes = 0,
+    voteNo = 0,
+    voteRequired = 1,
+    playerVote = "none",
+  }
+end
+
+KBM.state = NewState()
 
 local statusColors = {
   inactive = {0.46, 0.36, 0.22},
+  pending = {0.46, 0.36, 0.22},
   active = {0.56, 0.27, 0.08},
   complete = {0.17, 0.53, 0.21},
   failed = {0.71, 0.18, 0.17},
@@ -72,6 +82,8 @@ local function GetStatusText(status)
     return "실패"
   elseif status == "active" then
     return "진행 중"
+  elseif status == "pending" then
+    return "투표 대기"
   end
 
   return "대기"
@@ -95,13 +107,35 @@ local function GetThemeText(themeKey, themeName)
   return "미지정"
 end
 
+local function GetVoteOverlayText(state)
+  if state.voteState == "approved" then
+    return ""
+  end
+
+  if state.voteState == "rejected" then
+    return "과반수 반대로 잠금 상태입니다."
+  end
+
+  if state.playerVote == "yes" then
+    return "찬성 투표를 완료했습니다.\n과반수 찬성이 모이면 시작됩니다."
+  elseif state.playerVote == "no" then
+    return "반대를 선택했습니다.\n과반수 찬성이 모일 때까지 진행할 수 없습니다."
+  end
+
+  return "과반수 찬성이 필요합니다.\n하단 버튼으로 찬성 또는 반대를 선택하세요."
+end
+
 local function ShowRaidAlert(message)
   if not message or message == "" then
     return
   end
 
   if RaidNotice_AddMessage and RaidWarningFrame and ChatTypeInfo["RAID_WARNING"] then
-    RaidNotice_AddMessage(RaidWarningFrame, message, ChatTypeInfo["RAID_WARNING"])
+    RaidNotice_AddMessage(
+      RaidWarningFrame,
+      message,
+      ChatTypeInfo["RAID_WARNING"]
+    )
   end
 end
 
@@ -143,6 +177,16 @@ local function SkinDialogueButton(button, label)
   end
 end
 
+local function SetButtonEnabled(button, enabled)
+  if enabled then
+    button:Enable()
+    button:SetAlpha(1)
+  else
+    button:Disable()
+    button:SetAlpha(0.55)
+  end
+end
+
 local function CreateSectionHeader(parent, text, anchor, offsetY)
   local label = CreateText(
     parent,
@@ -159,6 +203,21 @@ local function CreateSectionHeader(parent, text, anchor, offsetY)
   return label
 end
 
+local function SendVote(choice)
+  if IsInRaid and IsInRaid() then
+    SendAddonMessage("KBM_VOTE", choice, "RAID")
+    return
+  end
+
+  local partyCount = GetNumPartyMembers and GetNumPartyMembers() or 0
+  if partyCount > 0 then
+    SendAddonMessage("KBM_VOTE", choice, "PARTY")
+    return
+  end
+
+  SendAddonMessage("KBM_VOTE", choice, "WHISPER", UnitName("player"))
+end
+
 KBM.parchment = KBM:CreateTexture(nil, "BACKGROUND")
 KBM.parchment:SetTexture(
   "Interface\\AddOns\\KarazhanBonusMission\\Art\\bg_512x1024.tga"
@@ -167,14 +226,6 @@ KBM.parchment:SetAllPoints(KBM)
 KBM.parchment:SetTexCoord(0, 1, 0, 1)
 KBM.parchment:SetVertexColor(1, 1, 1, 1)
 
-KBM.headerLine = KBM:CreateTexture(nil, "ARTWORK")
-KBM.headerLine:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
-KBM.headerLine:SetPoint("TOPLEFT", KBM, "TOPLEFT", 82, -86)
-KBM.headerLine:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -42, -86)
-KBM.headerLine:SetHeight(8)
-KBM.headerLine:SetTexCoord(0, 1, 0, 0.5)
-KBM.headerLine:SetAlpha(0.55)
-
 local close = CreateFrame("Button", nil, KBM, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -10, -10)
 close:SetScript("OnClick", function()
@@ -182,7 +233,12 @@ close:SetScript("OnClick", function()
   KBM.reopen:Show()
 end)
 
-KBM.reopen = CreateFrame("Button", "KarazhanBonusMissionReopenButton", UIParent, "UIPanelButtonTemplate")
+KBM.reopen = CreateFrame(
+  "Button",
+  "KarazhanBonusMissionReopenButton",
+  UIParent,
+  "UIPanelButtonTemplate"
+)
 KBM.reopen:SetSize(88, 22)
 KBM.reopen:SetPoint("CENTER", UIParent, "CENTER", 312, -196)
 KBM.reopen:SetText("임무 보기")
@@ -192,9 +248,31 @@ KBM.reopen:SetScript("OnClick", function()
 end)
 KBM.reopen:Hide()
 
+KBM.headerTitle = CreateText(
+  KBM,
+  "OVERLAY",
+  "GameFontHighlightLarge",
+  16,
+  0.33,
+  0.22,
+  0.10,
+  "CENTER"
+)
+KBM.headerTitle:SetPoint("TOP", KBM, "TOP", 0, -20)
+KBM.headerTitle:SetWidth(160)
+KBM.headerTitle:SetText("추가 미션")
+
+KBM.headerLine = KBM:CreateTexture(nil, "ARTWORK")
+KBM.headerLine:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+KBM.headerLine:SetPoint("TOPLEFT", KBM, "TOPLEFT", 82, -108)
+KBM.headerLine:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -42, -108)
+KBM.headerLine:SetHeight(8)
+KBM.headerLine:SetTexCoord(0, 1, 0, 0.5)
+KBM.headerLine:SetAlpha(0.55)
+
 KBM.iconBorder = CreateFrame("Frame", nil, KBM)
 KBM.iconBorder:SetSize(42, 42)
-KBM.iconBorder:SetPoint("TOPLEFT", KBM, "TOPLEFT", 28, -34)
+KBM.iconBorder:SetPoint("TOPLEFT", KBM, "TOPLEFT", 28, -58)
 KBM.iconBorder:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
   edgeFile = "Interface\\Buttons\\UI-Quickslot2",
@@ -210,44 +288,117 @@ KBM.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 KBM.icon:SetPoint("TOPLEFT", KBM.iconBorder, "TOPLEFT", 5, -5)
 KBM.icon:SetPoint("BOTTOMRIGHT", KBM.iconBorder, "BOTTOMRIGHT", -5, 5)
 
-KBM.title = CreateText(KBM, "OVERLAY", "GameFontHighlightLarge", 20, 0.24, 0.18, 0.10)
+KBM.title = CreateText(
+  KBM,
+  "OVERLAY",
+  "GameFontHighlightLarge",
+  20,
+  0.24,
+  0.18,
+  0.10
+)
 KBM.title:SetPoint("TOPLEFT", KBM.iconBorder, "TOPRIGHT", 14, -2)
 KBM.title:SetPoint("RIGHT", KBM, "RIGHT", -44, 0)
-KBM.title:SetText("추가 임무")
+KBM.title:SetText("추가 미션")
 
-KBM.theme = CreateText(KBM, "OVERLAY", "GameFontNormal", 13, 0.30, 0.20, 0.10, "RIGHT")
-KBM.theme:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -40, -100)
+KBM.theme = CreateText(
+  KBM,
+  "OVERLAY",
+  "GameFontNormal",
+  13,
+  0.30,
+  0.20,
+  0.10,
+  "RIGHT"
+)
+KBM.theme:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -40, -122)
 KBM.theme:SetWidth(166)
 KBM.theme:SetText("미지정")
 
-KBM.body = CreateFrame("Frame", nil, KBM)
-KBM.body:SetPoint("TOPLEFT", KBM, "TOPLEFT", 38, -126)
-KBM.body:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -38, 96)
+KBM.voteInfo = CreateText(
+  KBM,
+  "OVERLAY",
+  "GameFontNormalSmall",
+  12,
+  0.34,
+  0.23,
+  0.11,
+  "RIGHT"
+)
+KBM.voteInfo:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -40, -142)
+KBM.voteInfo:SetWidth(178)
+KBM.voteInfo:SetText("찬성 0 / 1, 반대 0")
 
-KBM.status = CreateText(KBM.body, "OVERLAY", "GameFontHighlight", 13, 0.55, 0.20, 0.14, "RIGHT")
+KBM.body = CreateFrame("Frame", nil, KBM)
+KBM.body:SetPoint("TOPLEFT", KBM, "TOPLEFT", 38, -164)
+KBM.body:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -38, 118)
+
+KBM.status = CreateText(
+  KBM.body,
+  "OVERLAY",
+  "GameFontHighlight",
+  13,
+  0.55,
+  0.20,
+  0.14,
+  "RIGHT"
+)
 KBM.status:SetPoint("TOPRIGHT", KBM.body, "TOPRIGHT", -4, 0)
 KBM.status:SetWidth(160)
 KBM.status:SetText("상태: 대기")
 
-KBM.briefing = CreateText(KBM.body, "OVERLAY", "GameFontNormal", 14, 0.22, 0.16, 0.10)
+KBM.briefing = CreateText(
+  KBM.body,
+  "OVERLAY",
+  "GameFontNormal",
+  14,
+  0.22,
+  0.16,
+  0.10
+)
 KBM.briefing:SetPoint("TOPLEFT", KBM.body, "TOPLEFT", 4, -8)
 KBM.briefing:SetWidth(300)
 KBM.briefing:SetSpacing(5)
-KBM.briefing:SetText("추가 임무가 아직 배정되지 않았습니다.")
+KBM.briefing:SetText("추가 미션이 아직 배정되지 않았습니다.")
 
-KBM.objectivesTitle = CreateSectionHeader(KBM.body, "목표", KBM.briefing, -96)
+KBM.objectivesTitle = CreateSectionHeader(KBM.body, "목표", KBM.briefing, -92)
 
-KBM.objectives = CreateText(KBM.body, "OVERLAY", "GameFontNormal", 14, 0.22, 0.16, 0.10)
+KBM.objectives = CreateText(
+  KBM.body,
+  "OVERLAY",
+  "GameFontNormal",
+  14,
+  0.22,
+  0.16,
+  0.10
+)
 KBM.objectives:SetPoint("TOPLEFT", KBM.objectivesTitle, "BOTTOMLEFT", 0, -8)
 KBM.objectives:SetWidth(300)
 KBM.objectives:SetText("아직 목표가 없습니다.")
 
-KBM.timer = CreateText(KBM.body, "OVERLAY", "GameFontHighlight", 13, 0.32, 0.21, 0.10)
+KBM.timer = CreateText(
+  KBM.body,
+  "OVERLAY",
+  "GameFontHighlight",
+  13,
+  0.32,
+  0.21,
+  0.10
+)
 KBM.timer:SetPoint("TOPLEFT", KBM.objectives, "BOTTOMLEFT", 0, -24)
 KBM.timer:SetText("남은 시간 00:00")
 
-KBM.progress = CreateText(KBM.body, "OVERLAY", "GameFontHighlight", 13, 0.32, 0.21, 0.10, "RIGHT")
-KBM.progress:SetPoint("TOPRIGHT", KBM.body, "TOPRIGHT", -4, -174)
+KBM.progress = CreateText(
+  KBM.body,
+  "OVERLAY",
+  "GameFontHighlight",
+  13,
+  0.32,
+  0.21,
+  0.10,
+  "RIGHT"
+)
+KBM.progress:SetPoint("TOPRIGHT", KBM.body, "TOPRIGHT", -4, -170)
 KBM.progress:SetWidth(112)
 KBM.progress:SetText("진행도 0 / 0")
 
@@ -269,7 +420,12 @@ KBM.progressBar:SetPoint("TOPLEFT", KBM.progressBarBG, "TOPLEFT", 0, 0)
 KBM.progressBar:SetPoint("BOTTOMLEFT", KBM.progressBarBG, "BOTTOMLEFT", 0, 0)
 KBM.progressBar:SetWidth(1)
 
-KBM.rewardsTitle = CreateSectionHeader(KBM.body, "보상", KBM.progressBarBG, -36)
+KBM.rewardsTitle = CreateSectionHeader(
+  KBM.body,
+  "보상",
+  KBM.progressBarBG,
+  -34
+)
 
 KBM.rewardLeft = CreateFrame("Frame", nil, KBM.body)
 KBM.rewardLeft:SetSize(136, 38)
@@ -280,7 +436,15 @@ KBM.rewardLeftIcon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
 KBM.rewardLeftIcon:SetPoint("TOPLEFT", KBM.rewardLeft, "TOPLEFT", 0, -2)
 KBM.rewardLeftIcon:SetSize(24, 24)
 
-KBM.rewardLeftText = CreateText(KBM.rewardLeft, "OVERLAY", "GameFontNormal", 13, 0.22, 0.16, 0.10)
+KBM.rewardLeftText = CreateText(
+  KBM.rewardLeft,
+  "OVERLAY",
+  "GameFontNormal",
+  13,
+  0.22,
+  0.16,
+  0.10
+)
 KBM.rewardLeftText:SetPoint("LEFT", KBM.rewardLeftIcon, "RIGHT", 8, 0)
 KBM.rewardLeftText:SetWidth(100)
 KBM.rewardLeftText:SetJustifyV("MIDDLE")
@@ -288,46 +452,88 @@ KBM.rewardLeftText:SetText("기본 보상")
 
 KBM.rewardRight = CreateFrame("Frame", nil, KBM.body)
 KBM.rewardRight:SetSize(136, 38)
-KBM.rewardRight:SetPoint("TOPRIGHT", KBM.body, "TOPRIGHT", -4, -282)
+KBM.rewardRight:SetPoint("TOPRIGHT", KBM.body, "TOPRIGHT", -4, -278)
 
 KBM.rewardRightIcon = KBM.rewardRight:CreateTexture(nil, "ARTWORK")
 KBM.rewardRightIcon:SetTexture("Interface\\Icons\\INV_Chest_Cloth_17")
 KBM.rewardRightIcon:SetPoint("TOPLEFT", KBM.rewardRight, "TOPLEFT", 0, -2)
 KBM.rewardRightIcon:SetSize(24, 24)
 
-KBM.rewardRightText = CreateText(KBM.rewardRight, "OVERLAY", "GameFontNormal", 13, 0.22, 0.16, 0.10)
+KBM.rewardRightText = CreateText(
+  KBM.rewardRight,
+  "OVERLAY",
+  "GameFontNormal",
+  13,
+  0.22,
+  0.16,
+  0.10
+)
 KBM.rewardRightText:SetPoint("LEFT", KBM.rewardRightIcon, "RIGHT", 8, 0)
 KBM.rewardRightText:SetWidth(100)
 KBM.rewardRightText:SetJustifyV("MIDDLE")
 KBM.rewardRightText:SetText("추가 보상")
 
-KBM.notice = CreateText(KBM.body, "OVERLAY", "GameFontNormal", 13, 0.30, 0.20, 0.10)
+KBM.notice = CreateText(
+  KBM.body,
+  "OVERLAY",
+  "GameFontNormal",
+  13,
+  0.30,
+  0.20,
+  0.10
+)
 KBM.notice:SetPoint("TOPLEFT", KBM.rewardLeft, "BOTTOMLEFT", 0, -26)
 KBM.notice:SetWidth(300)
 KBM.notice:SetSpacing(4)
 KBM.notice:SetText("")
 
+KBM.voteOverlay = CreateFrame("Frame", nil, KBM.body)
+KBM.voteOverlay:SetPoint("TOPLEFT", KBM.body, "TOPLEFT", -10, -2)
+KBM.voteOverlay:SetPoint("BOTTOMRIGHT", KBM.body, "BOTTOMRIGHT", 10, 12)
+KBM.voteOverlay:SetFrameStrata("DIALOG")
+KBM.voteOverlay:Hide()
+
+KBM.voteOverlayBg = KBM.voteOverlay:CreateTexture(nil, "BACKGROUND")
+KBM.voteOverlayBg:SetTexture("Interface\\Buttons\\WHITE8x8")
+KBM.voteOverlayBg:SetAllPoints(KBM.voteOverlay)
+KBM.voteOverlayBg:SetVertexColor(0.15, 0.11, 0.07, 0.46)
+
+KBM.voteOverlayText = CreateText(
+  KBM.voteOverlay,
+  "OVERLAY",
+  "GameFontHighlight",
+  14,
+  0.93,
+  0.86,
+  0.72,
+  "CENTER"
+)
+KBM.voteOverlayText:SetPoint("CENTER", KBM.voteOverlay, "CENTER", 0, -6)
+KBM.voteOverlayText:SetWidth(260)
+KBM.voteOverlayText:SetSpacing(5)
+KBM.voteOverlayText:SetText("")
+
 KBM.accept = CreateFrame("Button", nil, KBM, "UIPanelButtonTemplate")
 KBM.accept:SetSize(126, 28)
 KBM.accept:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", 42, 36)
-SkinDialogueButton(KBM.accept, "확인")
+SkinDialogueButton(KBM.accept, "찬성")
 KBM.accept:SetScript("OnClick", function()
-  KBM:Hide()
-  KBM.reopen:Show()
+  SendVote("YES")
 end)
 
 KBM.fold = CreateFrame("Button", nil, KBM, "UIPanelButtonTemplate")
 KBM.fold:SetSize(126, 28)
 KBM.fold:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -42, 36)
-SkinDialogueButton(KBM.fold, "접기")
+SkinDialogueButton(KBM.fold, "반대")
 KBM.fold:SetScript("OnClick", function()
-  KBM:Hide()
-  KBM.reopen:Show()
+  SendVote("NO")
 end)
 
 local function UpdateThemeVisuals()
   KBM.theme:SetText(GetThemeText(KBM.state.themeKey, KBM.state.themeName))
-  KBM.icon:SetTexture(themeIcons[KBM.state.themeKey] or "Interface\\Icons\\INV_Misc_QuestionMark")
+  KBM.icon:SetTexture(
+    themeIcons[KBM.state.themeKey] or "Interface\\Icons\\INV_Misc_QuestionMark"
+  )
 end
 
 local function UpdateRewards()
@@ -343,16 +549,53 @@ local function UpdateRewards()
   end
 end
 
+local function RefreshVoteUi()
+  local pending = KBM.state.voteState ~= "approved"
+  local rejected = KBM.state.voteState == "rejected"
+
+  KBM.voteInfo:SetText(
+    string.format(
+      "찬성 %d / %d, 반대 %d",
+      KBM.state.voteYes or 0,
+      KBM.state.voteRequired or 1,
+      KBM.state.voteNo or 0
+    )
+  )
+
+  if pending then
+    KBM.voteOverlay:Show()
+    KBM.voteOverlayText:SetText(GetVoteOverlayText(KBM.state))
+  else
+    KBM.voteOverlay:Hide()
+  end
+
+  if KBM.state.voteState == "approved" then
+    SetButtonEnabled(KBM.accept, false)
+    SetButtonEnabled(KBM.fold, false)
+  elseif rejected then
+    SetButtonEnabled(KBM.accept, false)
+    SetButtonEnabled(KBM.fold, false)
+  else
+    SetButtonEnabled(KBM.accept, true)
+    SetButtonEnabled(KBM.fold, true)
+  end
+end
+
 local function Refresh()
   UpdateThemeVisuals()
   UpdateRewards()
 
-  KBM.title:SetText(KBM.state.title or "추가 임무")
+  KBM.title:SetText(KBM.state.title or "추가 미션")
 
-  local statusText = "상태: " .. GetStatusText(KBM.state.status)
+  local statusToken = KBM.state.status or "inactive"
+  if KBM.state.voteState and KBM.state.voteState ~= "approved" then
+    statusToken = "pending"
+  end
+
+  local statusText = "상태: " .. GetStatusText(statusToken)
   KBM.status:SetText(statusText)
 
-  local statusColor = statusColors[KBM.state.status] or statusColors.inactive
+  local statusColor = statusColors[statusToken] or statusColors.inactive
   KBM.status:SetTextColor(statusColor[1], statusColor[2], statusColor[3])
 
   if KBM.state.briefing ~= "" then
@@ -361,14 +604,28 @@ local function Refresh()
     KBM.briefing:SetText("작전 브리핑이 아직 전달되지 않았습니다.")
   end
 
-  KBM.objectives:SetText(string.format("%s %d / %d", KBM.state.targetLabel or "-", KBM.state.currentCount or 0, KBM.state.targetCount or 0))
+  KBM.objectives:SetText(
+    string.format(
+      "%s %d / %d",
+      KBM.state.targetLabel or "-",
+      KBM.state.currentCount or 0,
+      KBM.state.targetCount or 0
+    )
+  )
 
-  KBM.timer:SetText("남은 시간 " .. FormatRemaining(KBM.state.remaining or 0))
-  KBM.progress:SetText(string.format(
-    "진행도 %d / %d",
-    KBM.state.currentCount or 0,
-    KBM.state.targetCount or 0
-  ))
+  if KBM.state.voteState ~= "approved" then
+    KBM.timer:SetText("제한 시간 " .. FormatRemaining(KBM.state.timeLimit or 0))
+  else
+    KBM.timer:SetText("남은 시간 " .. FormatRemaining(KBM.state.remaining or 0))
+  end
+
+  KBM.progress:SetText(
+    string.format(
+      "진행도 %d / %d",
+      KBM.state.currentCount or 0,
+      KBM.state.targetCount or 0
+    )
+  )
 
   local maxCount = KBM.state.targetCount or 0
   local current = KBM.state.currentCount or 0
@@ -381,40 +638,27 @@ local function Refresh()
   end
   KBM.progressBar:SetWidth(width)
 
-  if KBM.state.status == "complete" then
+  if statusToken == "complete" then
     KBM.progressBar:SetVertexColor(0.24, 0.62, 0.24, 0.96)
-  elseif KBM.state.status == "failed" then
+  elseif statusToken == "failed" then
     KBM.progressBar:SetVertexColor(0.70, 0.18, 0.18, 0.96)
   else
     KBM.progressBar:SetVertexColor(0.64, 0.42, 0.10, 0.96)
   end
 
   KBM.notice:SetText(KBM.state.announcement or "")
+  RefreshVoteUi()
 end
 
 local function ResetState()
-  KBM.state = {
-    themeKey = "",
-    themeName = "-",
-    title = "추가 임무",
-    targetLabel = "-",
-    currentCount = 0,
-    targetCount = 0,
-    remaining = 0,
-    timeLimit = 0,
-    status = "inactive",
-    missionType = 0,
-    briefing = "",
-    announcement = "",
-    expiresAt = nil,
-  }
+  KBM.state = NewState()
   Refresh()
 end
 
 local function ApplyState(parts)
   KBM.state.themeKey = parts[4] or ""
   KBM.state.themeName = parts[5] or "-"
-  KBM.state.title = parts[6] or "추가 임무"
+  KBM.state.title = parts[6] or "추가 미션"
   KBM.state.targetLabel = parts[7] or "-"
   KBM.state.currentCount = tonumber(parts[8]) or 0
   KBM.state.targetCount = tonumber(parts[9]) or 0
@@ -422,6 +666,11 @@ local function ApplyState(parts)
   KBM.state.timeLimit = tonumber(parts[11]) or 0
   KBM.state.status = parts[12] or "inactive"
   KBM.state.missionType = tonumber(parts[13]) or 0
+  KBM.state.voteState = parts[14] or "pending"
+  KBM.state.voteYes = tonumber(parts[15]) or 0
+  KBM.state.voteNo = tonumber(parts[16]) or 0
+  KBM.state.voteRequired = tonumber(parts[17]) or 1
+  KBM.state.playerVote = parts[18] or "none"
   KBM.state.expiresAt = GetTime() + (KBM.state.remaining or 0)
   Refresh()
   KBM:Show()
