@@ -15,7 +15,7 @@
 #include "StringFormat.h"
 #include "WorldSession.h"
 
-#include "../../mod-ale/src/LuaEngine/libs/httplib.h"
+#include "thirdparty/httplib.h"
 
 #include <algorithm>
 #include <regex>
@@ -448,6 +448,7 @@ namespace
             state.announcedThreeMinute = false;
             state.announcedOneMinute = false;
             state.announcedThirtySec = false;
+            SaveLiveState(instanceId, state);
             return state;
         }
 
@@ -493,6 +494,42 @@ namespace
             if (Player* player = ref.GetSource())
                 SendMissionMessageToPlayer(player, msg);
         }
+    }
+    void SaveLiveState(uint32 instanceId, MissionState const& state)
+    {
+        std::string themeKey = state.themeKey;
+        std::string themeName = state.themeName;
+        std::string title = state.title;
+        std::string targetLabel = state.targetLabel;
+        std::string briefing = state.briefing;
+        std::string announcement = state.announcement;
+        std::string source = state.source;
+
+        WorldDatabase.EscapeString(themeKey);
+        WorldDatabase.EscapeString(themeName);
+        WorldDatabase.EscapeString(title);
+        WorldDatabase.EscapeString(targetLabel);
+        WorldDatabase.EscapeString(briefing);
+        WorldDatabase.EscapeString(announcement);
+        WorldDatabase.EscapeString(source);
+
+        WorldDatabase.Execute(Acore::StringFormat(
+            "REPLACE INTO `instance_bonus_mission_live` "
+            "(`instance_id`, `map_id`, `theme_id`, `theme_key`, "
+            "`theme_name`, `mission_id`, `mission_type`, `title`, "
+            "`target_label`, `target_entry`, `target_count`, "
+            "`current_count`, `time_limit_sec`, `start_time`, "
+            "`expire_time`, `briefing`, `announcement`, `source`, "
+            "`completed`, `failed`, `updated_at`) "
+            "VALUES ({}, {}, {}, '{}', '{}', {}, {}, '{}', '{}', {}, "
+            "{}, {}, {}, {}, {}, '{}', '{}', '{}', {}, {}, "
+            "UNIX_TIMESTAMP())",
+            instanceId, state.mapId, state.themeId, themeKey, themeName,
+            state.missionId, state.missionType, title, targetLabel,
+            state.targetEntry, state.targetCount, state.currentCount,
+            state.timeLimitSec, static_cast<uint64>(state.startTime),
+            static_cast<uint64>(state.expireTime), briefing, announcement,
+            source, state.completed ? 1 : 0, state.failed ? 1 : 0));
     }
 
     std::string EscapeJson(std::string const& text)
@@ -1105,6 +1142,7 @@ namespace
             return;
 
         state.completed = true;
+        SaveLiveState(map->GetInstanceId(), state);
         RewardMissionToMap(map, state);
         SendMissionMessageToMap(
             map,
@@ -1119,6 +1157,7 @@ namespace
             return;
 
         state.failed = true;
+        SaveLiveState(map->GetInstanceId(), state);
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
@@ -1144,6 +1183,7 @@ namespace
             return;
 
         ++state->currentCount;
+        SaveLiveState(map->GetInstanceId(), *state);
 
         uint32 remaining = 0;
         if (state->targetCount > state->currentCount)

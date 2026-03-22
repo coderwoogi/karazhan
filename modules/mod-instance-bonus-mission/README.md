@@ -113,3 +113,27 @@ Suggested grades:
 5. Add death-safe and no-wipe conditions.
 6. Add end-of-run scoring and grade handling.
 7. Add LLM completion summaries.
+
+## AIO UI
+
+The first AIO UI prototype is stored under `aio/`.
+
+Files:
+- `aio/KarazhanBonusMissionServer.lua`
+- `aio/KarazhanBonusMissionClient.lua`
+- `AIO_UI_PLAN.md`
+
+The UI reads from the `instance_bonus_mission_live` table.
+The C++ module writes live mission state to this table and the AIO layer polls
+it for display.
+
+The current panel shows:
+- current theme
+- mission title
+- progress
+- remaining time
+- mission status
+- briefing text
+
+Client slash command:
+- `/kbm`

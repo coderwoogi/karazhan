@@ -59,6 +59,32 @@ CREATE TABLE `instance_bonus_reward_tier` (
     PRIMARY KEY (`map_id`, `theme_id`, `grade`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+DROP TABLE IF EXISTS `instance_bonus_mission_live`;
+CREATE TABLE `instance_bonus_mission_live` (
+    `instance_id` INT UNSIGNED NOT NULL,
+    `map_id` INT UNSIGNED NOT NULL,
+    `theme_id` INT UNSIGNED NOT NULL DEFAULT 0,
+    `theme_key` VARCHAR(40) NOT NULL DEFAULT '',
+    `theme_name` VARCHAR(80) NOT NULL DEFAULT '',
+    `mission_id` INT UNSIGNED NOT NULL DEFAULT 0,
+    `mission_type` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `title` VARCHAR(120) NOT NULL DEFAULT '',
+    `target_label` VARCHAR(120) NOT NULL DEFAULT '',
+    `target_entry` INT UNSIGNED NOT NULL DEFAULT 0,
+    `target_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    `current_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    `time_limit_sec` INT UNSIGNED NOT NULL DEFAULT 0,
+    `start_time` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `expire_time` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    `briefing` VARCHAR(255) NOT NULL DEFAULT '',
+    `announcement` VARCHAR(255) NOT NULL DEFAULT '',
+    `source` VARCHAR(40) NOT NULL DEFAULT '',
+    `completed` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `failed` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`instance_id`),
+    KEY `idx_instance_bonus_live_map` (`map_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 INSERT INTO `instance_bonus_mission_pool` (
     `map_id`, `mission_id`, `mission_type`, `target_entry`, `target_count`,
     `time_limit_sec`, `title`, `target_label`, `fallback_announcement`,
