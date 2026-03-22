@@ -120,27 +120,30 @@ end
 
 frame.bgTop = frame:CreateTexture(nil, "BACKGROUND")
 frame.bgTop:SetTexture(
-  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentSpriteTopPOT.tga"
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentAtlas512.tga"
 )
 frame.bgTop:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 frame.bgTop:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
-frame.bgTop:SetHeight(168)
+frame.bgTop:SetHeight(162)
+frame.bgTop:SetTexCoord(0, 1, 0.0, 0.245)
 
 frame.bgMid = frame:CreateTexture(nil, "BACKGROUND")
 frame.bgMid:SetTexture(
-  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentSpriteMidPOT.tga"
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentAtlas512.tga"
 )
 frame.bgMid:SetPoint("TOPLEFT", frame.bgTop, "BOTTOMLEFT", 0, 0)
 frame.bgMid:SetPoint("TOPRIGHT", frame.bgTop, "BOTTOMRIGHT", 0, 0)
 frame.bgMid:SetPoint("BOTTOM", frame, "BOTTOM", 0, 118)
+frame.bgMid:SetTexCoord(0, 1, 0.245, 0.885)
 
 frame.bgBottom = frame:CreateTexture(nil, "BACKGROUND")
 frame.bgBottom:SetTexture(
-  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentSpriteBottomPOT.tga"
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentAtlas512.tga"
 )
 frame.bgBottom:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
 frame.bgBottom:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
 frame.bgBottom:SetHeight(118)
+frame.bgBottom:SetTexCoord(0, 1, 0.885, 1.0)
 
 frame.close = CreateFrame("Button", nil, frame)
 frame.close:SetSize(22, 22)
