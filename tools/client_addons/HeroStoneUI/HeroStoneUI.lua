@@ -1,0 +1,394 @@
+local addonName = ...
+
+local PREFIX = "HERO_STONE_UI"
+local frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
+frame:SetSize(438, 608)
+frame:SetPoint("CENTER", UIParent, "CENTER", 0, -10)
+frame:SetFrameStrata("DIALOG")
+frame:SetToplevel(true)
+frame:SetClampedToScreen(true)
+frame:EnableMouse(true)
+frame:SetMovable(true)
+frame:RegisterForDrag("LeftButton")
+frame:SetScript("OnDragStart", frame.StartMoving)
+frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
+frame:Hide()
+
+frame.state = {
+  title = "Hero Stone",
+  subtitle = "",
+  body = "",
+  icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+  section = "Options",
+  closeText = "Close",
+  refreshText = "Refresh",
+  items = {},
+}
+
+local function Split(input, sep)
+  local parts = {}
+  local start = 1
+  local index = string.find(input, sep, start, true)
+  while index do
+    table.insert(parts, string.sub(input, start, index - 1))
+    start = index + string.len(sep)
+    index = string.find(input, sep, start, true)
+  end
+  table.insert(parts, string.sub(input, start))
+  return parts
+end
+
+local function SendCommand(command, value)
+  local playerName = UnitName("player")
+  if not playerName then
+    return
+  end
+
+  local payload = command
+  if value and value ~= "" then
+    payload = payload .. "\t" .. value
+  end
+
+  SendAddonMessage(PREFIX, payload, "WHISPER", playerName)
+end
+
+local function CreateText(parent, layer, template, size, r, g, b, justify)
+  local fs = parent:CreateFontString(nil, layer or "OVERLAY", template)
+  fs:SetFont(STANDARD_TEXT_FONT, size, "")
+  fs:SetTextColor(r, g, b)
+  fs:SetJustifyH(justify or "LEFT")
+  fs:SetJustifyV("TOP")
+  return fs
+end
+
+local function SkinActionButton(button)
+  button:SetNormalTexture("")
+  button:SetPushedTexture("")
+  button:SetHighlightTexture("")
+  button:SetDisabledTexture("")
+
+  button.bg = button:CreateTexture(nil, "BACKGROUND")
+  button.bg:SetTexture(
+    "Interface\\AddOns\\HeroStoneUI\\Art\\OptionBackground-Common.tga"
+  )
+  button.bg:SetAllPoints(button)
+
+  button.front = button:CreateTexture(nil, "BORDER")
+  button.front:SetTexture(
+    "Interface\\AddOns\\HeroStoneUI\\Art\\ButtonHighlight-Front.tga"
+  )
+  button.front:SetAllPoints(button)
+  button.front:SetAlpha(0.16)
+
+  button.hl = button:CreateTexture(nil, "HIGHLIGHT")
+  button.hl:SetTexture(
+    "Interface\\AddOns\\HeroStoneUI\\Art\\ButtonHighlight-Add.tga"
+  )
+  button.hl:SetAllPoints(button)
+  button.hl:SetBlendMode("ADD")
+  button.hl:SetAlpha(0.34)
+
+  local fs = button:GetFontString()
+  if fs then
+    fs:SetFont(STANDARD_TEXT_FONT, 13, "")
+    fs:SetTextColor(0.92, 0.91, 0.86)
+    fs:SetShadowOffset(1, -1)
+  end
+end
+
+frame.bg = frame:CreateTexture(nil, "BACKGROUND")
+frame.bg:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\GenericFrame-Tiled-Large.tga"
+)
+frame.bg:SetAllPoints(frame)
+
+frame.shadow = frame:CreateTexture(nil, "BORDER")
+frame.shadow:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Background-Dark")
+frame.shadow:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -28)
+frame.shadow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -28, 64)
+frame.shadow:SetVertexColor(0, 0, 0, 0.18)
+
+frame.close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
+frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -8, -10)
+frame.close:SetScript("OnClick", function()
+  frame:Hide()
+end)
+
+frame.iconBorder = CreateFrame("Frame", nil, frame)
+frame.iconBorder:SetSize(54, 54)
+frame.iconBorder:SetPoint("TOPLEFT", frame, "TOPLEFT", 34, -32)
+frame.iconBorder:SetBackdrop({
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\AddOns\\HeroStoneUI\\Art\\RewardChoice-ItemBorder.tga",
+  tile = false,
+  edgeSize = 14,
+  insets = { left = 3, right = 3, top = 3, bottom = 3 },
+})
+frame.iconBorder:SetBackdropColor(0.09, 0.09, 0.09, 0.95)
+
+frame.icon = frame.iconBorder:CreateTexture(nil, "ARTWORK")
+frame.icon:SetPoint("TOPLEFT", frame.iconBorder, "TOPLEFT", 5, -5)
+frame.icon:SetPoint("BOTTOMRIGHT", frame.iconBorder, "BOTTOMRIGHT", -5, 5)
+frame.icon:SetTexture(frame.state.icon)
+
+frame.title = CreateText(
+  frame,
+  "OVERLAY",
+  "GameFontHighlightLarge",
+  23,
+  0.95,
+  0.95,
+  0.92
+)
+frame.title:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 16, -2)
+frame.title:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
+frame.title:SetText(frame.state.title)
+
+frame.subtitle = CreateText(
+  frame,
+  "OVERLAY",
+  "GameFontNormal",
+  13,
+  0.72,
+  0.72,
+  0.68
+)
+frame.subtitle:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -8)
+frame.subtitle:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
+frame.subtitle:SetText(frame.state.subtitle)
+
+frame.divider = frame:CreateTexture(nil, "ARTWORK")
+frame.divider:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\SubHeaderBackground.tga"
+)
+frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 34, -106)
+frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -34, -106)
+frame.divider:SetHeight(16)
+frame.divider:SetAlpha(0.85)
+
+frame.body = CreateText(
+  frame,
+  "OVERLAY",
+  "GameFontNormal",
+  14,
+  0.88,
+  0.88,
+  0.84
+)
+frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 36, -126)
+frame.body:SetWidth(366)
+frame.body:SetSpacing(6)
+frame.body:SetText(frame.state.body)
+
+frame.section = CreateText(
+  frame,
+  "OVERLAY",
+  "GameFontHighlight",
+  14,
+  0.96,
+  0.94,
+  0.86
+)
+frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -24)
+frame.section:SetText(frame.state.section)
+
+frame.options = CreateFrame("Frame", nil, frame)
+frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -10)
+frame.options:SetSize(370, 290)
+
+frame.optionButtons = {}
+
+for index = 1, 8 do
+  local button = CreateFrame("Button", nil, frame.options, "UIPanelButtonTemplate")
+  button:SetSize(368, 40)
+  if index == 1 then
+    button:SetPoint("TOPLEFT", frame.options, "TOPLEFT", 0, 0)
+  else
+    button:SetPoint(
+      "TOPLEFT",
+      frame.optionButtons[index - 1],
+      "BOTTOMLEFT",
+      0,
+      -8
+    )
+  end
+  SkinActionButton(button)
+
+  button.icon = button:CreateTexture(nil, "ARTWORK")
+  button.icon:SetSize(20, 20)
+  button.icon:SetPoint("LEFT", button, "LEFT", 12, 0)
+  button.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+
+  button.label = CreateText(
+    button,
+    "OVERLAY",
+    "GameFontNormal",
+    13,
+    0.96,
+    0.96,
+    0.93
+  )
+  button.label:SetPoint("TOPLEFT", button.icon, "TOPRIGHT", 10, -2)
+  button.label:SetPoint("RIGHT", button, "RIGHT", -14, 0)
+  button.label:SetText("")
+
+  button.desc = CreateText(
+    button,
+    "OVERLAY",
+    "GameFontDisableSmall",
+    11,
+    0.68,
+    0.68,
+    0.66
+  )
+  button.desc:SetPoint("TOPLEFT", button.label, "BOTTOMLEFT", 0, -3)
+  button.desc:SetPoint("RIGHT", button, "RIGHT", -14, 0)
+  button.desc:SetText("")
+
+  button:SetScript("OnClick", function(self)
+    if self.actionId then
+      SendCommand("ACT", tostring(self.actionId))
+    end
+  end)
+
+  button:Hide()
+  frame.optionButtons[index] = button
+end
+
+frame.footerDivider = frame:CreateTexture(nil, "ARTWORK")
+frame.footerDivider:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\SubHeaderBackground.tga"
+)
+frame.footerDivider:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 34, 82)
+frame.footerDivider:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 82)
+frame.footerDivider:SetHeight(16)
+frame.footerDivider:SetAlpha(0.85)
+
+frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+frame.closeButton:SetSize(150, 34)
+frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 34, 30)
+SkinActionButton(frame.closeButton)
+frame.closeButton:SetText("Close")
+frame.closeButton:SetScript("OnClick", function()
+  frame:Hide()
+end)
+
+frame.refreshButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+frame.refreshButton:SetSize(150, 34)
+frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 30)
+SkinActionButton(frame.refreshButton)
+frame.refreshButton:SetText("Refresh")
+frame.refreshButton:SetScript("OnClick", function()
+  SendCommand("REFRESH", "")
+end)
+
+local function ResetState()
+  frame.state.title = "Hero Stone"
+  frame.state.subtitle = ""
+  frame.state.body = ""
+  frame.state.icon = "Interface\\Icons\\INV_Misc_QuestionMark"
+  frame.state.section = "Options"
+  frame.state.closeText = "Close"
+  frame.state.refreshText = "Refresh"
+  frame.state.items = {}
+end
+
+local function Refresh()
+  frame.icon:SetTexture(frame.state.icon)
+  frame.title:SetText(frame.state.title or "Hero Stone")
+  frame.subtitle:SetText(frame.state.subtitle or "")
+  frame.body:SetText(frame.state.body or "")
+  frame.section:SetText(frame.state.section or "Options")
+  frame.closeButton:SetText(frame.state.closeText or "Close")
+  frame.refreshButton:SetText(frame.state.refreshText or "Refresh")
+
+  for index, button in ipairs(frame.optionButtons) do
+    local item = frame.state.items[index]
+    if item then
+      button.actionId = item.id
+      button.icon:SetTexture(item.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+      button.label:SetText(item.label or "")
+      button.desc:SetText(item.desc or "")
+      button:Show()
+    else
+      button.actionId = nil
+      button:Hide()
+    end
+  end
+end
+
+frame:RegisterEvent("PLAYER_LOGIN")
+frame:RegisterEvent("CHAT_MSG_ADDON")
+frame:SetScript("OnEvent", function(self, event, prefix, message)
+  if event == "PLAYER_LOGIN" then
+    if RegisterAddonMessagePrefix then
+      RegisterAddonMessagePrefix(PREFIX)
+    end
+    return
+  end
+
+  if prefix ~= PREFIX or type(message) ~= "string" then
+    return
+  end
+
+  local parts = Split(message, "\t")
+  local kind = parts[1]
+
+  if kind == "CLEAR" then
+    ResetState()
+    Refresh()
+    return
+  end
+
+  if kind == "HEADER" then
+    frame.state.title = parts[2] or frame.state.title
+    frame.state.subtitle = parts[3] or ""
+    frame.state.icon = parts[4] or frame.state.icon
+    Refresh()
+    return
+  end
+
+  if kind == "BODY" then
+    frame.state.body = parts[2] or ""
+    Refresh()
+    return
+  end
+
+  if kind == "SECTION" then
+    frame.state.section = parts[2] or frame.state.section
+    Refresh()
+    return
+  end
+
+  if kind == "CONTROL" then
+    frame.state.closeText = parts[2] or frame.state.closeText
+    frame.state.refreshText = parts[3] or frame.state.refreshText
+    Refresh()
+    return
+  end
+
+  if kind == "ITEM" then
+    table.insert(frame.state.items, {
+      id = tonumber(parts[2]) or 0,
+      label = parts[3] or "",
+      desc = parts[4] or "",
+      icon = parts[5] or "Interface\\Icons\\INV_Misc_QuestionMark",
+    })
+    Refresh()
+    return
+  end
+
+  if kind == "SHOW" then
+    Refresh()
+    frame:Show()
+    return
+  end
+
+  if kind == "CLOSE" then
+    frame:Hide()
+    return
+  end
+end)
+
+ResetState()
+Refresh()
