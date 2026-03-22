@@ -1,6 +1,6 @@
-## Interface: 30300
-## Title: Karazhan Bonus Mission
-## Notes: Instance bonus mission UI for Karazhan server
+﻿## Interface: 30300
+## Title: 카라잔 추가 임무
+## Notes: 카라잔 던전 추가 임무 UI
 ## Author: coderwoogi
-## Version: 1.0.0
+## Version: 1.1.0
 KarazhanBonusMission.lua

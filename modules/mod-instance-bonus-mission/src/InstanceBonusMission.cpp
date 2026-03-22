@@ -530,6 +530,16 @@ namespace
         SendAddonPayload(player, "KBM_UI", "CLEAR");
     }
 
+    void SendMissionUiAlert(Player* player, std::string const& message)
+    {
+        SendAddonPayload(
+            player,
+            "KBM_UI",
+            Acore::StringFormat(
+                "ALERT\t{}",
+                SanitizeAddonField(message, 180)));
+    }
+
     void SendMissionUiState(Player* player, MissionState const& state)
     {
         std::ostringstream payload;
@@ -586,12 +596,16 @@ namespace
                  itr = itr->next())
             {
                 if (Player* member = itr->GetSource())
+                {
                     SendMissionMessageToPlayer(member, msg);
+                    SendMissionUiAlert(member, msg);
+                }
             }
             return;
         }
 
         SendMissionMessageToPlayer(player, msg);
+        SendMissionUiAlert(player, msg);
     }
 
     void SendMissionMessageToMap(Map* map, std::string const& msg)
@@ -603,7 +617,10 @@ namespace
         for (auto const& ref : players)
         {
             if (Player* player = ref.GetSource())
+            {
                 SendMissionMessageToPlayer(player, msg);
+                SendMissionUiAlert(player, msg);
+            }
         }
     }
 
@@ -1260,7 +1277,7 @@ namespace
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
-                "[추가 임무] {} 임무를 완수했습니다. 추가 보상이 지급됩니다.",
+                "[추가 임무] {} 임무를 완료했습니다. 추가 보상이 지급됩니다.",
                 state.title));
     }
 
@@ -1275,7 +1292,7 @@ namespace
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
-                "[추가 임무] {} 임무가 실패했습니다. {}",
+                "[추가 임무] {} 임무에 실패했습니다. {}",
                 state.title, reason));
     }
 
@@ -1426,12 +1443,12 @@ public:
         {
             SendMissionMessageToGroup(
                 player,
-                Acore::StringFormat("[추가 임무] {}", state.briefing));
+                Acore::StringFormat("[던전 지령] {}", state.briefing));
         }
 
         SendMissionMessageToGroup(
             player,
-            Acore::StringFormat("[추가 임무] {}", state.announcement));
+            Acore::StringFormat("[던전 지령] {}", state.announcement));
         SendMissionUiStateToMap(map, state);
     }
 
