@@ -26,6 +26,9 @@
 
 namespace
 {
+    char const* const kBriefingPrefix = u8"[작전 브리핑] ";
+    char const* const kMissionPrefix = u8"[추가 미션] ";
+
     struct MissionDefinition
     {
         uint32 mapId = 0;
@@ -1079,7 +1082,7 @@ namespace
             selection.definition = &themes->front();
 
         selection.briefing = Acore::StringFormat(
-            "이번 판의 추가 미션 유형은 {}입니다.",
+            u8"이번 판의 추가 미션 유형은 {}입니다.",
             selection.definition->name);
         selection.source = "fallback";
         return selection;
@@ -1225,7 +1228,7 @@ namespace
                 selection.definition = theme;
                 selection.briefing = briefing.empty()
                     ? Acore::StringFormat(
-                        "이번 판의 추가 미션 유형은 {}입니다.",
+                        u8"이번 판의 추가 미션 유형은 {}입니다.",
                         theme->name)
                     : briefing;
                 selection.source = "llm";
@@ -1657,12 +1660,12 @@ public:
         {
             SendMissionMessageToGroup(
                 player,
-                Acore::StringFormat("[작전 브리핑] {}", state.briefing));
+                std::string(kBriefingPrefix) + state.briefing);
         }
 
         SendMissionMessageToGroup(
             player,
-            Acore::StringFormat("[추가 미션] {}", state.announcement));
+            std::string(kMissionPrefix) + state.announcement);
         SendMissionUiStateToMap(map, state);
     }
 
