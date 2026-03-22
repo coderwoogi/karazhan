@@ -3,9 +3,9 @@ local addonName = ...
 local PREFIX = "TELEPORT_MASTER_UI"
 
 local frame = CreateFrame("Frame", "TeleportMasterUIFrame", UIParent)
-frame:SetSize(420, 840)
-frame:SetPoint("RIGHT", UIParent, "RIGHT", -94, 0)
-frame:SetScale(0.66)
+frame:SetSize(430, 760)
+frame:SetPoint("RIGHT", UIParent, "RIGHT", -92, -4)
+frame:SetScale(0.68)
 frame:SetFrameStrata("DIALOG")
 frame:SetToplevel(true)
 frame:SetClampedToScreen(true)
@@ -150,7 +150,7 @@ end
 frame.bg = frame:CreateTexture(nil, "BACKGROUND")
 frame.bg:SetAllPoints(frame)
 frame.bg:SetTexture(
-  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentBody.tga"
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentBody512.tga"
 )
 
 frame.close = CreateFrame("Button", nil, frame)
@@ -169,12 +169,12 @@ frame.close:SetScript("OnClick", function()
 end)
 
 frame.iconBorder = CreateFrame("Frame", nil, frame)
-frame.iconBorder:SetSize(56, 56)
-frame.iconBorder:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -28)
+frame.iconBorder:SetSize(64, 64)
+frame.iconBorder:SetPoint("TOPLEFT", frame, "TOPLEFT", 26, -28)
 
 frame.icon = frame.iconBorder:CreateTexture(nil, "ARTWORK")
-frame.icon:SetPoint("TOPLEFT", frame.iconBorder, "TOPLEFT", 8, -8)
-frame.icon:SetPoint("BOTTOMRIGHT", frame.iconBorder, "BOTTOMRIGHT", -8, 8)
+frame.icon:SetPoint("TOPLEFT", frame.iconBorder, "TOPLEFT", 9, -9)
+frame.icon:SetPoint("BOTTOMRIGHT", frame.iconBorder, "BOTTOMRIGHT", -9, 9)
 frame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 
 frame.iconFront = frame.iconBorder:CreateTexture(nil, "OVERLAY")
@@ -187,7 +187,7 @@ frame.subtitle = CreateText(
   frame,
   "OVERLAY",
   "GameFontNormal",
-  13,
+  14,
   0.44,
   0.35,
   0.24
@@ -199,7 +199,7 @@ frame.title = CreateText(
   frame,
   "OVERLAY",
   "GameFontHighlightLarge",
-  24,
+  28,
   0.18,
   0.13,
   0.08
@@ -218,34 +218,34 @@ frame.body = CreateText(
   frame,
   "OVERLAY",
   "GameFontNormal",
-  14,
+  15,
   0.21,
   0.16,
   0.11
 )
-frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 44, -146)
-frame.body:SetWidth(318)
+frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 44, -156)
+frame.body:SetWidth(326)
 frame.body:SetSpacing(8)
 
 frame.section = CreateText(
   frame,
   "OVERLAY",
   "GameFontHighlight",
-  15,
+  16,
   0.34,
   0.25,
   0.14
 )
-frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -26)
+frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -22)
 
 frame.options = CreateFrame("Frame", nil, frame)
 frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -14)
-frame.options:SetSize(318, 290)
+frame.options:SetSize(330, 240)
 
 frame.optionButtons = {}
 for index = 1, 6 do
   local button = CreateFrame("Button", nil, frame.options, "UIPanelButtonTemplate")
-  button:SetSize(318, 42)
+  button:SetSize(330, 42)
   if index == 1 then
     button:SetPoint("TOPLEFT", frame.options, "TOPLEFT", 0, 0)
   else
@@ -282,7 +282,7 @@ for index = 1, 6 do
     button,
     "OVERLAY",
     "GameFontNormal",
-    13,
+    14,
     0.20,
     0.16,
     0.10
@@ -294,7 +294,7 @@ for index = 1, 6 do
     button,
     "OVERLAY",
     "GameFontDisableSmall",
-    11,
+    12,
     0.45,
     0.35,
     0.24
@@ -316,12 +316,12 @@ frame.footerDivider = frame:CreateTexture(nil, "ARTWORK")
 frame.footerDivider:SetTexture(
   "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownHeaderDivider.tga"
 )
-frame.footerDivider:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 52, 128)
+frame.footerDivider:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 52, 112)
 frame.footerDivider:SetSize(316, 18)
 
 frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-frame.closeButton:SetSize(136, 36)
-frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 44, 44)
+frame.closeButton:SetSize(146, 38)
+frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 42, 34)
 SkinMainButton(
   frame.closeButton,
   "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundCommon.tga"
@@ -332,8 +332,8 @@ frame.closeButton:SetScript("OnClick", function()
 end)
 
 frame.refreshButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-frame.refreshButton:SetSize(136, 36)
-frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -44, 44)
+frame.refreshButton:SetSize(146, 38)
+frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -42, 34)
 SkinMainButton(
   frame.refreshButton,
   "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundGrey.tga"
