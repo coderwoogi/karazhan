@@ -24,6 +24,7 @@ public sealed class MainForm : Form
         Width = 1380;
         Height = 860;
         StartPosition = FormStartPosition.CenterScreen;
+        KeyPreview = true;
 
         var toolStrip = new ToolStrip();
         var newButton = new ToolStripButton("새 문서");
@@ -31,12 +32,14 @@ public sealed class MainForm : Form
         var loadJsonButton = new ToolStripButton("JSON 열기");
         var exportLuaButton = new ToolStripButton("Lua 내보내기");
         var copyLuaButton = new ToolStripButton("Lua 복사");
+        var deleteButton = new ToolStripButton("선택 삭제");
 
         newButton.Click += (_, _) => ResetDocument();
         saveJsonButton.Click += (_, _) => SaveJson();
         loadJsonButton.Click += (_, _) => LoadJson();
         exportLuaButton.Click += (_, _) => ExportLuaFile();
         copyLuaButton.Click += (_, _) => CopyLua();
+        deleteButton.Click += (_, _) => DeleteSelectedWidget();
 
         toolStrip.Items.AddRange(
         [
@@ -44,7 +47,9 @@ public sealed class MainForm : Form
             saveJsonButton,
             loadJsonButton,
             exportLuaButton,
-            copyLuaButton
+            copyLuaButton,
+            new ToolStripSeparator(),
+            deleteButton
         ]);
 
         Controls.Add(toolStrip);
@@ -83,7 +88,7 @@ public sealed class MainForm : Form
         split.Panel1.Controls.Add(toolboxLabel);
 
         _toolbox.Dock = DockStyle.Fill;
-        _toolbox.Items.AddRange(["Label", "Panel", "Button", "ProgressBar"]);
+        _toolbox.Items.AddRange(Enum.GetNames<WidgetKind>());
         _toolbox.MouseDown += (_, _) =>
         {
             if (_toolbox.SelectedItem is string item)
@@ -128,9 +133,11 @@ public sealed class MainForm : Form
 
         _statusLabel.Dock = DockStyle.Bottom;
         _statusLabel.Height = 24;
-        _statusLabel.Text = "툴박스에서 위젯을 끌어와 배치하세요.";
+        _statusLabel.Text = "툴박스에서 위젯을 끌어와 배치하세요. Delete 키로 삭제할 수 있습니다.";
         Controls.Add(_statusLabel);
         _statusLabel.BringToFront();
+
+        KeyDown += OnMainFormKeyDown;
     }
 
     private void LoadDefaultWidgets()
@@ -151,22 +158,34 @@ public sealed class MainForm : Form
             },
             new WidgetModel
             {
-                Name = "ThemePanel",
-                Kind = WidgetKind.Panel,
+                Name = "ThemeFrame",
+                Kind = WidgetKind.Frame,
                 Left = 214,
                 Top = 18,
-                Width = 100,
-                Height = 24,
-                BackColor = "#35204C"
+                Width = 120,
+                Height = 52,
+                BackColor = "#35204C",
+                Text = "보스 집중형"
             },
             new WidgetModel
             {
-                Name = "ProgressBar",
+                Name = "MissionProgress",
                 Kind = WidgetKind.ProgressBar,
                 Left = 18,
                 Top = 92,
                 Width = 260,
-                Height = 16
+                Height = 16,
+                Value = 64
+            },
+            new WidgetModel
+            {
+                Name = "MissionButton",
+                Kind = WidgetKind.Button,
+                Left = 18,
+                Top = 132,
+                Width = 120,
+                Height = 28,
+                Text = "임무 보기"
             }
         ]);
 
@@ -232,7 +251,7 @@ public sealed class MainForm : Form
         _document.Widgets = loaded.Widgets;
         _canvas.LoadDocument(_document);
         RefreshLuaPreview();
-        _statusLabel.Text = $"JSON 로드 완료: {dialog.FileName}";
+        _statusLabel.Text = $"JSON 불러오기 완료: {dialog.FileName}";
     }
 
     private void ExportLuaFile()
@@ -247,12 +266,36 @@ public sealed class MainForm : Form
             return;
 
         File.WriteAllText(dialog.FileName, _outputBox.Text);
-        _statusLabel.Text = $"Lua 저장 완료: {dialog.FileName}";
+        _statusLabel.Text = $"Lua 내보내기 완료: {dialog.FileName}";
     }
 
     private void CopyLua()
     {
         Clipboard.SetText(_outputBox.Text);
         _statusLabel.Text = "Lua 코드를 클립보드에 복사했습니다.";
+    }
+
+    private void DeleteSelectedWidget()
+    {
+        if (_canvas.SelectedWidget is null)
+        {
+            _statusLabel.Text = "삭제할 위젯을 먼저 선택하세요.";
+            return;
+        }
+
+        var removedName = _canvas.SelectedWidget.Name;
+        _canvas.RemoveSelectedWidget();
+        _propertyGrid.SelectedObject = null;
+        RefreshLuaPreview();
+        _statusLabel.Text = $"{removedName} 위젯을 삭제했습니다.";
+    }
+
+    private void OnMainFormKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.KeyCode != Keys.Delete)
+            return;
+
+        DeleteSelectedWidget();
+        e.Handled = true;
     }
 }

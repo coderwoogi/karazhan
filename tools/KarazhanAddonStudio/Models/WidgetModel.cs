@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Drawing;
 
 namespace KarazhanAddonStudio.Models;
 
@@ -43,9 +44,51 @@ public sealed class WidgetModel
     [DisplayName("글자색")]
     public string ForeColor { get; set; } = "#F0F0F0";
 
+    [Category("색상")]
+    [DisplayName("테두리색")]
+    public string BorderColor { get; set; } = "#5A6578";
+
+    [Category("표현")]
+    [DisplayName("텍스처 경로")]
+    public string TexturePath { get; set; } =
+        "Interface\\DialogFrame\\UI-DialogBox-Background";
+
+    [Category("표현")]
+    [DisplayName("정렬")]
+    public ContentAlignment TextAlign { get; set; } =
+        ContentAlignment.MiddleLeft;
+
+    [Category("표현")]
+    [DisplayName("글꼴 크기")]
+    public int FontSize { get; set; } = 11;
+
+    [Category("표현")]
+    [DisplayName("투명도")]
+    public int Alpha { get; set; } = 255;
+
+    [Category("값")]
+    [DisplayName("현재값")]
+    public int Value { get; set; } = 50;
+
+    [Category("값")]
+    [DisplayName("최대값")]
+    public int MaxValue { get; set; } = 100;
+
+    [Category("값")]
+    [DisplayName("체크됨")]
+    public bool Checked { get; set; }
+
+    [Category("값")]
+    [DisplayName("플레이스홀더")]
+    public string Placeholder { get; set; } = string.Empty;
+
     [Category("동작")]
     [DisplayName("보이기")]
     public bool Visible { get; set; } = true;
+
+    [Category("동작")]
+    [DisplayName("툴팁")]
+    public string Tooltip { get; set; } = string.Empty;
 
     [Category("데이터")]
     [DisplayName("바인딩 키")]

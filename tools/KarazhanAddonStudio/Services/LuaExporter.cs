@@ -23,6 +23,7 @@ public static class LuaExporter
         {
             var name = Sanitize(widget.Name);
             sb.AppendLine($"-- {widget.Name}");
+
             switch (widget.Kind)
             {
             case WidgetKind.Panel:
@@ -32,6 +33,20 @@ public static class LuaExporter
                     $"{name}:SetPoint(\"TOPLEFT\", Root, \"TOPLEFT\", {widget.Left}, -{widget.Top})");
                 sb.AppendLine(
                     $"{name}:SetSize({widget.Width}, {widget.Height})");
+                break;
+            case WidgetKind.Frame:
+                sb.AppendLine(
+                    $"local {name} = CreateFrame(\"Frame\", nil, Root, \"BackdropTemplate\")");
+                sb.AppendLine(
+                    $"{name}:SetPoint(\"TOPLEFT\", Root, \"TOPLEFT\", {widget.Left}, -{widget.Top})");
+                sb.AppendLine(
+                    $"{name}:SetSize({widget.Width}, {widget.Height})");
+                sb.AppendLine(
+                    $"{name}.Title = {name}:CreateFontString(nil, \"OVERLAY\", \"GameFontNormal\")");
+                sb.AppendLine(
+                    $"{name}.Title:SetPoint(\"TOPLEFT\", {name}, \"TOPLEFT\", 12, -12)");
+                sb.AppendLine(
+                    $"{name}.Title:SetText(\"{Escape(widget.Text)}\")");
                 break;
             case WidgetKind.Button:
                 sb.AppendLine(
@@ -51,24 +66,84 @@ public static class LuaExporter
                     $"{name}:SetSize({widget.Width}, {widget.Height})");
                 sb.AppendLine(
                     $"local {name}Texture = {name}:CreateTexture(nil, \"ARTWORK\")");
-                sb.AppendLine(
-                    $"{name}Texture:SetAllPoints({name})");
+                sb.AppendLine($"{name}Texture:SetAllPoints({name})");
                 sb.AppendLine(
                     $"{name}Texture:SetTexture(\"Interface\\\\TARGETINGFRAME\\\\UI-StatusBar\")");
+                break;
+            case WidgetKind.StatusBar:
+                sb.AppendLine(
+                    $"local {name} = CreateFrame(\"StatusBar\", nil, Root)");
+                sb.AppendLine(
+                    $"{name}:SetPoint(\"TOPLEFT\", Root, \"TOPLEFT\", {widget.Left}, -{widget.Top})");
+                sb.AppendLine(
+                    $"{name}:SetSize({widget.Width}, {widget.Height})");
+                sb.AppendLine(
+                    $"{name}:SetStatusBarTexture(\"Interface\\\\TARGETINGFRAME\\\\UI-StatusBar\")");
+                sb.AppendLine(
+                    $"{name}:SetMinMaxValues(0, {Math.Max(1, widget.MaxValue)})");
+                sb.AppendLine(
+                    $"{name}:SetValue({Math.Clamp(widget.Value, 0, Math.Max(1, widget.MaxValue))})");
+                break;
+            case WidgetKind.Texture:
+            case WidgetKind.Icon:
+                sb.AppendLine(
+                    $"local {name} = Root:CreateTexture(nil, \"ARTWORK\")");
+                sb.AppendLine(
+                    $"{name}:SetPoint(\"TOPLEFT\", Root, \"TOPLEFT\", {widget.Left}, -{widget.Top})");
+                sb.AppendLine(
+                    $"{name}:SetSize({widget.Width}, {widget.Height})");
+                sb.AppendLine(
+                    $"{name}:SetTexture(\"{Escape(widget.TexturePath)}\")");
+                break;
+            case WidgetKind.EditBox:
+                sb.AppendLine(
+                    $"local {name} = CreateFrame(\"EditBox\", nil, Root, \"InputBoxTemplate\")");
+                sb.AppendLine(
+                    $"{name}:SetPoint(\"TOPLEFT\", Root, \"TOPLEFT\", {widget.Left}, -{widget.Top})");
+                sb.AppendLine(
+                    $"{name}:SetSize({widget.Width}, {widget.Height})");
+                sb.AppendLine($"{name}:SetAutoFocus(false)");
+                sb.AppendLine($"{name}:SetText(\"{Escape(widget.Text)}\")");
+                break;
+            case WidgetKind.CheckBox:
+                sb.AppendLine(
+                    $"local {name} = CreateFrame(\"CheckButton\", nil, Root, \"UICheckButtonTemplate\")");
+                sb.AppendLine(
+                    $"{name}:SetPoint(\"TOPLEFT\", Root, \"TOPLEFT\", {widget.Left}, -{widget.Top})");
+                sb.AppendLine(
+                    $"{name}:SetSize({widget.Width}, {widget.Height})");
+                sb.AppendLine(
+                    $"{name}.text = _G[{name}:GetName() .. \"Text\"]");
+                sb.AppendLine(
+                    $"if {name}.text then {name}.text:SetText(\"{Escape(widget.Text)}\") end");
+                break;
+            case WidgetKind.Slider:
+                sb.AppendLine(
+                    $"local {name} = CreateFrame(\"Slider\", nil, Root, \"OptionsSliderTemplate\")");
+                sb.AppendLine(
+                    $"{name}:SetPoint(\"TOPLEFT\", Root, \"TOPLEFT\", {widget.Left}, -{widget.Top})");
+                sb.AppendLine(
+                    $"{name}:SetSize({widget.Width}, {widget.Height})");
+                sb.AppendLine(
+                    $"{name}:SetMinMaxValues(0, {Math.Max(1, widget.MaxValue)})");
+                sb.AppendLine(
+                    $"{name}:SetValue({Math.Clamp(widget.Value, 0, Math.Max(1, widget.MaxValue))})");
                 break;
             default:
                 sb.AppendLine(
                     $"local {name} = Root:CreateFontString(nil, \"OVERLAY\", \"GameFontNormal\")");
                 sb.AppendLine(
                     $"{name}:SetPoint(\"TOPLEFT\", Root, \"TOPLEFT\", {widget.Left}, -{widget.Top})");
-                sb.AppendLine(
-                    $"{name}:SetWidth({widget.Width})");
+                sb.AppendLine($"{name}:SetWidth({widget.Width})");
                 sb.AppendLine($"{name}:SetText(\"{Escape(widget.Text)}\")");
                 break;
             }
 
             if (!string.IsNullOrWhiteSpace(widget.BindingKey))
                 sb.AppendLine($"-- binding: {widget.BindingKey}");
+
+            if (!string.IsNullOrWhiteSpace(widget.Tooltip))
+                sb.AppendLine($"-- tooltip: {Escape(widget.Tooltip)}");
 
             sb.AppendLine();
         }
