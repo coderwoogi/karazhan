@@ -14,6 +14,9 @@ public sealed class DesignerCanvas : Panel
     private Point _dragStart;
     private Point _controlStart;
     private bool _dragging;
+    private bool _resizingCanvas;
+    private Point _resizeStart;
+    private Size _canvasStart;
 
     public DesignerCanvas()
     {
@@ -25,6 +28,9 @@ public sealed class DesignerCanvas : Panel
         DragEnter += OnDragEnterCanvas;
         DragDrop += OnDragDropCanvas;
         MouseClick += (_, _) => ClearSelection();
+        MouseDown += OnCanvasMouseDown;
+        MouseMove += OnCanvasMouseMove;
+        MouseUp += OnCanvasMouseUp;
     }
 
     public WidgetModel? SelectedWidget => _selected;
@@ -106,6 +112,15 @@ public sealed class DesignerCanvas : Panel
 
         for (var y = 0; y < Height; y += 16)
             e.Graphics.DrawLine(pen, 0, y, Width, y);
+
+        var gripRect = GetResizeGripRect();
+        using var gripBrush = new SolidBrush(Color.FromArgb(200, 120, 136, 160));
+        e.Graphics.FillRectangle(gripBrush, gripRect);
+        ControlPaint.DrawBorder(
+            e.Graphics,
+            gripRect,
+            Color.FromArgb(220, 180, 190, 210),
+            ButtonBorderStyle.Solid);
 
         if (_selected is null || !_bindings.TryGetValue(_selected, out var control))
             return;
@@ -387,6 +402,49 @@ public sealed class DesignerCanvas : Panel
 
         var point = PointToClient(new Point(e.X, e.Y));
         AddNewWidget(kind, point);
+    }
+
+    private void OnCanvasMouseDown(object? sender, MouseEventArgs e)
+    {
+        if (e.Button != MouseButtons.Left)
+            return;
+
+        if (!GetResizeGripRect().Contains(e.Location))
+            return;
+
+        _resizingCanvas = true;
+        _resizeStart = Cursor.Position;
+        _canvasStart = Size;
+        ClearSelection();
+    }
+
+    private void OnCanvasMouseMove(object? sender, MouseEventArgs e)
+    {
+        Cursor = GetResizeGripRect().Contains(e.Location) || _resizingCanvas
+            ? Cursors.SizeNWSE
+            : Cursors.Default;
+
+        if (!_resizingCanvas)
+            return;
+
+        var current = Cursor.Position;
+        var deltaX = current.X - _resizeStart.X;
+        var deltaY = current.Y - _resizeStart.Y;
+        Width = Math.Max(160, _canvasStart.Width + deltaX);
+        Height = Math.Max(120, _canvasStart.Height + deltaY);
+        LayoutChanged?.Invoke(this, EventArgs.Empty);
+        Invalidate();
+    }
+
+    private void OnCanvasMouseUp(object? sender, MouseEventArgs e)
+    {
+        if (e.Button == MouseButtons.Left)
+            _resizingCanvas = false;
+    }
+
+    private Rectangle GetResizeGripRect()
+    {
+        return new Rectangle(Math.Max(0, Width - 16), Math.Max(0, Height - 16), 12, 12);
     }
 
     private static Color ParseColor(string value, Color fallback)

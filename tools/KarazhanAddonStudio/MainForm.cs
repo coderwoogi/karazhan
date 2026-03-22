@@ -11,6 +11,9 @@ public sealed class MainForm : Form
     private readonly PropertyGrid _propertyGrid = new();
     private readonly TextBox _outputBox = new();
     private readonly Label _statusLabel = new();
+    private readonly NumericUpDown _documentWidth = new();
+    private readonly NumericUpDown _documentHeight = new();
+    private readonly TextBox _documentName = new();
 
     public MainForm()
     {
@@ -78,6 +81,63 @@ public sealed class MainForm : Form
         };
         rightSplit.Panel1.Controls.Add(designSplit);
 
+        var documentBar = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Top,
+            Height = 34,
+            Padding = new Padding(8, 4, 8, 4),
+            FlowDirection = FlowDirection.LeftToRight,
+            WrapContents = false
+        };
+        rightSplit.Panel1.Controls.Add(documentBar);
+        documentBar.BringToFront();
+
+        documentBar.Controls.Add(new Label
+        {
+            AutoSize = true,
+            Text = "문서명",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = new Padding(0, 6, 6, 0)
+        });
+
+        _documentName.Width = 180;
+        _documentName.TextChanged += (_, _) =>
+        {
+            _document.Name = _documentName.Text.Trim().Length == 0
+                ? "KarazhanBonusMission"
+                : _documentName.Text.Trim();
+            RefreshLuaPreview();
+        };
+        documentBar.Controls.Add(_documentName);
+
+        documentBar.Controls.Add(new Label
+        {
+            AutoSize = true,
+            Text = "너비",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = new Padding(12, 6, 6, 0)
+        });
+
+        _documentWidth.Minimum = 160;
+        _documentWidth.Maximum = 4000;
+        _documentWidth.Width = 80;
+        _documentWidth.ValueChanged += (_, _) => ApplyDocumentSizeFromInputs();
+        documentBar.Controls.Add(_documentWidth);
+
+        documentBar.Controls.Add(new Label
+        {
+            AutoSize = true,
+            Text = "높이",
+            TextAlign = ContentAlignment.MiddleLeft,
+            Margin = new Padding(12, 6, 6, 0)
+        });
+
+        _documentHeight.Minimum = 120;
+        _documentHeight.Maximum = 4000;
+        _documentHeight.Width = 80;
+        _documentHeight.ValueChanged += (_, _) => ApplyDocumentSizeFromInputs();
+        documentBar.Controls.Add(_documentHeight);
+
         var toolboxLabel = new Label
         {
             Dock = DockStyle.Top,
@@ -106,10 +166,16 @@ public sealed class MainForm : Form
         designSplit.Panel1.Controls.Add(canvasHost);
 
         _canvas.Location = new Point(16, 16);
-        _canvas.WidgetSelected += (_, widget) => _propertyGrid.SelectedObject = widget;
+        _canvas.WidgetSelected += (_, widget) =>
+        {
+            _propertyGrid.SelectedObject = widget is null
+                ? _document
+                : widget;
+        };
         _canvas.LayoutChanged += (_, _) =>
         {
             SyncDocumentFromCanvas();
+            SyncDocumentInputs();
             RefreshLuaPreview();
         };
         canvasHost.Controls.Add(_canvas);
@@ -138,6 +204,7 @@ public sealed class MainForm : Form
         _statusLabel.BringToFront();
 
         KeyDown += OnMainFormKeyDown;
+        SyncDocumentInputs();
     }
 
     private void LoadDefaultWidgets()
@@ -190,6 +257,8 @@ public sealed class MainForm : Form
         ]);
 
         _canvas.LoadDocument(_document);
+        _propertyGrid.SelectedObject = _document;
+        SyncDocumentInputs();
         RefreshLuaPreview();
     }
 
@@ -204,6 +273,8 @@ public sealed class MainForm : Form
 
     private void SyncDocumentFromCanvas()
     {
+        _document.Width = _canvas.Width;
+        _document.Height = _canvas.Height;
         _document.Widgets.Clear();
 
         foreach (Control control in _canvas.Controls)
@@ -250,6 +321,8 @@ public sealed class MainForm : Form
         _document.Height = loaded.Height;
         _document.Widgets = loaded.Widgets;
         _canvas.LoadDocument(_document);
+        _propertyGrid.SelectedObject = _document;
+        SyncDocumentInputs();
         RefreshLuaPreview();
         _statusLabel.Text = $"JSON 불러오기 완료: {dialog.FileName}";
     }
@@ -297,5 +370,26 @@ public sealed class MainForm : Form
 
         DeleteSelectedWidget();
         e.Handled = true;
+    }
+
+    private void ApplyDocumentSizeFromInputs()
+    {
+        _document.Width = (int)_documentWidth.Value;
+        _document.Height = (int)_documentHeight.Value;
+        _canvas.Width = _document.Width;
+        _canvas.Height = _document.Height;
+        RefreshLuaPreview();
+        _canvas.Invalidate();
+    }
+
+    private void SyncDocumentInputs()
+    {
+        _documentName.Text = _document.Name;
+        _documentWidth.Value = Math.Max(
+            _documentWidth.Minimum,
+            Math.Min(_documentWidth.Maximum, _document.Width));
+        _documentHeight.Value = Math.Max(
+            _documentHeight.Minimum,
+            Math.Min(_documentHeight.Maximum, _document.Height));
     }
 }
