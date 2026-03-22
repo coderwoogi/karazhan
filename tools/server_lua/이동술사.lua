@@ -202,15 +202,21 @@ local function BuildMenuItems(menuId, page)
     return items, currentPage, totalPages
 end
 
-local function OpenTeleportUi(player, menuId, page)
+local function OpenTeleportUi(player, menuId, page, displayId)
     local meta = GetNpcMeta()
     local key = GetPlayerKey(player)
     local currentMenuId = menuId or meta.menuId
     local items, currentPage, totalPages = BuildMenuItems(currentMenuId, page)
+    local currentDisplayId = tonumber(displayId) or 0
+
+    if currentDisplayId <= 0 and playerState[key] then
+        currentDisplayId = tonumber(playerState[key].displayId) or 0
+    end
 
     playerState[key] = {
         menuId = currentMenuId,
         page = currentPage,
+        displayId = currentDisplayId,
     }
 
     SendUi(player, "CLEAR")
@@ -219,7 +225,8 @@ local function OpenTeleportUi(player, menuId, page)
         "HEADER",
         meta.name,
         meta.subname,
-        "PORTRAIT_NPC"
+        "PORTRAIT_NPC",
+        currentDisplayId
     )
     SendUi(
         player,
@@ -256,7 +263,13 @@ local function HandleAction(player, payload)
     end
 
     if action == "PAGE" then
-        OpenTeleportUi(player, menu, option)
+        local state = playerState[GetPlayerKey(player)]
+        OpenTeleportUi(
+            player,
+            menu,
+            option,
+            state and state.displayId or 0
+        )
         return
     end
 
@@ -275,7 +288,13 @@ local function HandleAction(player, payload)
     end
 
     if selected.actionMenuId and selected.actionMenuId > 0 then
-        OpenTeleportUi(player, selected.actionMenuId)
+        local state = playerState[GetPlayerKey(player)]
+        OpenTeleportUi(
+            player,
+            selected.actionMenuId,
+            nil,
+            state and state.displayId or 0
+        )
         return
     end
 
@@ -300,7 +319,7 @@ local function OnGossipHello(event, player, creature)
         return
     end
 
-    OpenTeleportUi(player)
+    OpenTeleportUi(player, nil, nil, creature:GetDisplayId())
     player:GossipComplete()
 end
 
@@ -320,7 +339,8 @@ local function OnAddonMessage(event, sender, msgType, prefix, msg, target)
         OpenTeleportUi(
             sender,
             state and state.menuId or nil,
-            state and state.page or nil
+            state and state.page or nil,
+            state and state.displayId or 0
         )
         return false
     end

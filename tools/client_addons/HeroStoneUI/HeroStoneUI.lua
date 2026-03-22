@@ -9,7 +9,7 @@ local activePrefix = "HERO_STONE_UI"
 
 local frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
 frame:SetSize(438, 608)
-frame:SetPoint("CENTER", UIParent, "CENTER", 0, -10)
+frame:SetPoint("RIGHT", UIParent, "RIGHT", -110, 0)
 frame:SetScale(0.70)
 frame:SetFrameStrata("DIALOG")
 frame:SetToplevel(true)
@@ -20,12 +20,14 @@ frame:RegisterForDrag("LeftButton")
 frame:SetScript("OnDragStart", frame.StartMoving)
 frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 frame:Hide()
+table.insert(UISpecialFrames, frame:GetName())
 
 frame.state = {
   title = "Hero Stone",
   subtitle = "",
   body = "",
   icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga",
+  npcDisplayId = 0,
   section = "Options",
   closeText = "Close",
   refreshText = "Refresh",
@@ -115,8 +117,17 @@ frame.shadow:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -28)
 frame.shadow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -28, 64)
 frame.shadow:SetVertexColor(0, 0, 0, 0.18)
 
-frame.close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -8, -10)
+frame.close = CreateFrame("Button", nil, frame)
+frame.close:SetSize(24, 24)
+frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -14)
+frame.close.tex = frame.close:CreateTexture(nil, "ARTWORK")
+frame.close.tex:SetAllPoints(frame.close)
+frame.close.tex:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\WidgetCloseButton.tga"
+)
+frame.close:SetHighlightTexture(
+  "Interface\\Buttons\\UI-Common-MouseHilight", "ADD"
+)
 frame.close:SetScript("OnClick", function()
   frame:Hide()
 end)
@@ -142,6 +153,10 @@ local function UpdateHeaderIcon()
   if frame.state.icon == "PORTRAIT_NPC" then
     if UnitExists("npc") then
       SetPortraitTexture(frame.icon, "npc")
+    elseif UnitExists("target") then
+      SetPortraitTexture(frame.icon, "target")
+    elseif frame.state.npcDisplayId and frame.state.npcDisplayId > 0 and SetPortraitTextureFromCreatureDisplayID then
+      SetPortraitTextureFromCreatureDisplayID(frame.icon, frame.state.npcDisplayId)
     else
       frame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
     end
@@ -212,6 +227,14 @@ frame.section = CreateText(
 frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -24)
 frame.section:SetText(frame.state.section)
 
+frame.sectionBg = frame:CreateTexture(nil, "ARTWORK")
+frame.sectionBg:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\LabelBackground.tga"
+)
+frame.sectionBg:SetPoint("TOPLEFT", frame.section, "TOPLEFT", -10, 8)
+frame.sectionBg:SetPoint("BOTTOMRIGHT", frame.section, "BOTTOMRIGHT", 18, -8)
+frame.sectionBg:SetAlpha(0.65)
+
 frame.options = CreateFrame("Frame", nil, frame)
 frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -10)
 frame.options:SetSize(370, 290)
@@ -238,6 +261,20 @@ for index = 1, 8 do
   button.icon:SetSize(20, 20)
   button.icon:SetPoint("LEFT", button, "LEFT", 12, 0)
   button.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+
+  button.iconBg = button:CreateTexture(nil, "BACKGROUND")
+  button.iconBg:SetTexture(
+    "Interface\\AddOns\\HeroStoneUI\\Art\\ItemButtonBackground.tga"
+  )
+  button.iconBg:SetSize(28, 28)
+  button.iconBg:SetPoint("CENTER", button.icon, "CENTER", 0, 0)
+
+  button.iconBorder = button:CreateTexture(nil, "BORDER")
+  button.iconBorder:SetTexture(
+    "Interface\\AddOns\\HeroStoneUI\\Art\\ItemBorder.tga"
+  )
+  button.iconBorder:SetSize(32, 32)
+  button.iconBorder:SetPoint("CENTER", button.icon, "CENTER", 0, 0)
 
   button.label = CreateText(
     button,
@@ -284,6 +321,15 @@ frame.footerDivider:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 82)
 frame.footerDivider:SetHeight(16)
 frame.footerDivider:SetAlpha(0.85)
 
+frame.footerGlow = frame:CreateTexture(nil, "BORDER")
+frame.footerGlow:SetTexture(
+  "Interface\\AddOns\\HeroStoneUI\\Art\\RewardChoice-Highlight.tga"
+)
+frame.footerGlow:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 26, 18)
+frame.footerGlow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -26, 18)
+frame.footerGlow:SetHeight(84)
+frame.footerGlow:SetAlpha(0.08)
+
 frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
 frame.closeButton:SetSize(150, 34)
 frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 34, 30)
@@ -302,11 +348,50 @@ frame.refreshButton:SetScript("OnClick", function()
   SendCommand("REFRESH", "")
 end)
 
+local function CreateHotkeyBadge(parent, text)
+  local badge = CreateFrame("Frame", nil, parent)
+  badge:SetSize(24, 18)
+  badge:SetPoint("LEFT", parent, "LEFT", 10, 0)
+
+  badge.bg = badge:CreateTexture(nil, "BACKGROUND")
+  badge.bg:SetAllPoints(badge)
+  badge.bg:SetTexture(
+    "Interface\\AddOns\\HeroStoneUI\\Art\\HotkeyBackground.tga"
+  )
+
+  badge.text = CreateText(
+    badge,
+    "OVERLAY",
+    "GameFontHighlightSmall",
+    10,
+    0.92,
+    0.92,
+    0.88,
+    "CENTER"
+  )
+  badge.text:SetPoint("CENTER", badge, "CENTER", 0, 0)
+  badge.text:SetText(text)
+  return badge
+end
+
+frame.closeKey = CreateHotkeyBadge(frame.closeButton, "Esc")
+frame.refreshKey = CreateHotkeyBadge(frame.refreshButton, "R")
+
+frame.closeButton:GetFontString():SetPoint("LEFT", frame.closeKey, "RIGHT", 8, 0)
+frame.refreshButton:GetFontString():SetPoint(
+  "LEFT",
+  frame.refreshKey,
+  "RIGHT",
+  8,
+  0
+)
+
 local function ResetState()
   frame.state.title = "Hero Stone"
   frame.state.subtitle = ""
   frame.state.body = ""
   frame.state.icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga"
+  frame.state.npcDisplayId = 0
   frame.state.section = "Options"
   frame.state.closeText = "Close"
   frame.state.refreshText = "Refresh"
@@ -368,6 +453,7 @@ frame:SetScript("OnEvent", function(self, event, prefix, message)
     frame.state.title = parts[2] or frame.state.title
     frame.state.subtitle = parts[3] or ""
     frame.state.icon = parts[4] or frame.state.icon
+    frame.state.npcDisplayId = tonumber(parts[5]) or 0
     Refresh()
     return
   end
