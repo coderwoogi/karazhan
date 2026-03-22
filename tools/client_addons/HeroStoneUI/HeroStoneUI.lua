@@ -1,6 +1,12 @@
 local addonName = ...
 
-local PREFIX = "HERO_STONE_UI"
+local VALID_PREFIXES = {
+  HERO_STONE_UI = true,
+  TELEPORT_MASTER_UI = true,
+}
+
+local activePrefix = "HERO_STONE_UI"
+
 local frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
 frame:SetSize(438, 608)
 frame:SetPoint("CENTER", UIParent, "CENTER", 0, -10)
@@ -16,13 +22,13 @@ frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 frame:Hide()
 
 frame.state = {
-  title = "영웅석",
+  title = "Hero Stone",
   subtitle = "",
   body = "",
   icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga",
-  section = "사용 가능한 기능",
-  closeText = "닫기",
-  refreshText = "새로고침",
+  section = "Options",
+  closeText = "Close",
+  refreshText = "Refresh",
   items = {},
 }
 
@@ -47,10 +53,10 @@ local function SendCommand(command, value)
 
   local payload = command
   if value and value ~= "" then
-    payload = payload .. "\t" .. value
+    payload = payload .. "\t" .. tostring(value)
   end
 
-  SendAddonMessage(PREFIX, payload, "WHISPER", playerName)
+  SendAddonMessage(activePrefix, payload, "WHISPER", playerName)
 end
 
 local function CreateText(parent, layer, template, size, r, g, b, justify)
@@ -284,24 +290,24 @@ frame.refreshButton:SetScript("OnClick", function()
 end)
 
 local function ResetState()
-  frame.state.title = "영웅석"
+  frame.state.title = "Hero Stone"
   frame.state.subtitle = ""
   frame.state.body = ""
   frame.state.icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga"
-  frame.state.section = "사용 가능한 기능"
-  frame.state.closeText = "닫기"
-  frame.state.refreshText = "새로고침"
+  frame.state.section = "Options"
+  frame.state.closeText = "Close"
+  frame.state.refreshText = "Refresh"
   frame.state.items = {}
 end
 
 local function Refresh()
   frame.icon:SetTexture(frame.state.icon)
-  frame.title:SetText(frame.state.title or "영웅석")
+  frame.title:SetText(frame.state.title or "Hero Stone")
   frame.subtitle:SetText(frame.state.subtitle or "")
   frame.body:SetText(frame.state.body or "")
-  frame.section:SetText(frame.state.section or "사용 가능한 기능")
-  frame.closeButton:SetText(frame.state.closeText or "닫기")
-  frame.refreshButton:SetText(frame.state.refreshText or "새로고침")
+  frame.section:SetText(frame.state.section or "Options")
+  frame.closeButton:SetText(frame.state.closeText or "Close")
+  frame.refreshButton:SetText(frame.state.refreshText or "Refresh")
 
   for index, button in ipairs(frame.optionButtons) do
     local item = frame.state.items[index]
@@ -323,14 +329,18 @@ frame:RegisterEvent("CHAT_MSG_ADDON")
 frame:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
-      RegisterAddonMessagePrefix(PREFIX)
+      for knownPrefix in pairs(VALID_PREFIXES) do
+        RegisterAddonMessagePrefix(knownPrefix)
+      end
     end
     return
   end
 
-  if prefix ~= PREFIX or type(message) ~= "string" then
+  if not VALID_PREFIXES[prefix] or type(message) ~= "string" then
     return
   end
+
+  activePrefix = prefix
 
   local parts = Split(message, "\t")
   local kind = parts[1]
@@ -370,7 +380,7 @@ frame:SetScript("OnEvent", function(self, event, prefix, message)
 
   if kind == "ITEM" then
     table.insert(frame.state.items, {
-      id = tonumber(parts[2]) or 0,
+      id = parts[2] or "",
       label = parts[3] or "",
       desc = parts[4] or "",
       icon = parts[5] or "Interface\\Icons\\INV_Misc_QuestionMark",
