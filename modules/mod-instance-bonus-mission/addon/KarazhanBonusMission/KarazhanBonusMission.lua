@@ -138,8 +138,8 @@ KBM:SetBackdropBorderColor(0.42, 0.27, 0.11, 0.90)
 
 KBM.headerLine = KBM:CreateTexture(nil, "ARTWORK")
 KBM.headerLine:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
-KBM.headerLine:SetPoint("TOPLEFT", KBM, "TOPLEFT", 92, -62)
-KBM.headerLine:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -38, -62)
+KBM.headerLine:SetPoint("TOPLEFT", KBM, "TOPLEFT", 92, -82)
+KBM.headerLine:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -38, -82)
 KBM.headerLine:SetHeight(8)
 KBM.headerLine:SetTexCoord(0, 1, 0, 0.5)
 KBM.headerLine:SetAlpha(0.95)
@@ -163,7 +163,7 @@ KBM.reopen:Hide()
 
 KBM.iconBorder = CreateFrame("Frame", nil, KBM)
 KBM.iconBorder:SetSize(58, 58)
-KBM.iconBorder:SetPoint("TOPLEFT", KBM, "TOPLEFT", 24, -28)
+KBM.iconBorder:SetPoint("TOPLEFT", KBM, "TOPLEFT", 24, -48)
 KBM.iconBorder:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
   edgeFile = "Interface\\AddOns\\KarazhanBonusMission\\Art\\RewardChoice-ItemBorder",
@@ -186,7 +186,7 @@ KBM.title:SetText("추가 임무")
 
 KBM.themeTag = CreateFrame("Frame", nil, KBM)
 KBM.themeTag:SetSize(132, 28)
-KBM.themeTag:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -40, -86)
+KBM.themeTag:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -40, -106)
 KBM.themeTag:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
   edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -202,8 +202,8 @@ KBM.theme:SetPoint("CENTER", KBM.themeTag, "CENTER", 0, 0)
 KBM.theme:SetText("미지정")
 
 KBM.body = CreateFrame("Frame", nil, KBM)
-KBM.body:SetPoint("TOPLEFT", KBM, "TOPLEFT", 26, -112)
-KBM.body:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -26, 74)
+KBM.body:SetPoint("TOPLEFT", KBM, "TOPLEFT", 26, -132)
+KBM.body:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -26, 94)
 
 KBM.status = CreateText(KBM.body, "OVERLAY", "GameFontHighlight", 15, 0.55, 0.20, 0.14, "RIGHT")
 KBM.status:SetPoint("TOPRIGHT", KBM.body, "TOPRIGHT", -6, 0)
@@ -319,7 +319,7 @@ KBM.notice:SetText("")
 
 KBM.accept = CreateFrame("Button", nil, KBM, "UIPanelButtonTemplate")
 KBM.accept:SetSize(172, 34)
-KBM.accept:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", 32, 26)
+KBM.accept:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", 32, 46)
 KBM.accept:SetText("확인")
 KBM.accept:SetScript("OnClick", function()
   KBM:Hide()
@@ -328,7 +328,7 @@ end)
 
 KBM.fold = CreateFrame("Button", nil, KBM, "UIPanelButtonTemplate")
 KBM.fold:SetSize(172, 34)
-KBM.fold:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -32, 26)
+KBM.fold:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -32, 46)
 KBM.fold:SetText("접기")
 KBM.fold:SetScript("OnClick", function()
   KBM:Hide()
