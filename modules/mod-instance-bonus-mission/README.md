@@ -1,4 +1,4 @@
-﻿# mod-instance-bonus-mission
+# mod-instance-bonus-mission
 
 This module adds theme-driven bonus mission content for dungeon and raid
 instances.
@@ -137,3 +137,24 @@ The current panel shows:
 
 Client slash command:
 - `/kbm`
+## Custom Addon UI
+
+The current UI path no longer depends on Eluna or AIO for runtime.
+The server sends mission state through addon chat messages with the
+`KBM_UI` prefix, and a lightweight client addon renders the panel.
+
+Client addon files:
+- `addon/KarazhanBonusMission/KarazhanBonusMission.toc`
+- `addon/KarazhanBonusMission/KarazhanBonusMission.lua`
+
+Client install path:
+- `Interface/AddOns/KarazhanBonusMission`
+
+Current addon features:
+- `/kbm` toggle command
+- auto-show when a mission starts
+- theme, mission, progress, timer, and status display
+- briefing and current announcement display
+
+The older `aio/` prototype is kept only as an archive reference.
+Do not use it for the active build path.

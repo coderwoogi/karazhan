@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: Karazhan Bonus Mission
+## Notes: Instance bonus mission UI for Karazhan server
+## Author: coderwoogi
+## Version: 1.0.0
+KarazhanBonusMission.lua

@@ -1,4 +1,4 @@
-﻿
+
 #include "Chat.h"
 #include "Config.h"
 #include "Creature.h"
@@ -456,12 +456,123 @@ namespace
         std::unordered_map<uint32, MissionState> _states;
     };
 
+    void SaveLiveState(uint32 instanceId, MissionState const& state);
+
     void SendMissionMessageToPlayer(Player* player, std::string const& msg)
     {
         if (!player || !MissionStore::Instance().IsAnnounceEnabled())
             return;
 
         ChatHandler(player->GetSession()).SendSysMessage(msg.c_str());
+    }
+
+    std::string SanitizeAddonField(std::string text, std::size_t maxLen)
+    {
+        for (char& ch : text)
+        {
+            if (ch == '\t' || ch == '\r' || ch == '\n')
+                ch = ' ';
+        }
+
+        if (text.length() > maxLen)
+            text.resize(maxLen);
+
+        return text;
+    }
+
+    uint32 GetRemainingSeconds(MissionState const& state)
+    {
+        if (!state.timeLimitSec || !state.expireTime)
+            return 0;
+
+        time_t now = GameTime::GetGameTime().count();
+        if (now >= state.expireTime)
+            return 0;
+
+        return uint32(state.expireTime - now);
+    }
+
+    std::string GetMissionStatusToken(MissionState const& state)
+    {
+        if (state.completed)
+            return "complete";
+
+        if (state.failed)
+            return "failed";
+
+        return "active";
+    }
+
+    void SendAddonPayload(
+        Player* player,
+        std::string const& prefix,
+        std::string const& payload)
+    {
+        if (!player || !player->GetSession())
+            return;
+
+        std::string fullMessage = prefix + "\t" + payload;
+
+        WorldPacket data(SMSG_MESSAGECHAT, 100);
+        data << uint8(CHAT_MSG_WHISPER);
+        data << int32(LANG_ADDON);
+        data << player->GET_GUID();
+        data << uint32(0);
+        data << player->GET_GUID();
+        data << uint32(fullMessage.length() + 1);
+        data << fullMessage;
+        data << uint8(0);
+        player->GetSession()->SendPacket(&data);
+    }
+
+    void SendMissionUiClear(Player* player)
+    {
+        SendAddonPayload(player, "KBM_UI", "CLEAR");
+    }
+
+    void SendMissionUiState(Player* player, MissionState const& state)
+    {
+        std::ostringstream payload;
+        payload << "STATE\t";
+        payload << state.mapId << "\t";
+        payload << state.themeId << "\t";
+        payload << SanitizeAddonField(state.themeKey, 24) << "\t";
+        payload << SanitizeAddonField(state.themeName, 48) << "\t";
+        payload << SanitizeAddonField(state.title, 64) << "\t";
+        payload << SanitizeAddonField(state.targetLabel, 64) << "\t";
+        payload << state.currentCount << "\t";
+        payload << state.targetCount << "\t";
+        payload << GetRemainingSeconds(state) << "\t";
+        payload << state.timeLimitSec << "\t";
+        payload << GetMissionStatusToken(state) << "\t";
+        payload << uint32(state.missionType);
+
+        SendAddonPayload(player, "KBM_UI", payload.str());
+        SendAddonPayload(
+            player,
+            "KBM_UI",
+            Acore::StringFormat(
+                "BRIEFING\t{}",
+                SanitizeAddonField(state.briefing, 180)));
+        SendAddonPayload(
+            player,
+            "KBM_UI",
+            Acore::StringFormat(
+                "ANNOUNCEMENT\t{}",
+                SanitizeAddonField(state.announcement, 180)));
+    }
+
+    void SendMissionUiStateToMap(Map* map, MissionState const& state)
+    {
+        if (!map)
+            return;
+
+        Map::PlayerList const& players = map->GetPlayers();
+        for (auto const& ref : players)
+        {
+            if (Player* player = ref.GetSource())
+                SendMissionUiState(player, state);
+        }
     }
 
     void SendMissionMessageToGroup(Player* player, std::string const& msg)
@@ -495,6 +606,7 @@ namespace
                 SendMissionMessageToPlayer(player, msg);
         }
     }
+
     void SaveLiveState(uint32 instanceId, MissionState const& state)
     {
         std::string themeKey = state.themeKey;
@@ -1143,6 +1255,7 @@ namespace
 
         state.completed = true;
         SaveLiveState(map->GetInstanceId(), state);
+        SendMissionUiStateToMap(map, state);
         RewardMissionToMap(map, state);
         SendMissionMessageToMap(
             map,
@@ -1158,6 +1271,7 @@ namespace
 
         state.failed = true;
         SaveLiveState(map->GetInstanceId(), state);
+        SendMissionUiStateToMap(map, state);
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
@@ -1184,6 +1298,7 @@ namespace
 
         ++state->currentCount;
         SaveLiveState(map->GetInstanceId(), *state);
+        SendMissionUiStateToMap(map, *state);
 
         uint32 remaining = 0;
         if (state->targetCount > state->currentCount)
@@ -1280,11 +1395,17 @@ public:
 
         Map* map = player->GetMap();
         if (!map || !map->IsDungeon() || !map->GetInstanceId())
+        {
+            SendMissionUiClear(player);
             return;
+        }
 
         uint32 instanceId = map->GetInstanceId();
-        if (MissionStateStore::Instance().Get(instanceId))
+        if (MissionState* state = MissionStateStore::Instance().Get(instanceId))
+        {
+            SendMissionUiState(player, *state);
             return;
+        }
 
         PartyContext context = BuildPartyContext(map);
         ThemeSelection themeSelection = TrySelectThemeWithLlm(map, context);
@@ -1311,6 +1432,24 @@ public:
         SendMissionMessageToGroup(
             player,
             Acore::StringFormat("[추가 임무] {}", state.announcement));
+        SendMissionUiStateToMap(map, state);
+    }
+
+    void OnLogin(Player* player) override
+    {
+        if (!player)
+            return;
+
+        Map* map = player->GetMap();
+        if (!map || !map->IsDungeon() || !map->GetInstanceId())
+        {
+            SendMissionUiClear(player);
+            return;
+        }
+
+        if (MissionState* state = MissionStateStore::Instance().Get(
+                map->GetInstanceId()))
+            SendMissionUiState(player, *state);
     }
 
     void OnPlayerJustDied(Player* player) override
