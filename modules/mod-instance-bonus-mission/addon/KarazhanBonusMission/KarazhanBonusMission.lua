@@ -1,8 +1,8 @@
 local addonName = ...
 
 local KBM = CreateFrame("Frame", "KarazhanBonusMissionFrame", UIParent)
-KBM:SetSize(456, 560)
-KBM:SetPoint("CENTER", UIParent, "CENTER", 160, 0)
+KBM:SetSize(438, 548)
+KBM:SetPoint("CENTER", UIParent, "CENTER", 180, 0)
 KBM:SetClampedToScreen(true)
 KBM:EnableMouse(true)
 KBM:SetMovable(true)
@@ -14,7 +14,7 @@ KBM:Hide()
 KBM.state = {
   themeKey = "",
   themeName = "-",
-  title = "-",
+  title = "추가 임무",
   targetLabel = "-",
   currentCount = 0,
   targetCount = 0,
@@ -28,10 +28,10 @@ KBM.state = {
 }
 
 local statusColors = {
-  inactive = {0.48, 0.48, 0.48},
-  active = {0.20, 0.58, 0.82},
-  complete = {0.18, 0.64, 0.32},
-  failed = {0.84, 0.22, 0.22},
+  inactive = {0.42, 0.38, 0.30},
+  active = {0.45, 0.28, 0.12},
+  complete = {0.17, 0.51, 0.21},
+  failed = {0.72, 0.19, 0.17},
 }
 
 local themeIcons = {
@@ -108,31 +108,47 @@ local function ShowRaidAlert(message)
   end
 end
 
-local function CreateQuestText(parent, template, size)
-  local fs = parent:CreateFontString(nil, "OVERLAY", template or "QuestFont")
-  fs:SetFont(STANDARD_TEXT_FONT, size or 16, "")
-  fs:SetTextColor(0.21, 0.16, 0.10)
-  fs:SetJustifyH("LEFT")
+local function CreateText(parent, size, r, g, b, justify)
+  local fs = parent:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  fs:SetFont(STANDARD_TEXT_FONT, size, "")
+  fs:SetTextColor(r, g, b)
+  fs:SetJustifyH(justify or "LEFT")
   fs:SetJustifyV("TOP")
   return fs
 end
 
-KBM.bg = KBM:CreateTexture(nil, "BACKGROUND")
-KBM.bg:SetTexture("Interface\\QuestFrame\\QuestBG")
+KBM.bg = CreateFrame("Frame", nil, KBM)
 KBM.bg:SetAllPoints(KBM)
-KBM.bg:SetTexCoord(0, 1, 0, 1)
+KBM.bg:SetBackdrop({
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+  tile = true,
+  tileSize = 16,
+  edgeSize = 14,
+  insets = { left = 4, right = 4, top = 4, bottom = 4 },
+})
+KBM.bg:SetBackdropColor(0.93, 0.82, 0.63, 0.98)
+KBM.bg:SetBackdropBorderColor(0.53, 0.37, 0.20, 0.95)
 
-KBM.topBorder = KBM:CreateTexture(nil, "BORDER")
-KBM.topBorder:SetTexture("Interface\\QuestFrame\\UI-QuestLog-TopLeft")
-KBM.topBorder:SetSize(512, 128)
-KBM.topBorder:SetPoint("TOPLEFT", KBM, "TOPLEFT", -28, 20)
-KBM.topBorder:SetAlpha(0.92)
+KBM.inner = KBM:CreateTexture(nil, "BACKGROUND")
+KBM.inner:SetTexture("Interface\\Buttons\\WHITE8x8")
+KBM.inner:SetVertexColor(0.90, 0.79, 0.60, 0.96)
+KBM.inner:SetPoint("TOPLEFT", KBM, "TOPLEFT", 14, -16)
+KBM.inner:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -14, 18)
 
-KBM.bottomBorder = KBM:CreateTexture(nil, "BORDER")
-KBM.bottomBorder:SetTexture("Interface\\QuestFrame\\UI-QuestLog-BotLeft")
-KBM.bottomBorder:SetSize(512, 128)
-KBM.bottomBorder:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", -28, -18)
-KBM.bottomBorder:SetAlpha(0.92)
+KBM.topShade = KBM:CreateTexture(nil, "BORDER")
+KBM.topShade:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+KBM.topShade:SetPoint("TOPLEFT", KBM, "TOPLEFT", 18, -12)
+KBM.topShade:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -18, -12)
+KBM.topShade:SetHeight(28)
+KBM.topShade:SetAlpha(0.55)
+
+KBM.bottomShade = KBM:CreateTexture(nil, "BORDER")
+KBM.bottomShade:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
+KBM.bottomShade:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", 18, 18)
+KBM.bottomShade:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -18, 18)
+KBM.bottomShade:SetHeight(18)
+KBM.bottomShade:SetAlpha(0.40)
 
 local close = CreateFrame("Button", nil, KBM, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -8, -8)
@@ -147,7 +163,7 @@ KBM.reopen = CreateFrame(
   UIParent,
   "UIPanelButtonTemplate")
 KBM.reopen:SetSize(92, 24)
-KBM.reopen:SetPoint("CENTER", UIParent, "CENTER", 390, -250)
+KBM.reopen:SetPoint("CENTER", UIParent, "CENTER", 390, -248)
 KBM.reopen:SetText("임무 보기")
 KBM.reopen:SetScript("OnClick", function()
   KBM:Show()
@@ -155,72 +171,77 @@ KBM.reopen:SetScript("OnClick", function()
 end)
 KBM.reopen:Hide()
 
-KBM.iconRing = CreateFrame("Frame", nil, KBM)
-KBM.iconRing:SetSize(52, 52)
-KBM.iconRing:SetPoint("TOPLEFT", KBM, "TOPLEFT", 28, -30)
+KBM.iconBorder = CreateFrame("Frame", nil, KBM)
+KBM.iconBorder:SetSize(52, 52)
+KBM.iconBorder:SetPoint("TOPLEFT", KBM, "TOPLEFT", 28, -34)
+KBM.iconBorder:SetBackdrop({
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+  tile = true,
+  tileSize = 8,
+  edgeSize = 10,
+  insets = { left = 2, right = 2, top = 2, bottom = 2 },
+})
+KBM.iconBorder:SetBackdropColor(0.28, 0.21, 0.12, 0.95)
+KBM.iconBorder:SetBackdropBorderColor(0.61, 0.46, 0.24, 0.95)
 
-KBM.iconBorder = KBM.iconRing:CreateTexture(nil, "ARTWORK")
-KBM.iconBorder:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-KBM.iconBorder:SetAllPoints(KBM.iconRing)
-
-KBM.icon = KBM.iconRing:CreateTexture(nil, "BACKGROUND")
+KBM.icon = KBM.iconBorder:CreateTexture(nil, "ARTWORK")
 KBM.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-KBM.icon:SetSize(34, 34)
-KBM.icon:SetPoint("CENTER", KBM.iconRing, "CENTER", 0, 0)
+KBM.icon:SetPoint("TOPLEFT", KBM.iconBorder, "TOPLEFT", 6, -6)
+KBM.icon:SetPoint("BOTTOMRIGHT", KBM.iconBorder, "BOTTOMRIGHT", -6, 6)
 
-KBM.title = CreateQuestText(KBM, "QuestTitleFont", 28)
-KBM.title:SetPoint("TOPLEFT", KBM, "TOPLEFT", 88, -36)
-KBM.title:SetWidth(290)
+KBM.title = CreateText(KBM, 26, 0.20, 0.14, 0.09)
+KBM.title:SetPoint("TOPLEFT", KBM.iconBorder, "TOPRIGHT", 14, -2)
+KBM.title:SetWidth(300)
 KBM.title:SetText("추가 임무")
 
 KBM.titleLine = KBM:CreateTexture(nil, "ARTWORK")
 KBM.titleLine:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
-KBM.titleLine:SetPoint("TOPLEFT", KBM.title, "BOTTOMLEFT", 0, -10)
-KBM.titleLine:SetPoint("RIGHT", KBM, "RIGHT", -46, 0)
+KBM.titleLine:SetPoint("TOPLEFT", KBM.title, "BOTTOMLEFT", 0, -12)
+KBM.titleLine:SetPoint("RIGHT", KBM, "RIGHT", -40, 0)
 KBM.titleLine:SetHeight(8)
 KBM.titleLine:SetTexCoord(0, 1, 0, 0.5)
+KBM.titleLine:SetAlpha(0.80)
 
-KBM.theme = CreateQuestText(KBM, "QuestTitleFontBlackShadow", 15)
+KBM.theme = CreateText(KBM, 15, 0.36, 0.24, 0.12)
 KBM.theme:SetPoint("TOPLEFT", KBM.titleLine, "BOTTOMLEFT", 0, -10)
-KBM.theme:SetWidth(300)
+KBM.theme:SetWidth(240)
 KBM.theme:SetText("테마: 미지정")
 
-KBM.status = CreateQuestText(KBM, "QuestTitleFontBlackShadow", 15)
-KBM.status:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -46, -92)
+KBM.status = CreateText(KBM, 15, 0.36, 0.24, 0.12, "RIGHT")
+KBM.status:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -40, -110)
 KBM.status:SetWidth(120)
-KBM.status:SetJustifyH("RIGHT")
 KBM.status:SetText("상태: 대기")
 
-KBM.briefing = CreateQuestText(KBM, "QuestFont", 17)
-KBM.briefing:SetPoint("TOPLEFT", KBM.theme, "BOTTOMLEFT", 0, -18)
-KBM.briefing:SetWidth(344)
+KBM.briefing = CreateText(KBM, 17, 0.22, 0.16, 0.10)
+KBM.briefing:SetPoint("TOPLEFT", KBM.theme, "BOTTOMLEFT", 0, -22)
+KBM.briefing:SetWidth(352)
 KBM.briefing:SetSpacing(8)
 KBM.briefing:SetText("추가 임무가 아직 배정되지 않았습니다.")
 
-KBM.objectivesTitle = CreateQuestText(KBM, "QuestTitleFontBlackShadow", 18)
-KBM.objectivesTitle:SetPoint("TOPLEFT", KBM.briefing, "BOTTOMLEFT", 0, -18)
+KBM.objectivesTitle = CreateText(KBM, 18, 0.28, 0.18, 0.08)
+KBM.objectivesTitle:SetPoint("TOPLEFT", KBM.briefing, "BOTTOMLEFT", 0, -24)
 KBM.objectivesTitle:SetText("목표")
 
-KBM.objectives = CreateQuestText(KBM, "QuestFont", 17)
+KBM.objectives = CreateText(KBM, 17, 0.22, 0.16, 0.10)
 KBM.objectives:SetPoint("TOPLEFT", KBM.objectivesTitle, "BOTTOMLEFT", 0, -10)
-KBM.objectives:SetWidth(344)
+KBM.objectives:SetWidth(352)
 KBM.objectives:SetSpacing(6)
 KBM.objectives:SetText("아직 목표가 없습니다.")
 
-KBM.timer = CreateQuestText(KBM, "QuestFontHighlight", 15)
-KBM.timer:SetPoint("TOPLEFT", KBM.objectives, "BOTTOMLEFT", 0, -10)
+KBM.timer = CreateText(KBM, 15, 0.36, 0.24, 0.12)
+KBM.timer:SetPoint("TOPLEFT", KBM.objectives, "BOTTOMLEFT", 0, -14)
 KBM.timer:SetWidth(160)
 KBM.timer:SetText("남은 시간: 00:00")
 
-KBM.progress = CreateQuestText(KBM, "QuestFontHighlight", 15)
-KBM.progress:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -46, -328)
+KBM.progress = CreateText(KBM, 15, 0.36, 0.24, 0.12, "RIGHT")
+KBM.progress:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -40, -340)
 KBM.progress:SetWidth(160)
-KBM.progress:SetJustifyH("RIGHT")
 KBM.progress:SetText("진행도: 0 / 0")
 
 KBM.progressBarBG = CreateFrame("Frame", nil, KBM)
-KBM.progressBarBG:SetPoint("TOPLEFT", KBM.timer, "BOTTOMLEFT", 0, -8)
-KBM.progressBarBG:SetSize(344, 18)
+KBM.progressBarBG:SetPoint("TOPLEFT", KBM.timer, "BOTTOMLEFT", 0, -10)
+KBM.progressBarBG:SetSize(350, 18)
 KBM.progressBarBG:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
   edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -229,18 +250,18 @@ KBM.progressBarBG:SetBackdrop({
   edgeSize = 8,
   insets = { left = 2, right = 2, top = 2, bottom = 2 },
 })
-KBM.progressBarBG:SetBackdropColor(0.10, 0.08, 0.05, 0.95)
-KBM.progressBarBG:SetBackdropBorderColor(0.46, 0.36, 0.24, 0.90)
+KBM.progressBarBG:SetBackdropColor(0.18, 0.11, 0.06, 0.90)
+KBM.progressBarBG:SetBackdropBorderColor(0.52, 0.36, 0.20, 0.90)
 
 KBM.progressBar = KBM.progressBarBG:CreateTexture(nil, "ARTWORK")
 KBM.progressBar:SetTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
-KBM.progressBar:SetVertexColor(0.59, 0.33, 0.19, 0.95)
+KBM.progressBar:SetVertexColor(0.58, 0.31, 0.15, 0.96)
 KBM.progressBar:SetPoint("TOPLEFT", KBM.progressBarBG, "TOPLEFT", 2, -2)
 KBM.progressBar:SetPoint("BOTTOMLEFT", KBM.progressBarBG, "BOTTOMLEFT", 2, 2)
 KBM.progressBar:SetWidth(1)
 
-KBM.rewardsTitle = CreateQuestText(KBM, "QuestTitleFontBlackShadow", 18)
-KBM.rewardsTitle:SetPoint("TOPLEFT", KBM.progressBarBG, "BOTTOMLEFT", 0, -18)
+KBM.rewardsTitle = CreateText(KBM, 18, 0.28, 0.18, 0.08)
+KBM.rewardsTitle:SetPoint("TOPLEFT", KBM.progressBarBG, "BOTTOMLEFT", 0, -22)
 KBM.rewardsTitle:SetText("보상")
 
 KBM.rewardLeftIcon = KBM:CreateTexture(nil, "ARTWORK")
@@ -248,31 +269,34 @@ KBM.rewardLeftIcon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
 KBM.rewardLeftIcon:SetSize(36, 36)
 KBM.rewardLeftIcon:SetPoint("TOPLEFT", KBM.rewardsTitle, "BOTTOMLEFT", 0, -12)
 
-KBM.rewardLeftText = CreateQuestText(KBM, "QuestFontHighlight", 15)
+KBM.rewardLeftText = CreateText(KBM, 15, 0.22, 0.16, 0.10)
 KBM.rewardLeftText:SetPoint("LEFT", KBM.rewardLeftIcon, "RIGHT", 10, 0)
-KBM.rewardLeftText:SetWidth(120)
+KBM.rewardLeftText:SetWidth(140)
+KBM.rewardLeftText:SetJustifyV("MIDDLE")
 KBM.rewardLeftText:SetText("추가 보상")
 
 KBM.rewardRightIcon = KBM:CreateTexture(nil, "ARTWORK")
 KBM.rewardRightIcon:SetTexture("Interface\\Icons\\INV_Chest_Cloth_17")
 KBM.rewardRightIcon:SetSize(36, 36)
-KBM.rewardRightIcon:SetPoint("TOPLEFT", KBM.rewardLeftIcon, "TOPLEFT", 188, 0)
+KBM.rewardRightIcon:SetPoint("TOPLEFT", KBM.rewardLeftIcon, "TOPLEFT", 186, 0)
 
-KBM.rewardRightText = CreateQuestText(KBM, "QuestFontHighlight", 15)
+KBM.rewardRightText = CreateText(KBM, 15, 0.22, 0.16, 0.10)
 KBM.rewardRightText:SetPoint("LEFT", KBM.rewardRightIcon, "RIGHT", 10, 0)
-KBM.rewardRightText:SetWidth(120)
+KBM.rewardRightText:SetWidth(140)
+KBM.rewardRightText:SetJustifyV("MIDDLE")
 KBM.rewardRightText:SetText("임무 상자")
 
 KBM.footerLine = KBM:CreateTexture(nil, "ARTWORK")
 KBM.footerLine:SetTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight")
 KBM.footerLine:SetPoint("TOPLEFT", KBM.rewardLeftIcon, "BOTTOMLEFT", -2, -18)
-KBM.footerLine:SetPoint("RIGHT", KBM, "RIGHT", -50, 0)
+KBM.footerLine:SetPoint("RIGHT", KBM, "RIGHT", -42, 0)
 KBM.footerLine:SetHeight(8)
 KBM.footerLine:SetTexCoord(0, 1, 0, 0.5)
+KBM.footerLine:SetAlpha(0.80)
 
 KBM.accept = CreateFrame("Button", nil, KBM, "UIPanelButtonTemplate")
 KBM.accept:SetSize(160, 34)
-KBM.accept:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", 38, 24)
+KBM.accept:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", 34, 22)
 KBM.accept:SetText("확인")
 KBM.accept:SetScript("OnClick", function()
   KBM:Hide()
@@ -281,7 +305,7 @@ end)
 
 KBM.decline = CreateFrame("Button", nil, KBM, "UIPanelButtonTemplate")
 KBM.decline:SetSize(160, 34)
-KBM.decline:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -42, 24)
+KBM.decline:SetPoint("BOTTOMRIGHT", KBM, "BOTTOMRIGHT", -34, 22)
 KBM.decline:SetText("접기")
 KBM.decline:SetScript("OnClick", function()
   KBM:Hide()
@@ -289,8 +313,7 @@ KBM.decline:SetScript("OnClick", function()
 end)
 
 local function UpdateThemeVisuals()
-  local themeText = GetThemeText(KBM.state.themeKey, KBM.state.themeName)
-  KBM.theme:SetText("테마: " .. themeText)
+  KBM.theme:SetText("테마: " .. GetThemeText(KBM.state.themeKey, KBM.state.themeName))
   KBM.icon:SetTexture(themeIcons[KBM.state.themeKey] or "Interface\\Icons\\INV_Misc_QuestionMark")
 end
 
@@ -326,7 +349,7 @@ local function Refresh()
   local current = KBM.state.currentCount or 0
   local width = 1
   if maxCount > 0 then
-    width = math.floor(340 * math.min(current / maxCount, 1))
+    width = math.floor(346 * math.min(current / maxCount, 1))
     if width < 1 then
       width = 1
     end
@@ -334,11 +357,11 @@ local function Refresh()
   KBM.progressBar:SetWidth(width)
 
   if KBM.state.status == "complete" then
-    KBM.progressBar:SetVertexColor(0.26, 0.68, 0.28, 0.95)
+    KBM.progressBar:SetVertexColor(0.24, 0.62, 0.24, 0.96)
   elseif KBM.state.status == "failed" then
-    KBM.progressBar:SetVertexColor(0.72, 0.20, 0.20, 0.95)
+    KBM.progressBar:SetVertexColor(0.70, 0.18, 0.18, 0.96)
   else
-    KBM.progressBar:SetVertexColor(0.59, 0.33, 0.19, 0.95)
+    KBM.progressBar:SetVertexColor(0.58, 0.31, 0.15, 0.96)
   end
 end
 
