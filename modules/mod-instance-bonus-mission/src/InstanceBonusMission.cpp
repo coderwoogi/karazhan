@@ -385,6 +385,8 @@ namespace
             _themeMissionIds;
     };
 
+    void SaveLiveState(uint32 instanceId, MissionState const& state);
+
     class MissionStateStore
     {
     public:
@@ -456,8 +458,6 @@ namespace
         std::unordered_map<uint32, MissionState> _states;
     };
 
-    void SaveLiveState(uint32 instanceId, MissionState const& state);
-
     void SendMissionMessageToPlayer(Player* player, std::string const& msg)
     {
         if (!player || !MissionStore::Instance().IsAnnounceEnabled())
@@ -516,9 +516,9 @@ namespace
         WorldPacket data(SMSG_MESSAGECHAT, 100);
         data << uint8(CHAT_MSG_WHISPER);
         data << int32(LANG_ADDON);
-        data << player->GET_GUID();
+        data << player->GetGUID();
         data << uint32(0);
-        data << player->GET_GUID();
+        data << player->GetGUID();
         data << uint32(fullMessage.length() + 1);
         data << fullMessage;
         data << uint8(0);
@@ -1435,7 +1435,7 @@ public:
         SendMissionUiStateToMap(map, state);
     }
 
-    void OnLogin(Player* player) override
+    void OnPlayerLogin(Player* player) override
     {
         if (!player)
             return;
