@@ -712,12 +712,12 @@ namespace
         state.voteApproved = true;
         state.startTime = GameTime::GetGameTime().count();
         state.expireTime = state.startTime + state.timeLimitSec;
-        state.announcement = "異붽? 誘몄뀡??怨쇰컲??李ъ꽦?쇰줈 ?쒖옉?섏뿀?듬땲??";
+        state.announcement = "추가 미션이 과반수 찬성으로 시작되었습니다.";
         SaveLiveState(map->GetInstanceId(), state);
         SendMissionUiStateToMap(map, state);
         SendMissionMessageToMap(
             map,
-            "[異붽? 誘몄뀡] 怨쇰컲??李ъ꽦?쇰줈 誘몄뀡???쒖옉?섏뿀?듬땲??");
+            "[추가 미션] 과반수 찬성으로 미션이 시작되었습니다.");
     }
 
     bool ApplyVote(Player* player, bool agree)
@@ -742,7 +742,7 @@ namespace
         else
         {
             state->announcement = Acore::StringFormat(
-                "李ъ꽦 {} / {} , 諛섎? {}",
+                "찬성 {} / {}, 반대 {}",
                 vote.yes, vote.required, vote.no);
             SaveLiveState(map->GetInstanceId(), *state);
             SendMissionUiStateToMap(map, *state);
@@ -751,9 +751,9 @@ namespace
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
-                "[異붽? 誘몄뀡] {}?섏씠 {}瑜??좏깮?덉뒿?덈떎. 李ъ꽦 {} / {}, 諛섎? {}",
+                "[추가 미션] {}님이 {}를 선택했습니다. 찬성 {} / {}, 반대 {}",
                 player->GetName(),
-                agree ? "李ъ꽦" : "諛섎?",
+                agree ? "찬성" : "반대",
                 vote.yes,
                 vote.required,
                 vote.no));
@@ -1079,7 +1079,7 @@ namespace
             selection.definition = &themes->front();
 
         selection.briefing = Acore::StringFormat(
-            "?대쾲 ?먯쓽 異붽? ?꾨Т ?좏삎? {}?낅땲??",
+            "이번 판의 추가 미션 유형은 {}입니다.",
             selection.definition->name);
         selection.source = "fallback";
         return selection;
@@ -1225,7 +1225,7 @@ namespace
                 selection.definition = theme;
                 selection.briefing = briefing.empty()
                     ? Acore::StringFormat(
-                        "?대쾲 ?먯쓽 異붽? ?꾨Т ?좏삎? {}?낅땲??",
+                        "이번 판의 추가 미션 유형은 {}입니다.",
                         theme->name)
                     : briefing;
                 selection.source = "llm";
@@ -1479,7 +1479,7 @@ namespace
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
-                "[異붽? ?꾨Т] {} ?꾨Т瑜??꾨즺?덉뒿?덈떎. 異붽? 蹂댁긽??吏湲됰맗?덈떎.",
+                "[추가 미션] {} 임무를 완료했습니다. 추가 보상이 지급됩니다.",
                 state.title));
     }
 
@@ -1494,7 +1494,7 @@ namespace
         SendMissionMessageToMap(
             map,
             Acore::StringFormat(
-                "[異붽? ?꾨Т] {} ?꾨Т???ㅽ뙣?덉뒿?덈떎. {}",
+                "[추가 미션] {} 임무에 실패했습니다. {}",
                 state.title, reason));
     }
 
@@ -1541,7 +1541,7 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[異붽? ?꾨Т] {} 紐⑺몴瑜??덈컲 ?ъ꽦?덉뒿?덈떎. {} / {}",
+                    "[추가 미션] {} 목표를 절반 달성했습니다. {} / {}",
                     state->targetLabel,
                     state->currentCount,
                     state->targetCount));
@@ -1553,7 +1553,7 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[異붽? ?꾨Т] {} {}留덈━ 以?{}留덈━ ?⑥븯?듬땲??",
+                    "[추가 미션] {} {}마리 중 {}마리 남았습니다.",
                     state->targetLabel,
                     state->targetCount,
                     remaining));
@@ -1565,7 +1565,7 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[異붽? ?꾨Т] {} {}留덈━ 以?{}留덈━ ?⑥븯?듬땲??",
+                    "[추가 미션] {} {}마리 중 {}마리 남았습니다.",
                     state->targetLabel,
                     state->targetCount,
                     remaining));
@@ -1577,7 +1577,7 @@ namespace
             SendMissionMessageToGroup(
                 killer,
                 Acore::StringFormat(
-                    "[異붽? ?꾨Т] {} {}留덈━ 以?{}留덈━ ?⑥븯?듬땲??",
+                    "[추가 미션] {} {}마리 중 {}마리 남았습니다.",
                     state->targetLabel,
                     state->targetCount,
                     remaining));
@@ -1703,7 +1703,7 @@ public:
         if (state->missionType != 2)
             return;
 
-        FailMission(map, *state, "?뚰떚 ?щ쭩??諛쒖깮?덉뒿?덈떎.");
+        FailMission(map, *state, "파티 사망이 발생했습니다.");
     }
     bool OnPlayerCanUseChat(
         Player* player,
@@ -1785,7 +1785,7 @@ public:
 
         if (now >= state->expireTime)
         {
-            FailMission(map, *state, "?쒗븳 ?쒓컙??吏?ъ뒿?덈떎.");
+            FailMission(map, *state, "제한 시간이 지났습니다.");
             return;
         }
 
@@ -1796,35 +1796,35 @@ public:
         {
             state->announcedTenMinute = true;
             SendMissionMessageToMap(
-                map, "[異붽? ?꾨Т] ?쒓컙??10遺??⑥븯?듬땲??");
+                map, "[추가 미션] 시간이 10분 남았습니다.");
         }
 
         if (!state->announcedFiveMinute && remaining <= 300)
         {
             state->announcedFiveMinute = true;
             SendMissionMessageToMap(
-                map, "[異붽? ?꾨Т] ?쒓컙??5遺??⑥븯?듬땲??");
+                map, "[추가 미션] 시간이 5분 남았습니다.");
         }
 
         if (!state->announcedThreeMinute && remaining <= 180)
         {
             state->announcedThreeMinute = true;
             SendMissionMessageToMap(
-                map, "[異붽? ?꾨Т] ?쒓컙??3遺??⑥븯?듬땲??");
+                map, "[추가 미션] 시간이 3분 남았습니다.");
         }
 
         if (!state->announcedOneMinute && remaining <= 60)
         {
             state->announcedOneMinute = true;
             SendMissionMessageToMap(
-                map, "[異붽? ?꾨Т] ?쒓컙??1遺??⑥븯?듬땲??");
+                map, "[추가 미션] 시간이 1분 남았습니다.");
         }
 
         if (!state->announcedThirtySec && remaining <= 30)
         {
             state->announcedThirtySec = true;
             SendMissionMessageToMap(
-                map, "[異붽? ?꾨Т] ?쒓컙??30珥??⑥븯?듬땲??");
+                map, "[추가 미션] 시간이 30초 남았습니다.");
         }
     }
 };
