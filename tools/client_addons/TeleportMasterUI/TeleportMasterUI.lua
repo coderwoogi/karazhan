@@ -88,12 +88,16 @@ local function SkinActionButton(button, texturePath, fontSize)
   button.hl:SetBlendMode("ADD")
   button.hl:SetAlpha(0.22)
 
-  local text = button:GetFontString()
-  if text then
-    text:SetFont(STANDARD_TEXT_FONT, fontSize, "")
-    text:SetTextColor(0.95, 0.92, 0.84)
-    text:SetShadowOffset(1, -1)
+  if not button.text then
+    button.text = button:CreateFontString(nil, "OVERLAY")
+    button.text:SetPoint("CENTER", button, "CENTER", 12, 0)
+    button:SetFontString(button.text)
   end
+
+  button.text:SetFont(STANDARD_TEXT_FONT, fontSize, "")
+  button.text:SetTextColor(0.95, 0.92, 0.84)
+  button.text:SetShadowColor(0, 0, 0, 0.9)
+  button.text:SetShadowOffset(1, -1)
 end
 
 local function SkinListButton(button)
@@ -182,8 +186,8 @@ frame.subtitle = CreateText(
   {0.45, 0.35, 0.24},
   "LEFT"
 )
-frame.subtitle:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 12, 6)
-frame.subtitle:SetWidth(310)
+frame.subtitle:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 16, -1)
+frame.subtitle:SetWidth(320)
 
 frame.title = CreateText(
   frame,
@@ -192,8 +196,8 @@ frame.title = CreateText(
   {0.18, 0.13, 0.08},
   "LEFT"
 )
-frame.title:SetPoint("TOPLEFT", frame.subtitle, "BOTTOMLEFT", 0, -2)
-frame.title:SetWidth(310)
+frame.title:SetPoint("TOPLEFT", frame.subtitle, "BOTTOMLEFT", 0, -4)
+frame.title:SetWidth(320)
 
 frame.divider = frame:CreateTexture(nil, "ARTWORK")
 frame.divider:SetTexture(
