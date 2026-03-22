@@ -222,7 +222,7 @@ KBM.reopen = CreateFrame(
   "UIPanelButtonTemplate"
 )
 KBM.reopen:SetSize(88, 22)
-KBM.reopen:SetPoint("CENTER", UIParent, "CENTER", 312, -196)
+KBM.reopen:SetPoint("TOP", UIParent, "TOP", 0, -20)
 KBM.reopen:SetText("임무 보기")
 KBM.reopen:SetScript("OnClick", function()
   KBM:Show()
