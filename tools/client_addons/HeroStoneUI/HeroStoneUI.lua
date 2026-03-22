@@ -153,12 +153,12 @@ frame.shadow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -28, 64)
 frame.shadow:SetVertexColor(0, 0, 0, 0.18)
 
 frame.close = CreateFrame("Button", nil, frame)
-frame.close:SetSize(24, 24)
-frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -14)
+frame.close:SetSize(26, 26)
+frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -11, -13)
 frame.close.tex = frame.close:CreateTexture(nil, "ARTWORK")
 frame.close.tex:SetAllPoints(frame.close)
 frame.close.tex:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\WidgetCloseButtonSmall.tga"
+  "Interface\\AddOns\\HeroStoneUI\\Art\\WidgetCloseButtonRed.tga"
 )
 frame.close:SetHighlightTexture(
   "Interface\\Buttons\\UI-Common-MouseHilight", "ADD"
