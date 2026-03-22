@@ -158,7 +158,7 @@ frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -12, -14)
 frame.close.tex = frame.close:CreateTexture(nil, "ARTWORK")
 frame.close.tex:SetAllPoints(frame.close)
 frame.close.tex:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\WidgetCloseButton.tga"
+  "Interface\\AddOns\\HeroStoneUI\\Art\\WidgetCloseButtonSmall.tga"
 )
 frame.close:SetHighlightTexture(
   "Interface\\Buttons\\UI-Common-MouseHilight", "ADD"
