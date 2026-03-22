@@ -1,35 +1,27 @@
 local addonName = ...
 
-local VALID_PREFIXES = {
-  HERO_STONE_UI = true,
-}
+local PREFIX = "TELEPORT_MASTER_UI"
+local frame = CreateFrame("Frame", "TeleportMasterUIFrame", UIParent)
 
-local activePrefix = "HERO_STONE_UI"
-
-local frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
-frame:SetSize(438, 608)
-frame:SetPoint("RIGHT", UIParent, "RIGHT", -110, 0)
-frame:SetScale(0.70)
+frame:SetSize(470, 650)
+frame:SetPoint("RIGHT", UIParent, "RIGHT", -84, -8)
+frame:SetScale(0.74)
 frame:SetFrameStrata("DIALOG")
 frame:SetToplevel(true)
 frame:SetClampedToScreen(true)
 frame:EnableMouse(true)
-frame:SetMovable(true)
-frame:RegisterForDrag("LeftButton")
-frame:SetScript("OnDragStart", frame.StartMoving)
-frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
 frame:Hide()
 table.insert(UISpecialFrames, frame:GetName())
 
 frame.state = {
-  title = "Hero Stone",
+  title = "이동술사",
   subtitle = "",
   body = "",
-  icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga",
+  icon = "PORTRAIT_NPC",
   npcDisplayId = 0,
-  section = "Options",
-  closeText = "Close",
-  refreshText = "Refresh",
+  section = "이동 가능한 지역",
+  closeText = "닫기",
+  refreshText = "새로고침",
   items = {},
 }
 
@@ -57,7 +49,7 @@ local function SendCommand(command, value)
     payload = payload .. "\t" .. tostring(value)
   end
 
-  SendAddonMessage(activePrefix, payload, "WHISPER", playerName)
+  SendAddonMessage(PREFIX, payload, "WHISPER", playerName)
 end
 
 local function CreateText(parent, layer, template, size, r, g, b, justify)
@@ -104,7 +96,33 @@ local function SetSafePortraitTexture(textureObject, unit)
   return true
 end
 
-local function SkinActionButton(button)
+local function SkinMainButton(button, texturePath)
+  button:SetNormalTexture("")
+  button:SetPushedTexture("")
+  button:SetHighlightTexture("")
+  button:SetDisabledTexture("")
+
+  button.bg = button:CreateTexture(nil, "BACKGROUND")
+  button.bg:SetTexture(texturePath)
+  button.bg:SetAllPoints(button)
+
+  button.hl = button:CreateTexture(nil, "HIGHLIGHT")
+  button.hl:SetTexture(
+    "Interface\\AddOns\\TeleportMasterUI\\Art\\ButtonHighlight-Add.tga"
+  )
+  button.hl:SetAllPoints(button)
+  button.hl:SetBlendMode("ADD")
+  button.hl:SetAlpha(0.28)
+
+  local fs = button:GetFontString()
+  if fs then
+    fs:SetFont(STANDARD_TEXT_FONT, 13, "")
+    fs:SetTextColor(0.95, 0.92, 0.84)
+    fs:SetShadowOffset(1, -1)
+  end
+end
+
+local function SkinListButton(button)
   button:SetNormalTexture("")
   button:SetPushedTexture("")
   button:SetHighlightTexture("")
@@ -112,52 +130,51 @@ local function SkinActionButton(button)
 
   button.bg = button:CreateTexture(nil, "BACKGROUND")
   button.bg:SetTexture(
-    "Interface\\AddOns\\HeroStoneUI\\Art\\OptionBackground-Common.tga"
+    "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundCommon.tga"
   )
   button.bg:SetAllPoints(button)
-
-  button.front = button:CreateTexture(nil, "BORDER")
-  button.front:SetTexture(
-    "Interface\\AddOns\\HeroStoneUI\\Art\\ButtonHighlight-Front.tga"
-  )
-  button.front:SetAllPoints(button)
-  button.front:SetAlpha(0.16)
+  button.bg:SetAlpha(0.82)
 
   button.hl = button:CreateTexture(nil, "HIGHLIGHT")
   button.hl:SetTexture(
-    "Interface\\AddOns\\HeroStoneUI\\Art\\ButtonHighlight-Add.tga"
+    "Interface\\AddOns\\TeleportMasterUI\\Art\\RewardChoice-Highlight.tga"
   )
   button.hl:SetAllPoints(button)
   button.hl:SetBlendMode("ADD")
-  button.hl:SetAlpha(0.34)
-
-  local fs = button:GetFontString()
-  if fs then
-    fs:SetFont(STANDARD_TEXT_FONT, 13, "")
-    fs:SetTextColor(0.92, 0.91, 0.86)
-    fs:SetShadowOffset(1, -1)
-  end
+  button.hl:SetAlpha(0.24)
 end
 
-frame.bg = frame:CreateTexture(nil, "BACKGROUND")
-frame.bg:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\GenericFrame-Tiled-Large.tga"
+frame.bgTop = frame:CreateTexture(nil, "BACKGROUND")
+frame.bgTop:SetTexture(
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentTop.tga"
 )
-frame.bg:SetAllPoints(frame)
+frame.bgTop:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+frame.bgTop:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+frame.bgTop:SetHeight(164)
 
-frame.shadow = frame:CreateTexture(nil, "BORDER")
-frame.shadow:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Background-Dark")
-frame.shadow:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -28)
-frame.shadow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -28, 64)
-frame.shadow:SetVertexColor(0, 0, 0, 0.18)
+frame.bgMid = frame:CreateTexture(nil, "BACKGROUND")
+frame.bgMid:SetTexture(
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentMid.tga"
+)
+frame.bgMid:SetPoint("TOPLEFT", frame.bgTop, "BOTTOMLEFT", 0, 0)
+frame.bgMid:SetPoint("TOPRIGHT", frame.bgTop, "BOTTOMRIGHT", 0, 0)
+frame.bgMid:SetPoint("BOTTOM", frame, "BOTTOM", 0, 132)
+
+frame.bgBottom = frame:CreateTexture(nil, "BACKGROUND")
+frame.bgBottom:SetTexture(
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownParchmentBottom.tga"
+)
+frame.bgBottom:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+frame.bgBottom:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+frame.bgBottom:SetHeight(132)
 
 frame.close = CreateFrame("Button", nil, frame)
 frame.close:SetSize(26, 26)
-frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -11, -13)
+frame.close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -18, -16)
 frame.close.tex = frame.close:CreateTexture(nil, "ARTWORK")
 frame.close.tex:SetAllPoints(frame.close)
 frame.close.tex:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\WidgetCloseButtonRed.tga"
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\WidgetCloseButtonRed.tga"
 )
 frame.close:SetHighlightTexture(
   "Interface\\Buttons\\UI-Common-MouseHilight", "ADD"
@@ -167,119 +184,84 @@ frame.close:SetScript("OnClick", function()
 end)
 
 frame.iconBorder = CreateFrame("Frame", nil, frame)
-frame.iconBorder:SetSize(56, 56)
-frame.iconBorder:SetPoint("TOPLEFT", frame, "TOPLEFT", 34, -32)
+frame.iconBorder:SetSize(58, 58)
+frame.iconBorder:SetPoint("TOPLEFT", frame, "TOPLEFT", 30, -30)
 
 frame.icon = frame.iconBorder:CreateTexture(nil, "ARTWORK")
 frame.icon:SetPoint("TOPLEFT", frame.iconBorder, "TOPLEFT", 8, -8)
 frame.icon:SetPoint("BOTTOMRIGHT", frame.iconBorder, "BOTTOMRIGHT", -8, 8)
-frame.icon:SetTexture(frame.state.icon)
+frame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 
 frame.iconFront = frame.iconBorder:CreateTexture(nil, "OVERLAY")
 frame.iconFront:SetAllPoints(frame.iconBorder)
 frame.iconFront:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\ParchmentPortraitFrame.tga"
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownPortraitFrame.tga"
 )
-
-local function UpdateHeaderIcon()
-  if frame.state.icon == "PORTRAIT_NPC" then
-    if SetSafePortraitTexture(frame.icon, "npc") then
-      return
-    end
-
-    if SetSafePortraitTexture(frame.icon, "target") then
-      return
-    end
-
-    if frame.state.npcDisplayId and frame.state.npcDisplayId > 0 and SetPortraitTextureFromCreatureDisplayID then
-      SetPortraitTextureFromCreatureDisplayID(frame.icon, frame.state.npcDisplayId)
-    else
-      frame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-    end
-    return
-  end
-
-  frame.icon:SetTexture(frame.state.icon)
-end
-
-frame.title = CreateText(
-  frame,
-  "OVERLAY",
-  "GameFontHighlightLarge",
-  23,
-  0.95,
-  0.95,
-  0.92
-)
-frame.title:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 16, -2)
-frame.title:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
-frame.title:SetText(frame.state.title)
 
 frame.subtitle = CreateText(
   frame,
   "OVERLAY",
   "GameFontNormal",
   13,
-  0.72,
-  0.72,
-  0.68
+  0.43,
+  0.35,
+  0.25
 )
-frame.subtitle:SetPoint("TOPLEFT", frame.title, "BOTTOMLEFT", 0, -8)
-frame.subtitle:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
-frame.subtitle:SetText(frame.state.subtitle)
+frame.subtitle:SetPoint("TOPLEFT", frame.iconBorder, "TOPRIGHT", 16, -1)
+frame.subtitle:SetPoint("RIGHT", frame, "RIGHT", -56, 0)
+
+frame.title = CreateText(
+  frame,
+  "OVERLAY",
+  "GameFontHighlightLarge",
+  24,
+  0.18,
+  0.13,
+  0.08
+)
+frame.title:SetPoint("TOPLEFT", frame.subtitle, "BOTTOMLEFT", 0, -2)
+frame.title:SetPoint("RIGHT", frame, "RIGHT", -56, 0)
 
 frame.divider = frame:CreateTexture(nil, "ARTWORK")
 frame.divider:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\ParchmentDivider.tga"
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownDivider.tga"
 )
-frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 34, -106)
-frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -34, -106)
-frame.divider:SetHeight(14)
-frame.divider:SetAlpha(0.95)
+frame.divider:SetPoint("TOPLEFT", frame, "TOPLEFT", 28, -96)
+frame.divider:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -28, -96)
+frame.divider:SetHeight(12)
 
 frame.body = CreateText(
   frame,
   "OVERLAY",
   "GameFontNormal",
   14,
-  0.88,
-  0.88,
-  0.84
+  0.20,
+  0.16,
+  0.11
 )
-frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 36, -126)
-frame.body:SetWidth(366)
-frame.body:SetSpacing(6)
-frame.body:SetText(frame.state.body)
+frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 38, -118)
+frame.body:SetWidth(392)
+frame.body:SetSpacing(9)
 
 frame.section = CreateText(
   frame,
   "OVERLAY",
   "GameFontHighlight",
-  14,
-  0.96,
-  0.94,
-  0.86
+  15,
+  0.33,
+  0.24,
+  0.14
 )
 frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -24)
-frame.section:SetText(frame.state.section)
-
-frame.sectionBg = frame:CreateTexture(nil, "ARTWORK")
-frame.sectionBg:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\LabelBackground.tga"
-)
-frame.sectionBg:SetPoint("TOPLEFT", frame.section, "TOPLEFT", -10, 8)
-frame.sectionBg:SetPoint("BOTTOMRIGHT", frame.section, "BOTTOMRIGHT", 18, -8)
-frame.sectionBg:SetAlpha(0.65)
 
 frame.options = CreateFrame("Frame", nil, frame)
-frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -10)
-frame.options:SetSize(370, 290)
+frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -14)
+frame.options:SetSize(392, 276)
 
 frame.optionButtons = {}
-
-for index = 1, 8 do
+for index = 1, 6 do
   local button = CreateFrame("Button", nil, frame.options, "UIPanelButtonTemplate")
-  button:SetSize(368, 40)
+  button:SetSize(392, 42)
   if index == 1 then
     button:SetPoint("TOPLEFT", frame.options, "TOPLEFT", 0, 0)
   else
@@ -291,52 +273,50 @@ for index = 1, 8 do
       -8
     )
   end
-  SkinActionButton(button)
+  SkinListButton(button)
 
-  button.icon = button:CreateTexture(nil, "ARTWORK")
-  button.icon:SetSize(20, 20)
-  button.icon:SetPoint("LEFT", button, "LEFT", 12, 0)
+  button.iconBg = button:CreateTexture(nil, "ARTWORK")
+  button.iconBg:SetTexture(
+    "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownItemButtonBackground.tga"
+  )
+  button.iconBg:SetSize(30, 30)
+  button.iconBg:SetPoint("LEFT", button, "LEFT", 8, 0)
+
+  button.icon = button:CreateTexture(nil, "BORDER")
+  button.icon:SetSize(18, 18)
+  button.icon:SetPoint("CENTER", button.iconBg, "CENTER", 0, 0)
   button.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 
-  button.iconBg = button:CreateTexture(nil, "BACKGROUND")
-  button.iconBg:SetTexture(
-    "Interface\\AddOns\\HeroStoneUI\\Art\\ItemButtonBackground.tga"
-  )
-  button.iconBg:SetSize(28, 28)
-  button.iconBg:SetPoint("CENTER", button.icon, "CENTER", 0, 0)
-
-  button.iconBorder = button:CreateTexture(nil, "BORDER")
+  button.iconBorder = button:CreateTexture(nil, "OVERLAY")
   button.iconBorder:SetTexture(
-    "Interface\\AddOns\\HeroStoneUI\\Art\\ItemBorder.tga"
+    "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownRewardChoiceItemBorder.tga"
   )
-  button.iconBorder:SetSize(32, 32)
-  button.iconBorder:SetPoint("CENTER", button.icon, "CENTER", 0, 0)
+  button.iconBorder:SetSize(34, 34)
+  button.iconBorder:SetPoint("CENTER", button.iconBg, "CENTER", 0, 0)
 
   button.label = CreateText(
     button,
     "OVERLAY",
     "GameFontNormal",
     13,
-    0.96,
-    0.96,
-    0.93
+    0.21,
+    0.16,
+    0.10
   )
-  button.label:SetPoint("TOPLEFT", button.icon, "TOPRIGHT", 10, -2)
+  button.label:SetPoint("TOPLEFT", button.iconBg, "TOPRIGHT", 12, -5)
   button.label:SetPoint("RIGHT", button, "RIGHT", -14, 0)
-  button.label:SetText("")
 
   button.desc = CreateText(
     button,
     "OVERLAY",
     "GameFontDisableSmall",
     11,
-    0.68,
-    0.68,
-    0.66
+    0.42,
+    0.34,
+    0.24
   )
-  button.desc:SetPoint("TOPLEFT", button.label, "BOTTOMLEFT", 0, -3)
+  button.desc:SetPoint("TOPLEFT", button.label, "BOTTOMLEFT", 0, -2)
   button.desc:SetPoint("RIGHT", button, "RIGHT", -14, 0)
-  button.desc:SetText("")
 
   button:SetScript("OnClick", function(self)
     if self.actionId then
@@ -350,49 +330,45 @@ end
 
 frame.footerDivider = frame:CreateTexture(nil, "ARTWORK")
 frame.footerDivider:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\SubHeaderBackground.tga"
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownDivider.tga"
 )
-frame.footerDivider:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 34, 82)
-frame.footerDivider:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 82)
-frame.footerDivider:SetHeight(16)
-frame.footerDivider:SetAlpha(0.85)
-
-frame.footerGlow = frame:CreateTexture(nil, "BORDER")
-frame.footerGlow:SetTexture(
-  "Interface\\AddOns\\HeroStoneUI\\Art\\RewardChoice-Highlight.tga"
-)
-frame.footerGlow:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 26, 18)
-frame.footerGlow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -26, 18)
-frame.footerGlow:SetHeight(84)
-frame.footerGlow:SetAlpha(0.08)
+frame.footerDivider:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 28, 120)
+frame.footerDivider:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -28, 120)
+frame.footerDivider:SetHeight(12)
 
 frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-frame.closeButton:SetSize(150, 34)
-frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 34, 30)
-SkinActionButton(frame.closeButton)
-frame.closeButton:SetText("Close")
+frame.closeButton:SetSize(186, 38)
+frame.closeButton:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 38, 30)
+SkinMainButton(
+  frame.closeButton,
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundCommon.tga"
+)
+frame.closeButton:SetText("닫기")
 frame.closeButton:SetScript("OnClick", function()
   frame:Hide()
 end)
 
 frame.refreshButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-frame.refreshButton:SetSize(150, 34)
-frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -34, 30)
-SkinActionButton(frame.refreshButton)
-frame.refreshButton:SetText("Refresh")
+frame.refreshButton:SetSize(186, 38)
+frame.refreshButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -38, 30)
+SkinMainButton(
+  frame.refreshButton,
+  "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundGrey.tga"
+)
+frame.refreshButton:SetText("새로고침")
 frame.refreshButton:SetScript("OnClick", function()
   SendCommand("REFRESH", "")
 end)
 
 local function CreateHotkeyBadge(parent, text)
   local badge = CreateFrame("Frame", nil, parent)
-  badge:SetSize(24, 18)
-  badge:SetPoint("LEFT", parent, "LEFT", 10, 0)
+  badge:SetSize(28, 20)
+  badge:SetPoint("LEFT", parent, "LEFT", 12, 0)
 
   badge.bg = badge:CreateTexture(nil, "BACKGROUND")
   badge.bg:SetAllPoints(badge)
   badge.bg:SetTexture(
-    "Interface\\AddOns\\HeroStoneUI\\Art\\HotkeyBackground.tga"
+    "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownHotkeyBackground.tga"
   )
 
   badge.text = CreateText(
@@ -400,9 +376,9 @@ local function CreateHotkeyBadge(parent, text)
     "OVERLAY",
     "GameFontHighlightSmall",
     10,
-    0.92,
-    0.92,
-    0.88,
+    0.95,
+    0.93,
+    0.86,
     "CENTER"
   )
   badge.text:SetPoint("CENTER", badge, "CENTER", 0, 0)
@@ -412,7 +388,6 @@ end
 
 frame.closeKey = CreateHotkeyBadge(frame.closeButton, "Esc")
 frame.refreshKey = CreateHotkeyBadge(frame.refreshButton, "R")
-
 frame.closeButton:GetFontString():SetPoint("LEFT", frame.closeKey, "RIGHT", 8, 0)
 frame.refreshButton:GetFontString():SetPoint(
   "LEFT",
@@ -422,26 +397,46 @@ frame.refreshButton:GetFontString():SetPoint(
   0
 )
 
+local function UpdateHeaderIcon()
+  if SetSafePortraitTexture(frame.icon, "npc") then
+    return
+  end
+
+  if SetSafePortraitTexture(frame.icon, "target") then
+    return
+  end
+
+  if frame.state.npcDisplayId and frame.state.npcDisplayId > 0
+      and SetPortraitTextureFromCreatureDisplayID then
+    SetPortraitTextureFromCreatureDisplayID(
+      frame.icon,
+      frame.state.npcDisplayId
+    )
+  else
+    frame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+  end
+end
+
 local function ResetState()
-  frame.state.title = "Hero Stone"
+  frame.state.title = "이동술사"
   frame.state.subtitle = ""
   frame.state.body = ""
-  frame.state.icon = "Interface\\AddOns\\HeroStoneUI\\Art\\INV_Misc_Rune_100.tga"
+  frame.state.icon = "PORTRAIT_NPC"
   frame.state.npcDisplayId = 0
-  frame.state.section = "Options"
-  frame.state.closeText = "Close"
-  frame.state.refreshText = "Refresh"
+  frame.state.section = "이동 가능한 지역"
+  frame.state.closeText = "닫기"
+  frame.state.refreshText = "새로고침"
   frame.state.items = {}
 end
 
 local function Refresh()
   UpdateHeaderIcon()
-  frame.title:SetText(frame.state.title or "Hero Stone")
   frame.subtitle:SetText(frame.state.subtitle or "")
+  frame.title:SetText(frame.state.title or "이동술사")
   frame.body:SetText(frame.state.body or "")
-  frame.section:SetText(frame.state.section or "Options")
-  frame.closeButton:SetText(frame.state.closeText or "Close")
-  frame.refreshButton:SetText(frame.state.refreshText or "Refresh")
+  frame.section:SetText(frame.state.section or "이동 가능한 지역")
+  frame.closeButton:SetText(frame.state.closeText or "닫기")
+  frame.refreshButton:SetText(frame.state.refreshText or "새로고침")
 
   for index, button in ipairs(frame.optionButtons) do
     local item = frame.state.items[index]
@@ -463,18 +458,14 @@ frame:RegisterEvent("CHAT_MSG_ADDON")
 frame:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
-      for knownPrefix in pairs(VALID_PREFIXES) do
-        RegisterAddonMessagePrefix(knownPrefix)
-      end
+      RegisterAddonMessagePrefix(PREFIX)
     end
     return
   end
 
-  if not VALID_PREFIXES[prefix] or type(message) ~= "string" then
+  if prefix ~= PREFIX or type(message) ~= "string" then
     return
   end
-
-  activePrefix = prefix
 
   local parts = Split(message, "\t")
   local kind = parts[1]
@@ -488,7 +479,7 @@ frame:SetScript("OnEvent", function(self, event, prefix, message)
   if kind == "HEADER" then
     frame.state.title = parts[2] or frame.state.title
     frame.state.subtitle = parts[3] or ""
-    frame.state.icon = parts[4] or frame.state.icon
+    frame.state.icon = parts[4] or "PORTRAIT_NPC"
     frame.state.npcDisplayId = tonumber(parts[5]) or 0
     Refresh()
     return
