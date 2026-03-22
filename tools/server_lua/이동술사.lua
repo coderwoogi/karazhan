@@ -219,7 +219,7 @@ local function OpenTeleportUi(player, menuId, page)
         "HEADER",
         meta.name,
         meta.subname,
-        "Interface\\ICONS\\Spell_Arcane_PortalDalaran"
+        "PORTRAIT_NPC"
     )
     SendUi(
         player,

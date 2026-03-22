@@ -138,6 +138,19 @@ frame.icon:SetPoint("TOPLEFT", frame.iconBorder, "TOPLEFT", 5, -5)
 frame.icon:SetPoint("BOTTOMRIGHT", frame.iconBorder, "BOTTOMRIGHT", -5, 5)
 frame.icon:SetTexture(frame.state.icon)
 
+local function UpdateHeaderIcon()
+  if frame.state.icon == "PORTRAIT_NPC" then
+    if UnitExists("npc") then
+      SetPortraitTexture(frame.icon, "npc")
+    else
+      frame.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+    end
+    return
+  end
+
+  frame.icon:SetTexture(frame.state.icon)
+end
+
 frame.title = CreateText(
   frame,
   "OVERLAY",
@@ -301,7 +314,7 @@ local function ResetState()
 end
 
 local function Refresh()
-  frame.icon:SetTexture(frame.state.icon)
+  UpdateHeaderIcon()
   frame.title:SetText(frame.state.title or "Hero Stone")
   frame.subtitle:SetText(frame.state.subtitle or "")
   frame.body:SetText(frame.state.body or "")
