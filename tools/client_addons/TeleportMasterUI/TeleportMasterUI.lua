@@ -98,6 +98,8 @@ local function SkinActionButton(button, texturePath, fontSize)
   button.text:SetTextColor(0.95, 0.92, 0.84)
   button.text:SetShadowColor(0, 0, 0, 0.9)
   button.text:SetShadowOffset(1, -1)
+  button.text:SetJustifyH("LEFT")
+  button.text:SetJustifyV("MIDDLE")
 end
 
 local function SkinListButton(button)
@@ -311,7 +313,7 @@ SkinActionButton(
   "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundCommon.tga",
   16
 )
-frame.closeButton:SetText("닫기")
+frame.closeButton.text:SetText("닫기")
 frame.closeButton:SetScript("OnClick", function()
   frame:Hide()
 end)
@@ -324,7 +326,7 @@ SkinActionButton(
   "Interface\\AddOns\\TeleportMasterUI\\Art\\BrownOptionBackgroundGrey.tga",
   16
 )
-frame.refreshButton:SetText("새로고침")
+frame.refreshButton.text:SetText("새로고침")
 frame.refreshButton:SetScript("OnClick", function()
   SendCommand("REFRESH", "")
 end)
@@ -436,8 +438,8 @@ local function Refresh()
   frame.title:SetText(frame.state.title or "이동술사")
   frame.body:SetText(frame.state.body or "")
   frame.section:SetText(frame.state.section or "이동 가능한 지역")
-  frame.closeButton:SetText(frame.state.closeText or "닫기")
-  frame.refreshButton:SetText(frame.state.refreshText or "새로고침")
+  frame.closeButton.text:SetText(frame.state.closeText or "닫기")
+  frame.refreshButton.text:SetText(frame.state.refreshText or "새로고침")
 
   for index, button in ipairs(frame.optionButtons) do
     local item = frame.state.items[index]
