@@ -83,6 +83,34 @@ Maps themes to valid missions.
 ### instance_bonus_reward_tier
 Defines reward tiers per theme and grade.
 
+## V2 schema for web and audit
+
+The current runtime still uses the prototype tables below:
+- `instance_bonus_mission_pool`
+- `instance_bonus_theme_pool`
+- `instance_bonus_theme_mission`
+- `instance_bonus_reward_tier`
+- `instance_bonus_mission_live`
+
+To avoid breaking current gameplay, the web/CMS and audit schema is added
+side by side as a v2 data model:
+- `instance_bonus_map_config`
+- `instance_bonus_mission`
+- `instance_bonus_theme`
+- `instance_bonus_theme_mission_link`
+- `instance_bonus_reward_profile`
+- `instance_bonus_reward_profile_item`
+- `instance_bonus_run_live`
+- `instance_bonus_run_history`
+- `instance_bonus_run_member`
+- `instance_bonus_vote_log`
+- `instance_bonus_reward_log`
+- `instance_bonus_event_log`
+- `instance_bonus_llm_log`
+
+This lets the current module keep running while web tooling and future runtime
+migration can move to the richer schema without data loss.
+
 ## Planned scoring model
 
 The server computes score from real gameplay metrics.
