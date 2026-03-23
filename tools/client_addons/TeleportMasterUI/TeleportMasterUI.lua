@@ -228,16 +228,41 @@ frame.section = CreateText(
 )
 frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -16)
 
-frame.options = CreateFrame("Frame", nil, frame)
-frame.options:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", 0, -12)
-frame.options:SetSize(370, 260)
+frame.optionScroll = CreateFrame(
+  "ScrollFrame",
+  "TeleportMasterUIOptionScroll",
+  frame,
+  "UIPanelScrollFrameTemplate"
+)
+frame.optionScroll:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", -4, -12)
+frame.optionScroll:SetSize(390, 284)
+frame.optionScroll:EnableMouseWheel(true)
+
+frame.optionContent = CreateFrame("Frame", nil, frame.optionScroll)
+frame.optionContent:SetSize(370, 284)
+frame.optionScroll:SetScrollChild(frame.optionContent)
+
+frame.optionScroll:SetScript("OnMouseWheel", function(self, delta)
+  local current = self:GetVerticalScroll()
+  local step = 44
+  local nextValue = current - (delta * step)
+  if nextValue < 0 then
+    nextValue = 0
+  end
+  local maxValue = math.max(0, self:GetVerticalScrollRange())
+  if nextValue > maxValue then
+    nextValue = maxValue
+  end
+  self:SetVerticalScroll(nextValue)
+end)
 
 frame.optionButtons = {}
-for index = 1, 5 do
-  local button = CreateFrame("Button", nil, frame.options)
+
+local function CreateOptionButton(index)
+  local button = CreateFrame("Button", nil, frame.optionContent)
   button:SetSize(370, 46)
   if index == 1 then
-    button:SetPoint("TOPLEFT", frame.options, "TOPLEFT", 0, 0)
+    button:SetPoint("TOPLEFT", frame.optionContent, "TOPLEFT", 0, 0)
   else
     button:SetPoint(
       "TOPLEFT",
@@ -296,6 +321,11 @@ for index = 1, 5 do
 
   button:Hide()
   frame.optionButtons[index] = button
+  return button
+end
+
+for index = 1, 8 do
+  CreateOptionButton(index)
 end
 
 frame.footerDivider = frame:CreateTexture(nil, "ARTWORK")
@@ -441,6 +471,10 @@ local function Refresh()
   frame.closeButton.text:SetText(frame.state.closeText or "닫기")
   frame.refreshButton.text:SetText(frame.state.refreshText or "새로고침")
 
+  while #frame.optionButtons < #frame.state.items do
+    CreateOptionButton(#frame.optionButtons + 1)
+  end
+
   for index, button in ipairs(frame.optionButtons) do
     local item = frame.state.items[index]
     if item then
@@ -456,6 +490,17 @@ local function Refresh()
       button:Hide()
     end
   end
+
+  local visibleCount = #frame.state.items
+  if visibleCount < 1 then
+    visibleCount = 1
+  end
+  local contentHeight = (visibleCount * 46) + ((visibleCount - 1) * 7)
+  if contentHeight < 284 then
+    contentHeight = 284
+  end
+  frame.optionContent:SetHeight(contentHeight)
+  frame.optionScroll:SetVerticalScroll(0)
 end
 
 frame:RegisterEvent("PLAYER_LOGIN")
