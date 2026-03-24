@@ -1,0 +1,64 @@
+#
+# mod-karazhan-helper
+#
+
+[worldserver]
+
+#
+#    KarazhanHelper.Enable
+#        1 = enable the local LLM helper module
+#        0 = disable the module
+#
+KarazhanHelper.Enable = 1
+
+#
+#    KarazhanHelper.MinQueryLength
+#        Minimum chat length before the helper considers a message.
+#
+KarazhanHelper.MinQueryLength = 4
+
+#
+#    KarazhanHelper.RequireQuestionHint
+#        1 = require helper-style question hints like 어디/드랍/구매/?.
+#        0 = try to inspect every allowed chat message.
+#
+KarazhanHelper.RequireQuestionHint = 1
+
+#
+#    KarazhanHelper.MaxCandidates
+#        Maximum item candidates sent to the local LLM resolver.
+#
+KarazhanHelper.MaxCandidates = 8
+
+#
+#    KarazhanHelper.LLM.Enable
+#        1 = use the local helper bridge
+#        0 = use the built-in fallback answer formatter
+#
+KarazhanHelper.LLM.Enable = 1
+
+#
+#    KarazhanHelper.LLM.Url
+#        Local helper bridge URL.
+#
+KarazhanHelper.LLM.Url = "http://127.0.0.1:8000"
+
+#
+#    KarazhanHelper.LLM.TimeoutMs
+#        HTTP timeout for helper requests.
+#
+KarazhanHelper.LLM.TimeoutMs = 4000
+
+#
+#    KarazhanHelper.Channel.Say
+#    KarazhanHelper.Channel.Party
+#    KarazhanHelper.Channel.Raid
+#    KarazhanHelper.Channel.Guild
+#    KarazhanHelper.Channel.Whisper
+#        Enable helper listening per chat channel.
+#
+KarazhanHelper.Channel.Say = 1
+KarazhanHelper.Channel.Party = 1
+KarazhanHelper.Channel.Raid = 1
+KarazhanHelper.Channel.Guild = 1
+KarazhanHelper.Channel.Whisper = 1
