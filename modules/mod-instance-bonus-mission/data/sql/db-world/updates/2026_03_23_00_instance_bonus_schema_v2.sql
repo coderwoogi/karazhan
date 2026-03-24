@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_map_config` (
     `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `allow_llm` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `allow_vote` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `daily_limit_per_player` INT UNSIGNED NOT NULL DEFAULT 0,
     `vote_timeout_sec` INT UNSIGNED NOT NULL DEFAULT 30,
     `default_time_limit_sec` INT UNSIGNED NOT NULL DEFAULT 0,
     `min_party_size` TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -18,6 +19,17 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_map_config` (
     `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (`map_id`),
     KEY `idx_instance_bonus_map_enabled` (`enabled`, `publish_status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `instance_bonus_player_daily_usage` (
+    `usage_date` DATE NOT NULL,
+    `map_id` INT UNSIGNED NOT NULL,
+    `guid` BIGINT UNSIGNED NOT NULL,
+    `success_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`usage_date`, `map_id`, `guid`),
+    KEY `idx_instance_bonus_daily_usage_guid` (`guid`, `usage_date`),
+    KEY `idx_instance_bonus_daily_usage_map` (`map_id`, `usage_date`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `instance_bonus_mission` (
@@ -268,12 +280,12 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_llm_log` (
 
 INSERT IGNORE INTO `instance_bonus_map_config` (
     `map_id`, `map_name`, `enabled`, `allow_llm`, `allow_vote`,
-    `vote_timeout_sec`, `default_time_limit_sec`, `min_party_size`,
+    `daily_limit_per_player`, `vote_timeout_sec`, `default_time_limit_sec`, `min_party_size`,
     `max_party_size`, `theme_selection_mode`, `mission_selection_mode`,
     `max_active_missions`, `publish_status`
 ) VALUES
 (
-    557, '마나 무덤', 1, 1, 1,
+    557, '마나 무덤', 1, 1, 1, 0,
     30, 900, 1,
     5, 1, 1,
     1, 2

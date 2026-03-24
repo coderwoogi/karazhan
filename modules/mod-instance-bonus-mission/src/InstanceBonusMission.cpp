@@ -534,6 +534,92 @@ namespace
         return uint32(player->GetGUID().GetCounter());
     }
 
+    uint32 GetDailyLimitForMap(uint32 mapId)
+    {
+        QueryResult result = WorldDatabase.Query(Acore::StringFormat(
+            "SELECT `daily_limit_per_player` "
+            "FROM `instance_bonus_map_config` "
+            "WHERE `map_id` = {} AND `enabled` = 1 "
+            "LIMIT 1",
+            mapId));
+
+        if (!result)
+            return 0;
+
+        return result->Fetch()[0].Get<uint32>();
+    }
+
+    uint32 GetPlayerDailySuccessCount(uint32 mapId, Player* player)
+    {
+        if (!player)
+            return 0;
+
+        QueryResult result = WorldDatabase.Query(Acore::StringFormat(
+            "SELECT `success_count` "
+            "FROM `instance_bonus_player_daily_usage` "
+            "WHERE `usage_date` = CURDATE() "
+            "  AND `map_id` = {} "
+            "  AND `guid` = {} "
+            "LIMIT 1",
+            mapId, player->GetGUID().GetCounter()));
+
+        if (!result)
+            return 0;
+
+        return result->Fetch()[0].Get<uint32>();
+    }
+
+    bool HasRemainingDailyMissionCount(uint32 mapId, Player* player)
+    {
+        uint32 limit = GetDailyLimitForMap(mapId);
+        if (!limit)
+            return true;
+
+        return GetPlayerDailySuccessCount(mapId, player) < limit;
+    }
+
+    bool MapHasAnyEligibleMissionPlayer(Map* map)
+    {
+        if (!map)
+            return false;
+
+        uint32 limit = GetDailyLimitForMap(map->GetId());
+        if (!limit)
+            return true;
+
+        Map::PlayerList const& players = map->GetPlayers();
+        for (auto const& ref : players)
+        {
+            Player* player = ref.GetSource();
+            if (!player)
+                continue;
+
+            if (HasRemainingDailyMissionCount(map->GetId(), player))
+                return true;
+        }
+
+        return false;
+    }
+
+    void IncrementDailyMissionCount(uint32 mapId, Player* player)
+    {
+        if (!player)
+            return;
+
+        uint32 limit = GetDailyLimitForMap(mapId);
+        if (!limit)
+            return;
+
+        WorldDatabase.Execute(Acore::StringFormat(
+            "INSERT INTO `instance_bonus_player_daily_usage` "
+            "(`usage_date`, `map_id`, `guid`, `success_count`, `updated_at`) "
+            "VALUES (CURDATE(), {}, {}, 1, UNIX_TIMESTAMP()) "
+            "ON DUPLICATE KEY UPDATE "
+            "`success_count` = `success_count` + 1, "
+            "`updated_at` = UNIX_TIMESTAMP()",
+            mapId, player->GetGUID().GetCounter()));
+    }
+
     VoteStatus BuildVoteStatus(Map* map, MissionState const& state)
     {
         VoteStatus vote;
@@ -545,6 +631,9 @@ namespace
         {
             Player* player = ref.GetSource();
             if (!player)
+                continue;
+
+            if (!HasRemainingDailyMissionCount(map->GetId(), player))
                 continue;
 
             ++vote.eligible;
@@ -795,6 +884,14 @@ namespace
 
         if (state->voteApproved)
             return false;
+
+        if (!HasRemainingDailyMissionCount(map->GetId(), player))
+        {
+            SendMissionMessageToPlayer(
+                player,
+                "[추가 미션] 오늘 이 던전의 추가 미션 참여 횟수를 모두 사용했습니다.");
+            return false;
+        }
 
         state->votes[GetVoteKey(player)] = agree;
         VoteStatus vote = BuildVoteStatus(map, *state);
@@ -1465,7 +1562,16 @@ namespace
             if (!player)
                 continue;
 
+            if (!HasRemainingDailyMissionCount(map->GetId(), player))
+            {
+                SendMissionMessageToPlayer(
+                    player,
+                    "[추가 미션] 오늘 이 던전의 추가 미션 보상 횟수를 모두 사용했습니다.");
+                continue;
+            }
+
             player->AddItem(state.rewardItem, state.rewardCount);
+            IncrementDailyMissionCount(map->GetId(), player);
         }
     }
 
@@ -1634,6 +1740,15 @@ public:
         if (MissionState* state = MissionStateStore::Instance().Get(instanceId))
         {
             SendMissionUiState(player, *state);
+            return;
+        }
+
+        if (!MapHasAnyEligibleMissionPlayer(map))
+        {
+            SendMissionMessageToPlayer(
+                player,
+                "[추가 미션] 오늘 이 던전의 추가 미션 가능 횟수를 모두 사용했습니다.");
+            SendMissionUiClear(player);
             return;
         }
 
