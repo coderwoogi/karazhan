@@ -9,6 +9,7 @@
 #include <array>
 #include <cctype>
 #include <string>
+#include <string_view>
 
 namespace
 {
@@ -109,6 +110,23 @@ namespace
             return false;
         }
     }
+
+    bool ShouldBlockRawPacketText(WorldPacket& packet)
+    {
+        if (packet.empty())
+            return false;
+
+        try
+        {
+            std::string raw(reinterpret_cast<char const*>(packet.contents()),
+                packet.size());
+            return ShouldBlockMessage(raw);
+        }
+        catch (ByteBufferException const&)
+        {
+            return false;
+        }
+    }
 }
 
 class LoginInfoFilterWorldScript : public WorldScript
@@ -143,9 +161,15 @@ public:
         {
             case SMSG_MESSAGECHAT:
             case SMSG_GM_MESSAGECHAT:
-                return !ShouldBlockSystemChatPacket(packet);
+                if (ShouldBlockSystemChatPacket(packet))
+                    return false;
+                return !ShouldBlockRawPacketText(packet);
             case SMSG_NOTIFICATION:
-                return !ShouldBlockNotificationPacket(packet);
+                if (ShouldBlockNotificationPacket(packet))
+                    return false;
+                return !ShouldBlockRawPacketText(packet);
+            case SMSG_AREA_TRIGGER_MESSAGE:
+                return !ShouldBlockRawPacketText(packet);
             default:
                 return true;
         }
