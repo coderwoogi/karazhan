@@ -25,7 +25,6 @@ RandomQuestSystem::~RandomQuestSystem() = default;
 
 void RandomQuestSystem::Initialize()
 {
-    LOG_INFO("module.randomquest", ">> RandomQuestSystem initialized");
 }
 
 void RandomQuestSystem::HandleQuestReward(Player* player, Quest const* quest)
@@ -80,7 +79,6 @@ void RandomQuestSystem::HandleQuestAbandon(Player* player, uint32 questId)
 void RandomQuestSystem::Shutdown()
 {
     _playerStateCache.clear();
-    LOG_INFO("module.randomquest", ">> RandomQuestSystem shutdown");
 }
 
 uint32 RandomQuestSystem::GetCurrentResetPeriod()

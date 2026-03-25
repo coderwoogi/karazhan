@@ -19,10 +19,9 @@ void Addmod_item_karazhanScripts()
         Add_SC_npc_item_karazhan();
         Add_SC_item_karazhan_mgr();
         
-        LOG_INFO("module", "Karazhan: All scripts loaded successfully");
     }
     catch (std::exception const& e)
     {
-        LOG_ERROR("module", "Karazhan: Failed to load scripts - {}", e.what());
+        (void)e;
     }
 }

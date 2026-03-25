@@ -28,7 +28,6 @@ namespace
 
 ItemKarazhanMgr::ItemKarazhanMgr()
 {
-    LOG_INFO("module", "Karazhan: Item enhancement system initialized");
 }
 
 ItemKarazhanMgr* ItemKarazhanMgr::instance()
@@ -39,24 +38,8 @@ ItemKarazhanMgr* ItemKarazhanMgr::instance()
 
 void ItemKarazhanMgr::Initialize()
 {
-    LOG_INFO("module", "Karazhan: Loading enhancement configurations...");
-
     LoadSlotConfigs();
     LoadEnchantConfigs();
-
-    LOG_INFO("module", "Karazhan: Loaded {} slot configs", _slotConfigs.size());
-    LOG_INFO("module", "Karazhan: Loaded {} enchant configs", _enchantConfigs.size());
-
-    for (auto const& [slotId, config] : _slotConfigs)
-    {
-        if (config.canEnhance)
-        {
-            LOG_INFO("module", "Karazhan: Slot {} ({}) - Max Level: {}",
-                slotId, config.slotNameKo, config.maxEnhanceLevel);
-        }
-    }
-
-    LOG_INFO("module", "Karazhan: Enhancement system ready");
 }
 
 void ItemKarazhanMgr::Update(uint32 /*diff*/)
@@ -122,7 +105,6 @@ void ItemKarazhanMgr::LoadSlotConfigs()
         return;
     }
 
-    uint32 count = 0;
     do
     {
         Field* fields = result->Fetch();
@@ -137,11 +119,9 @@ void ItemKarazhanMgr::LoadSlotConfigs()
         config.comment = fields[6].Get<std::string>();
 
         _slotConfigs[config.slotId] = config;
-        count++;
 
     } while (result->NextRow());
 
-    LOG_INFO("module", "Karazhan: Loaded {} slot configurations", count);
 }
 
 void ItemKarazhanMgr::LoadEnchantConfigs()
@@ -160,7 +140,6 @@ void ItemKarazhanMgr::LoadEnchantConfigs()
         return;
     }
 
-    uint32 count = 0;
     do
     {
         Field* fields = result->Fetch();
@@ -181,11 +160,9 @@ void ItemKarazhanMgr::LoadEnchantConfigs()
         config.material3Count = fields[12].Get<uint32>();
 
         _enchantConfigs[MakeEnchantConfigKey(config.enchantLevel, config.enhanceType)] = config;
-        count++;
 
     } while (result->NextRow());
 
-    LOG_INFO("module", "Karazhan: Loaded {} enchant level configurations", count);
 }
 
 bool ItemKarazhanMgr::CanEnhanceSlot(uint8 inventoryType) const

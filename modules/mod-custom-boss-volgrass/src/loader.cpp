@@ -30,7 +30,6 @@ public:
         VolgrassConfig::ADD_ENTRY_ID = sConfigMgr->GetOption<uint32>("Volgrass.Add.EntryID", 190019);
         if (VolgrassConfig::ADD_ENTRY_ID == 0)
         {
-            LOG_WARN("module", "Volgrass: Volgrass.Add.EntryID was 0, forcing fallback add entry 190019");
             VolgrassConfig::ADD_ENTRY_ID = 190019;
         }
         VolgrassConfig::PHASE2_ADD_COUNT = sConfigMgr->GetOption<uint8>("Volgrass.Phase2.AddCount", 3);
@@ -40,14 +39,6 @@ public:
         VolgrassConfig::ENCOUNTER_TIMEOUT = sConfigMgr->GetOption<uint32>("Volgrass.Encounter.Timeout", 1200000);
         VolgrassConfig::PRE_ANNOUNCE_MINUTES = sConfigMgr->GetOption<uint32>("Volgrass.Invasion.PreAnnounceMinutes", 5);
 
-        LOG_INFO("module", "Volgrass: Loaded config - AddEntry: {}, P2Count: {}, P3Count: {}, Interval: {}ms, Berserk: {}ms, Timeout: {}ms, PreAnnounce: {}m",
-            VolgrassConfig::ADD_ENTRY_ID,
-            VolgrassConfig::PHASE2_ADD_COUNT,
-            VolgrassConfig::PHASE3_ADD_COUNT,
-            VolgrassConfig::SUMMON_INTERVAL,
-            VolgrassConfig::BERSERK_TIMER,
-            VolgrassConfig::ENCOUNTER_TIMEOUT,
-            VolgrassConfig::PRE_ANNOUNCE_MINUTES);
     }
 
     void OnUpdate(uint32 diff) override
@@ -90,8 +81,6 @@ void Addmod_custom_boss_volgrassScripts()
 {
     AddSC_boss_volgrass();
     new VolgrassWorldScript();
-
-    LOG_INFO("module", "Volgrass: Module loaded successfully");
 }
 
 

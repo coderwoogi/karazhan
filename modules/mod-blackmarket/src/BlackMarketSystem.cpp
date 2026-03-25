@@ -52,10 +52,7 @@ void BlackMarketSystem::Initialize()
     _enabled = sConfigMgr->GetOption<bool>("BlackMarket.Enable", true);
     
     if (!_enabled)
-    {
-        LOG_INFO("module", ">> BlackMarket system is disabled");
         return;
-    }
     
     _spawnCycle = sConfigMgr->GetOption<uint32>("BlackMarket.SpawnCycle", 30);
     _announceGlobal = sConfigMgr->GetOption<bool>("BlackMarket.Announce.Global", false);
@@ -72,16 +69,9 @@ void BlackMarketSystem::Initialize()
 
     // Always start a fresh random session on server startup.
     if (_isActive || !_currentMerchantGUID.IsEmpty() || !_currentItems.empty())
-    {
-        LOG_INFO("module", ">> BlackMarket restoring state skipped, resetting for fresh startup spawn");
         DespawnMerchant();
-    }
 
     _events.ScheduleEvent(EVENT_BLACKMARKET_CYCLE, Seconds(1));
-    LOG_INFO("module", ">> BlackMarket initial random spawn scheduled");
-    
-    LOG_INFO("module", ">> BlackMarket initialization complete (Spawns: {}, Items: {}, Active: {})",
-        _spawnPoints.size(), _itemPool.size(), _isActive);
 }
 
 void BlackMarketSystem::LoadSpawnPoints()
@@ -91,10 +81,7 @@ void BlackMarketSystem::LoadSpawnPoints()
         "FROM blackmarket_spawn_points");
     
     if (!result)
-    {
-        LOG_WARN("module", ">> BlackMarket spawn points not found");
         return;
-    }
     
     do
     {
@@ -114,7 +101,6 @@ void BlackMarketSystem::LoadSpawnPoints()
         
     } while (result->NextRow());
     
-    LOG_INFO("module", ">> BlackMarket loaded {} spawn points", _spawnPoints.size());
 }
 
 void BlackMarketSystem::LoadItemPool()
@@ -125,10 +111,7 @@ void BlackMarketSystem::LoadItemPool()
         "FROM blackmarket_item_pool");
     
     if (!result)
-    {
-        LOG_WARN("module", ">> BlackMarket item pool is empty");
         return;
-    }
     
     do
     {
@@ -148,7 +131,6 @@ void BlackMarketSystem::LoadItemPool()
         
     } while (result->NextRow());
     
-    LOG_INFO("module", ">> BlackMarket loaded {} items", _itemPool.size());
 }
 
 void BlackMarketSystem::LoadCurrentState()
@@ -197,7 +179,6 @@ void BlackMarketSystem::LoadCurrentState()
             } while (itemResult->NextRow());
         }
 
-        LOG_INFO("module", ">> BlackMarket active merchant restored at fixed position");
     }
 }
 

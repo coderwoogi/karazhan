@@ -37,8 +37,7 @@ public:
             areaEntry->flags |= AREA_FLAG_OUTLAND;
             ++updatedAreas;
         }
-
-        LOG_INFO("module", "mod-azeroth-flying: enabled flying flags for {} Azeroth areas", updatedAreas);
+        (void)updatedAreas;
     }
 };
 
