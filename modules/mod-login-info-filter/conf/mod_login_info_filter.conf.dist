@@ -1,0 +1,10 @@
+[worldserver]
+
+#
+#    LoginInfoFilter.Enable
+#        Description: Enables filtering of AzerothCore login info messages.
+#        Default:     1 - enabled
+#                     0 - disabled
+#
+
+LoginInfoFilter.Enable = 1
