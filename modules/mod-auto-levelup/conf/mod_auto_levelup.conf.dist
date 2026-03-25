@@ -1,0 +1,25 @@
+[worldserver]
+
+#
+#    AutoLevelup.Enable
+#        Description: Enable auto levelup for the first character on
+#                     an account.
+#        Default:     1
+#
+AutoLevelup.Enable = 1
+
+#
+#    AutoLevelup.FirstCharacterLevel
+#        Description: Level applied to the first current character on
+#                     an account.
+#        Default:     70
+#
+AutoLevelup.FirstCharacterLevel = 70
+
+#
+#    AutoLevelup.OtherCharacterLevel
+#        Description: Level applied to every later character on the
+#                     same account.
+#        Default:     1
+#
+AutoLevelup.OtherCharacterLevel = 1
