@@ -1,7 +1,3 @@
-ALTER TABLE `instance_bonus_map_config`
-    ADD COLUMN `daily_limit_per_player` INT UNSIGNED NOT NULL DEFAULT 0
-    AFTER `allow_vote`;
-
 CREATE TABLE IF NOT EXISTS `instance_bonus_player_daily_usage` (
     `usage_date` DATE NOT NULL,
     `map_id` INT UNSIGNED NOT NULL,
@@ -15,4 +11,4 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_player_daily_usage` (
 
 UPDATE `instance_bonus_map_config`
 SET `daily_limit_per_player` = 0
-WHERE `map_id` = 557 AND `daily_limit_per_player` IS NULL;
+WHERE `map_id` = 557;
