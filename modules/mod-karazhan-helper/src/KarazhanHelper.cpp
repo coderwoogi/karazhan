@@ -451,8 +451,8 @@ namespace
                     "SELECT DISTINCT clt.entry AS source_entry "
                     "FROM creature_loot_template clt "
                     "JOIN reference_loot_template rlt "
-                    "  ON rlt.entry = ABS(clt.mincountOrRef) "
-                    "WHERE clt.mincountOrRef < 0 AND rlt.item = {0}"
+                    "  ON rlt.entry = ABS(clt.reference) "
+                    "WHERE clt.reference <> 0 AND rlt.item = {0}"
                     ") AS helper_sources",
                     item.itemId));
                 if (countResult)
@@ -469,9 +469,9 @@ namespace
                     "SELECT ct.name AS name "
                     "FROM creature_loot_template clt "
                     "JOIN reference_loot_template rlt "
-                    "  ON rlt.entry = ABS(clt.mincountOrRef) "
+                    "  ON rlt.entry = ABS(clt.reference) "
                     "JOIN creature_template ct ON ct.entry = clt.entry "
-                    "WHERE clt.mincountOrRef < 0 AND rlt.item = {0}"
+                    "WHERE clt.reference <> 0 AND rlt.item = {0}"
                     ") AS helper_drop_names "
                     "ORDER BY name LIMIT 5",
                     item.itemId));
