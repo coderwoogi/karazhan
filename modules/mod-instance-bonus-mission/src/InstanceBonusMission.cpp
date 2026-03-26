@@ -2188,6 +2188,20 @@ public:
             return;
         }
 
+        LOG_INFO(
+            "module.instance_bonus_mission",
+            "추가미션 모듈 실행: player='{}' mapId={} instanceId={}",
+            player->GetName(),
+            map->GetId(),
+            map->GetInstanceId());
+
+        SendMissionMessageToPlayer(
+            player,
+            "[추가 미션] 추가미션 모듈 실행");
+        SendMissionMessageToPlayer(
+            player,
+            "[추가 미션] 추가미션 모듈 작동");
+
         uint32 instanceId = map->GetInstanceId();
         if (MissionState* state = MissionStateStore::Instance().Get(instanceId))
         {
