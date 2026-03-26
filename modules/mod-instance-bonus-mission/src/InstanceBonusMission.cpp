@@ -399,6 +399,11 @@ namespace
 
             LoadMapConfigs();
             LoadMissions();
+            LOG_INFO(
+                "module.instance_bonus_mission",
+                "InstanceBonusMission loaded: mapConfigs={}, missionMaps={}",
+                _mapConfigs.size(),
+                _definitions.size());
         }
 
         bool IsEnabled() const
@@ -1715,14 +1720,22 @@ namespace
     PartyContext BuildPartyContext(Map* map, Player* seedPlayer = nullptr)
     {
         PartyContext context;
+        context.difficultyMask = GetDifficultyMaskForMap(map);
+        context.difficulty = GetDifficultyTokenForMap(map);
+
         std::vector<Player*> players = GetInstancePlayers(map, seedPlayer);
         context.partySize = uint32(players.size());
+
+        // Treat the player who triggered the entry hook as the minimum
+        // context source, even for GM-led test runs where the map player list
+        // may still be empty or filtered.
+        if (!context.partySize && seedPlayer)
+            context.partySize = 1;
+
         if (players.empty())
             return context;
 
         float totalItemLevel = 0.0f;
-        context.difficultyMask = GetDifficultyMaskForMap(map);
-        context.difficulty = GetDifficultyTokenForMap(map);
 
         for (Player* player : players)
         {
@@ -2220,16 +2233,57 @@ public:
 
         PartyContext context = BuildPartyContext(map, player);
         MapConfigDefinition config = GetMapConfigForMap(map->GetId());
+        LOG_INFO(
+            "module.instance_bonus_mission",
+            "Entry context: mapId={} instanceId={} partySize={} diffMask={} cfgEnabled={} cfgDiffMask={} minParty={} maxParty={}",
+            map->GetId(),
+            instanceId,
+            context.partySize,
+            context.difficultyMask,
+            config.enabled ? 1 : 0,
+            config.difficultyMask,
+            config.minPartySize,
+            config.maxPartySize);
         if (!IsMapConfigEnabledForContext(config, context))
         {
+            LOG_INFO(
+                "module.instance_bonus_mission",
+                "Entry blocked by map config: mapId={} instanceId={}",
+                map->GetId(),
+                instanceId);
             SendMissionUiClear(player);
             return;
         }
 
+        std::vector<MissionDefinition const*> eligibleMissions =
+            CollectEligibleMissions(map->GetId(), context);
+        LOG_INFO(
+            "module.instance_bonus_mission",
+            "Eligible missions: mapId={} instanceId={} count={}",
+            map->GetId(),
+            instanceId,
+            eligibleMissions.size());
+
         MissionSelection missionSelection = TrySelectMissionWithLlm(
             map, context);
         if (!missionSelection.definition)
+        {
+            LOG_INFO(
+                "module.instance_bonus_mission",
+                "No mission selected: mapId={} instanceId={}",
+                map->GetId(),
+                instanceId);
             return;
+        }
+
+        LOG_INFO(
+            "module.instance_bonus_mission",
+            "Mission selected: mapId={} instanceId={} missionId={} title='{}' source={}",
+            map->GetId(),
+            instanceId,
+            missionSelection.definition->missionId,
+            missionSelection.definition->title,
+            missionSelection.source);
 
         MissionState& state = MissionStateStore::Instance().Create(
             instanceId,
