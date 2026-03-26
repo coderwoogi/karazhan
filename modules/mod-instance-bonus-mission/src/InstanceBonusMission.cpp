@@ -18,6 +18,7 @@
 #include "thirdparty/httplib.h"
 
 #include <algorithm>
+#include <cctype>
 #include <regex>
 #include <sstream>
 #include <unordered_map>
@@ -38,11 +39,37 @@ namespace
         uint32 targetEntry = 0;
         uint32 targetCount = 0;
         uint32 timeLimitSec = 0;
+        uint32 rewardProfileId = 0;
         std::string title;
+        std::string description;
+        std::string briefingText;
         std::string targetLabel;
         std::string fallbackAnnouncement;
         uint32 rewardItem = 0;
         uint32 rewardCount = 0;
+    };
+
+    struct MapConfigDefinition
+    {
+        uint32 mapId = 0;
+        std::string mapName;
+        uint32 difficultyMask = 0;
+        bool enabled = true;
+        bool allowVote = true;
+        bool allowLlm = true;
+        uint32 dailyLimitPerPlayer = 0;
+        uint32 defaultTimeLimitSec = 0;
+        uint8 minPartySize = 1;
+        uint8 maxPartySize = 5;
+        uint8 maxConcurrentMissions = 1;
+        std::string notes;
+    };
+
+    struct RewardProfileItem
+    {
+        uint32 itemEntry = 0;
+        uint32 itemCount = 0;
+        std::string grade;
     };
 
     struct ThemeDefinition
@@ -94,6 +121,7 @@ namespace
 
     struct MissionState
     {
+        uint64 runId = 0;
         uint32 missionId = 0;
         uint32 mapId = 0;
         uint32 themeId = 0;
@@ -102,9 +130,12 @@ namespace
         uint32 targetCount = 0;
         uint32 currentCount = 0;
         uint32 timeLimitSec = 0;
+        uint32 rewardProfileId = 0;
         uint32 rewardItem = 0;
         uint32 rewardCount = 0;
+        uint32 difficultyMask = 0;
         std::string title;
+        std::string description;
         std::string targetLabel;
         std::string themeKey;
         std::string themeName;
@@ -242,6 +273,96 @@ namespace
         return (allowedMask & currentMask) != 0;
     }
 
+    uint64 GenerateRunId(uint32 instanceId)
+    {
+        uint64 timePart = uint64(GameTime::GetGameTime().count()) & 0xFFFFFFFF;
+        uint64 saltPart = uint64(urand(1, 0xFFFF));
+        return (uint64(instanceId) << 32) | ((timePart ^ saltPart) & 0xFFFFFFFF);
+    }
+
+    std::string NormalizeDbToken(std::string value)
+    {
+        std::transform(
+            value.begin(),
+            value.end(),
+            value.begin(),
+            [](unsigned char ch) { return char(std::tolower(ch)); });
+        return value;
+    }
+
+    uint8 ParseMissionType(std::string value)
+    {
+        value = NormalizeDbToken(value);
+        if (value == "1" || value == "kill" || value == "general")
+            return 1;
+        if (value == "2" || value == "survival" || value == "clean_run")
+            return 2;
+        if (value == "3" || value == "speed")
+            return 3;
+        if (value == "4" || value == "boss")
+            return 4;
+        return 1;
+    }
+
+    std::string EscapeSql(std::string text)
+    {
+        WorldDatabase.EscapeString(text);
+        return text;
+    }
+
+    bool TableExists(char const* tableName)
+    {
+        QueryResult result = WorldDatabase.Query(Acore::StringFormat(
+            "SELECT 1 "
+            "FROM INFORMATION_SCHEMA.TABLES "
+            "WHERE TABLE_SCHEMA = DATABASE() "
+            "  AND TABLE_NAME = '{}' "
+            "LIMIT 1",
+            tableName));
+        return result != nullptr;
+    }
+
+    bool ColumnExists(char const* tableName, char const* columnName)
+    {
+        QueryResult result = WorldDatabase.Query(Acore::StringFormat(
+            "SELECT 1 "
+            "FROM INFORMATION_SCHEMA.COLUMNS "
+            "WHERE TABLE_SCHEMA = DATABASE() "
+            "  AND TABLE_NAME = '{}' "
+            "  AND COLUMN_NAME = '{}' "
+            "LIMIT 1",
+            tableName, columnName));
+        return result != nullptr;
+    }
+
+    std::string GetColumnDataType(char const* tableName, char const* columnName)
+    {
+        QueryResult result = WorldDatabase.Query(Acore::StringFormat(
+            "SELECT LOWER(DATA_TYPE) "
+            "FROM INFORMATION_SCHEMA.COLUMNS "
+            "WHERE TABLE_SCHEMA = DATABASE() "
+            "  AND TABLE_NAME = '{}' "
+            "  AND COLUMN_NAME = '{}' "
+            "LIMIT 1",
+            tableName, columnName));
+        if (!result)
+            return {};
+
+        return result->Fetch()[0].Get<std::string>();
+    }
+
+    std::string MakeTimeValueExpr(
+        char const* tableName,
+        char const* columnName,
+        time_t value)
+    {
+        std::string type = GetColumnDataType(tableName, columnName);
+        if (type == "datetime" || type == "timestamp" || type == "date")
+            return Acore::StringFormat("FROM_UNIXTIME({})", uint64(value));
+
+        return Acore::StringFormat("{}", uint64(value));
+    }
+
     class MissionStore
     {
     public:
@@ -269,12 +390,14 @@ namespace
             _defaultRewardCount = sConfigMgr->GetOption<uint32>(
                 "InstanceBonusMission.Reward.Count", 1);
             _definitions.clear();
+            _mapConfigs.clear();
             _themes.clear();
             _themeMissionIds.clear();
 
             if (!_enabled)
                 return;
 
+            LoadMapConfigs();
             LoadMissions();
         }
 
@@ -312,6 +435,15 @@ namespace
             return &itr->second;
         }
 
+        MapConfigDefinition GetMapConfig(uint32 mapId) const
+        {
+            auto itr = _mapConfigs.find(mapId);
+            if (itr == _mapConfigs.end())
+                return {};
+
+            return itr->second;
+        }
+
         std::vector<ThemeDefinition> const* GetThemesByMap(uint32 mapId) const
         {
             auto itr = _themes.find(mapId);
@@ -336,8 +468,142 @@ namespace
         }
 
     private:
+        void LoadMapConfigs()
+        {
+            if (!TableExists("instance_bonus_map_config"))
+                return;
+
+            std::string maxConcurrentExpr = "1";
+            if (ColumnExists(
+                    "instance_bonus_map_config",
+                    "max_concurrent_missions"))
+            {
+                maxConcurrentExpr =
+                    "IFNULL(max_concurrent_missions, 1)";
+            }
+            else if (ColumnExists(
+                         "instance_bonus_map_config",
+                         "max_active_missions"))
+            {
+                maxConcurrentExpr =
+                    "IFNULL(max_active_missions, 1)";
+            }
+
+            std::string difficultyExpr = "0";
+            if (ColumnExists("instance_bonus_map_config", "difficulty_mask"))
+                difficultyExpr = "IFNULL(difficulty_mask, 0)";
+
+            std::string notesExpr = "''";
+            if (ColumnExists("instance_bonus_map_config", "notes"))
+                notesExpr = "IFNULL(notes, '')";
+
+            QueryResult result = WorldDatabase.Query(Acore::StringFormat(
+                "SELECT map_id, "
+                "IFNULL(map_name, ''), "
+                "{}, "
+                "IFNULL(enabled, 1), "
+                "IFNULL(allow_vote, 1), "
+                "IFNULL(allow_llm, 1), "
+                "IFNULL(daily_limit_per_player, 0), "
+                "IFNULL(default_time_limit_sec, 0), "
+                "IFNULL(min_party_size, 1), "
+                "IFNULL(max_party_size, 5), "
+                "{}, "
+                "{} "
+                "FROM instance_bonus_map_config",
+                difficultyExpr,
+                maxConcurrentExpr,
+                notesExpr));
+
+            if (!result)
+                return;
+
+            do
+            {
+                Field* fields = result->Fetch();
+
+                MapConfigDefinition definition;
+                definition.mapId = fields[0].Get<uint32>();
+                definition.mapName = fields[1].Get<std::string>();
+                definition.difficultyMask = fields[2].Get<uint32>();
+                definition.enabled = fields[3].Get<uint8>() != 0;
+                definition.allowVote = fields[4].Get<uint8>() != 0;
+                definition.allowLlm = fields[5].Get<uint8>() != 0;
+                definition.dailyLimitPerPlayer = fields[6].Get<uint32>();
+                definition.defaultTimeLimitSec = fields[7].Get<uint32>();
+                definition.minPartySize = fields[8].Get<uint8>();
+                definition.maxPartySize = fields[9].Get<uint8>();
+                definition.maxConcurrentMissions = fields[10].Get<uint8>();
+                definition.notes = fields[11].Get<std::string>();
+                _mapConfigs[definition.mapId] = definition;
+            } while (result->NextRow());
+        }
+
         void LoadMissions()
         {
+            bool loadedV2 = false;
+
+            if (TableExists("instance_bonus_mission"))
+            {
+                QueryResult result = WorldDatabase.Query(
+                    "SELECT mission_id, map_id, "
+                    "CAST(mission_type AS CHAR), "
+                    "difficulty_mask, "
+                    "target_entry, target_count, time_limit_sec, "
+                    "IFNULL(name, ''), "
+                    "IFNULL(description, ''), "
+                    "IFNULL(briefing_text, ''), "
+                    "IFNULL(target_label, ''), "
+                    "reward_profile_id "
+                    "FROM instance_bonus_mission "
+                    "WHERE enabled = 1 "
+                    "  AND CAST(publish_status AS CHAR) IN ('2', 'published') "
+                    "ORDER BY map_id, mission_id");
+
+                if (result)
+                {
+                    do
+                    {
+                        Field* fields = result->Fetch();
+
+                        MissionDefinition definition;
+                        definition.missionId = fields[0].Get<uint32>();
+                        definition.mapId = fields[1].Get<uint32>();
+                        definition.missionType = ParseMissionType(
+                            fields[2].Get<std::string>());
+                        definition.difficultyMask = fields[3].Get<uint32>();
+                        definition.targetEntry = fields[4].Get<uint32>();
+                        definition.targetCount = fields[5].Get<uint32>();
+                        definition.timeLimitSec = fields[6].Get<uint32>();
+                        definition.title = fields[7].Get<std::string>();
+                        definition.description = fields[8].Get<std::string>();
+                        definition.briefingText = fields[9].Get<std::string>();
+                        definition.targetLabel = fields[10].Get<std::string>();
+                        definition.rewardProfileId = fields[11].Get<uint32>();
+
+                        if (definition.targetLabel.empty())
+                            definition.targetLabel = definition.title;
+
+                        if (definition.briefingText.empty())
+                            definition.briefingText = definition.description;
+
+                        definition.fallbackAnnouncement =
+                            definition.briefingText.empty()
+                                ? definition.title
+                                : definition.briefingText;
+                        definition.rewardItem = _defaultRewardItem;
+                        definition.rewardCount = _defaultRewardCount;
+
+                        _definitions[definition.mapId].push_back(definition);
+                    } while (result->NextRow());
+
+                    loadedV2 = !_definitions.empty();
+                }
+            }
+
+            if (loadedV2)
+                return;
+
             QueryResult result = WorldDatabase.Query(
                 "SELECT map_id, mission_id, mission_type, difficulty_mask, "
                 "target_entry, target_count, time_limit_sec, title, "
@@ -446,6 +712,7 @@ namespace
         uint32 _llmTimeoutMs = 3000;
         uint32 _defaultRewardItem = 49426;
         uint32 _defaultRewardCount = 1;
+        std::unordered_map<uint32, MapConfigDefinition> _mapConfigs;
         std::unordered_map<uint32, std::vector<MissionDefinition>>
             _definitions;
         std::unordered_map<uint32, std::vector<ThemeDefinition>> _themes;
@@ -456,6 +723,12 @@ namespace
     };
 
     void SaveLiveState(uint32 instanceId, MissionState const& state);
+    void LogVote(MissionState const& state, Player* player, bool agree);
+    void LogReward(
+        MissionState const& state,
+        Player* player,
+        uint32 itemEntry,
+        uint32 itemCount);
 
     class MissionStateStore
     {
@@ -480,22 +753,30 @@ namespace
             MissionSelection const& missionSelection)
         {
             MissionDefinition const& mission = *missionSelection.definition;
+            MapConfigDefinition config =
+                MissionStore::Instance().GetMapConfig(mission.mapId);
             MissionState& state = _states[instanceId];
+            state.runId = GenerateRunId(instanceId);
             state.missionId = mission.missionId;
             state.mapId = mission.mapId;
             state.themeId = 0;
             state.missionType = mission.missionType;
+            state.difficultyMask = mission.difficultyMask;
             state.targetEntry = mission.targetEntry;
             state.targetCount = mission.targetCount;
             state.currentCount = 0;
-            state.timeLimitSec = mission.timeLimitSec;
+            state.timeLimitSec = mission.timeLimitSec
+                ? mission.timeLimitSec
+                : config.defaultTimeLimitSec;
+            state.rewardProfileId = mission.rewardProfileId;
             state.rewardItem = mission.rewardItem;
             state.rewardCount = mission.rewardCount;
             state.title = mission.title;
+            state.description = mission.description;
             state.targetLabel = mission.targetLabel;
             state.themeKey.clear();
             state.themeName.clear();
-            state.briefing.clear();
+            state.briefing = mission.briefingText;
             state.announcement = missionSelection.announcement.empty()
                 ? mission.fallbackAnnouncement
                 : missionSelection.announcement;
@@ -584,17 +865,66 @@ namespace
 
     uint32 GetDailyLimitForMap(uint32 mapId)
     {
+        return MissionStore::Instance().GetMapConfig(mapId)
+            .dailyLimitPerPlayer;
+    }
+
+    MapConfigDefinition GetMapConfigForMap(uint32 mapId)
+    {
+        return MissionStore::Instance().GetMapConfig(mapId);
+    }
+
+    bool IsMapConfigEnabledForContext(
+        MapConfigDefinition const& config,
+        PartyContext const& context)
+    {
+        if (!config.mapId)
+            return true;
+
+        if (!config.enabled)
+            return false;
+
+        if (!IsDifficultyAllowed(config.difficultyMask, context.difficultyMask))
+            return false;
+
+        if (context.partySize < config.minPartySize)
+            return false;
+
+        if (context.partySize > config.maxPartySize)
+            return false;
+
+        return true;
+    }
+
+    std::vector<RewardProfileItem> GetRewardProfileItems(uint32 rewardProfileId)
+    {
+        std::vector<RewardProfileItem> items;
+        if (!rewardProfileId ||
+            !TableExists("instance_bonus_reward_profile_item"))
+            return items;
+
         QueryResult result = WorldDatabase.Query(Acore::StringFormat(
-            "SELECT `daily_limit_per_player` "
-            "FROM `instance_bonus_map_config` "
-            "WHERE `map_id` = {} AND `enabled` = 1 "
-            "LIMIT 1",
-            mapId));
+            "SELECT item_entry, item_count, CAST(grade AS CHAR) "
+            "FROM instance_bonus_reward_profile_item "
+            "WHERE reward_profile_id = {} "
+            "ORDER BY grade ASC, item_entry ASC",
+            rewardProfileId));
 
         if (!result)
-            return 0;
+            return items;
 
-        return result->Fetch()[0].Get<uint32>();
+        do
+        {
+            Field* fields = result->Fetch();
+            RewardProfileItem item;
+            item.itemEntry = fields[0].Get<uint32>();
+            item.itemCount = fields[1].Get<uint32>();
+            item.grade = fields[2].Get<std::string>();
+            if (item.itemEntry && item.itemCount)
+                items.push_back(item);
+        } while (result->NextRow());
+
+        return items;
     }
 
     uint32 GetPlayerDailySuccessCount(uint32 mapId, Player* player)
@@ -942,6 +1272,7 @@ namespace
         }
 
         state->votes[GetVoteKey(player)] = agree;
+        LogVote(*state, player, agree);
         VoteStatus vote = BuildVoteStatus(map, *state);
 
         if (vote.state == "approved")
@@ -972,6 +1303,256 @@ namespace
                 vote.required,
                 vote.no));
         return true;
+    }
+
+    void SaveRunHistory(MissionState const& state)
+    {
+        if (!TableExists("instance_bonus_run_history"))
+            return;
+
+        std::string status = "pending";
+        if (state.completed)
+            status = "success";
+        else if (state.failed)
+            status = "failed";
+        else if (state.voteApproved)
+            status = "active";
+
+        if (ColumnExists("instance_bonus_run_history", "theme_key"))
+        {
+            WorldDatabase.Execute(Acore::StringFormat(
+                "REPLACE INTO instance_bonus_run_history ("
+                "run_id, instance_id, map_id, difficulty, leader_guid, "
+                "theme_id, theme_key, mission_id, mission_name, status, "
+                "started_at, ended_at, clear_time_sec, deaths, wipes, "
+                "failure_reason, score, grade, vote_yes, vote_no, llm_used, "
+                "llm_source, reward_profile_id) VALUES ("
+                "{}, {}, {}, {}, 0, 0, '', {}, '{}', {}, {}, {}, {}, 0, 0, "
+                "'', 0, '', {}, {}, {}, '{}', {})",
+                state.runId,
+                state.runId >> 32,
+                state.mapId,
+                state.difficultyMask,
+                state.missionId,
+                EscapeSql(state.title),
+                state.completed ? 2 : (state.failed ? 3 : (state.voteApproved ? 1 : 0)),
+                MakeTimeValueExpr(
+                    "instance_bonus_run_history",
+                    "started_at",
+                    state.startTime ? state.startTime : GameTime::GetGameTime().count()),
+                MakeTimeValueExpr(
+                    "instance_bonus_run_history",
+                    "ended_at",
+                    (state.completed || state.failed)
+                        ? GameTime::GetGameTime().count()
+                        : 0),
+                state.completed && state.startTime
+                    ? uint32(GameTime::GetGameTime().count() - state.startTime)
+                    : 0,
+                uint32(std::count_if(
+                    state.votes.begin(),
+                    state.votes.end(),
+                    [](auto const& entry) { return entry.second; })),
+                uint32(std::count_if(
+                    state.votes.begin(),
+                    state.votes.end(),
+                    [](auto const& entry) { return !entry.second; })),
+                state.source == "llm" ? 1 : 0,
+                EscapeSql(state.source),
+                state.rewardProfileId));
+            return;
+        }
+
+        WorldDatabase.Execute(Acore::StringFormat(
+            "INSERT INTO instance_bonus_run_history ("
+            "instance_id, map_id, theme_id, theme_name, mission_id, "
+            "mission_name, status, grade, started_at, ended_at, "
+            "clear_time_sec, deaths, wipes, score, vote_yes, vote_no, "
+            "llm_used, fallback_used, failure_reason) VALUES ("
+            "{}, {}, 0, '', {}, '{}', '{}', '', {}, {}, {}, 0, 0, 0, {}, "
+            "{}, {}, {}, '')",
+            state.runId >> 32,
+            state.mapId,
+            state.missionId,
+            EscapeSql(state.title),
+            EscapeSql(status),
+            MakeTimeValueExpr(
+                "instance_bonus_run_history",
+                "started_at",
+                state.startTime ? state.startTime : GameTime::GetGameTime().count()),
+            (state.completed || state.failed)
+                ? MakeTimeValueExpr(
+                    "instance_bonus_run_history",
+                    "ended_at",
+                    GameTime::GetGameTime().count())
+                : "NULL",
+            state.completed && state.startTime
+                ? uint32(GameTime::GetGameTime().count() - state.startTime)
+                : 0,
+            uint32(std::count_if(
+                state.votes.begin(),
+                state.votes.end(),
+                [](auto const& entry) { return entry.second; })),
+            uint32(std::count_if(
+                state.votes.begin(),
+                state.votes.end(),
+                [](auto const& entry) { return !entry.second; })),
+            state.source == "llm" ? 1 : 0,
+            state.source == "fallback" ? 1 : 0));
+    }
+
+    void SaveRunLive(uint32 instanceId, MissionState const& state)
+    {
+        if (!TableExists("instance_bonus_run_live"))
+            return;
+
+        if (ColumnExists("instance_bonus_run_live", "difficulty"))
+        {
+            WorldDatabase.Execute(Acore::StringFormat(
+                "REPLACE INTO instance_bonus_run_live ("
+                "run_id, instance_id, map_id, difficulty, status, theme_id, "
+                "theme_key, theme_name, mission_id, mission_name, objective_type, "
+                "target_entry, target_label, target_count, current_count, "
+                "time_limit_sec, start_time, expire_time, deaths, wipes, "
+                "briefing, announcement, source, vote_required, vote_yes, "
+                "vote_no, completed, failed, failure_reason, reward_profile_id, "
+                "updated_at) VALUES ("
+                "{}, {}, {}, {}, {}, 0, '', '', {}, '{}', {}, {}, '{}', {}, {}, "
+                "{}, {}, {}, 0, 0, '{}', '{}', '{}', {}, {}, {}, {}, {}, '', "
+                "{}, {})",
+                state.runId,
+                instanceId,
+                state.mapId,
+                state.difficultyMask,
+                state.completed ? 2 : (state.failed ? 3 : (state.voteApproved ? 1 : 0)),
+                state.missionId,
+                EscapeSql(state.title),
+                uint32(state.missionType),
+                state.targetEntry,
+                EscapeSql(state.targetLabel),
+                state.targetCount,
+                state.currentCount,
+                state.timeLimitSec,
+                MakeTimeValueExpr(
+                    "instance_bonus_run_live", "start_time", state.startTime),
+                MakeTimeValueExpr(
+                    "instance_bonus_run_live", "expire_time", state.expireTime),
+                EscapeSql(state.briefing),
+                EscapeSql(state.announcement),
+                EscapeSql(state.source),
+                1,
+                uint32(std::count_if(
+                    state.votes.begin(),
+                    state.votes.end(),
+                    [](auto const& entry) { return entry.second; })),
+                uint32(std::count_if(
+                    state.votes.begin(),
+                    state.votes.end(),
+                    [](auto const& entry) { return !entry.second; })),
+                state.completed ? 1 : 0,
+                state.failed ? 1 : 0,
+                state.rewardProfileId,
+                MakeTimeValueExpr(
+                    "instance_bonus_run_live",
+                    "updated_at",
+                    GameTime::GetGameTime().count())));
+            return;
+        }
+
+        WorldDatabase.Execute(Acore::StringFormat(
+            "INSERT INTO instance_bonus_run_live ("
+            "instance_id, map_id, theme_id, mission_id, status, started_at, "
+            "score, grade, llm_used, fallback_used) VALUES ("
+            "{}, {}, 0, {}, '{}', {}, 0, '', {}, {})",
+            instanceId,
+            state.mapId,
+            state.missionId,
+            EscapeSql(
+                state.completed ? "success"
+                    : (state.failed ? "failed"
+                        : (state.voteApproved ? "active" : "live"))),
+            MakeTimeValueExpr(
+                "instance_bonus_run_live",
+                "started_at",
+                state.startTime ? state.startTime : GameTime::GetGameTime().count()),
+            state.source == "llm" ? 1 : 0,
+            state.source == "fallback" ? 1 : 0));
+    }
+
+    void LogVote(MissionState const& state, Player* player, bool agree)
+    {
+        if (!player || !TableExists("instance_bonus_vote_log"))
+            return;
+
+        if (ColumnExists("instance_bonus_vote_log", "character_guid"))
+        {
+            WorldDatabase.Execute(Acore::StringFormat(
+                "INSERT INTO instance_bonus_vote_log "
+                "(run_id, character_guid, character_name, vote_value, voted_at) "
+                "VALUES ({}, {}, '{}', '{}', {})",
+                state.runId,
+                player->GetGUID().GetCounter(),
+                EscapeSql(player->GetName()),
+                agree ? "yes" : "no",
+                MakeTimeValueExpr(
+                    "instance_bonus_vote_log",
+                    "voted_at",
+                    GameTime::GetGameTime().count())));
+            return;
+        }
+
+        WorldDatabase.Execute(Acore::StringFormat(
+            "INSERT INTO instance_bonus_vote_log "
+            "(run_id, guid, name, vote, voted_at, vote_round) VALUES "
+            "({}, {}, '{}', {}, {}, 1) "
+            "ON DUPLICATE KEY UPDATE vote = VALUES(vote), voted_at = VALUES(voted_at)",
+            state.runId,
+            player->GetGUID().GetCounter(),
+            EscapeSql(player->GetName()),
+            agree ? 1 : 2,
+            uint64(GameTime::GetGameTime().count())));
+    }
+
+    void LogReward(
+        MissionState const& state,
+        Player* player,
+        uint32 itemEntry,
+        uint32 itemCount)
+    {
+        if (!player || !TableExists("instance_bonus_reward_log"))
+            return;
+
+        if (ColumnExists("instance_bonus_reward_log", "character_guid"))
+        {
+            WorldDatabase.Execute(Acore::StringFormat(
+                "INSERT INTO instance_bonus_reward_log "
+                "(run_id, character_guid, character_name, grade, item_entry, "
+                "item_count, granted_at) VALUES "
+                "({}, {}, '{}', 'A', {}, {}, {})",
+                state.runId,
+                player->GetGUID().GetCounter(),
+                EscapeSql(player->GetName()),
+                itemEntry,
+                itemCount,
+                MakeTimeValueExpr(
+                    "instance_bonus_reward_log",
+                    "granted_at",
+                    GameTime::GetGameTime().count())));
+            return;
+        }
+
+        WorldDatabase.Execute(Acore::StringFormat(
+            "INSERT INTO instance_bonus_reward_log "
+            "(run_id, guid, name, grade, reward_profile_id, item_entry, "
+            "item_count, granted_at, grant_status) VALUES "
+            "({}, {}, '{}', 'A', {}, {}, {}, {}, 1)",
+            state.runId,
+            player->GetGUID().GetCounter(),
+            EscapeSql(player->GetName()),
+            state.rewardProfileId,
+            itemEntry,
+            itemCount,
+            uint64(GameTime::GetGameTime().count())));
     }
 
     void SaveLiveState(uint32 instanceId, MissionState const& state)
@@ -1009,6 +1590,9 @@ namespace
             state.timeLimitSec, static_cast<uint64>(state.startTime),
             static_cast<uint64>(state.expireTime), briefing, announcement,
             source, state.completed ? 1 : 0, state.failed ? 1 : 0));
+
+        SaveRunLive(instanceId, state);
+        SaveRunHistory(state);
     }
 
     std::string EscapeJson(std::string const& text)
@@ -1190,17 +1774,22 @@ namespace
     }
 
     std::vector<MissionDefinition const*> CollectEligibleMissions(
-        uint32 mapId, uint32 difficultyMask)
+        uint32 mapId,
+        PartyContext const& context)
     {
         std::vector<MissionDefinition const*> missions;
         auto definitions = MissionStore::Instance().GetByMap(mapId);
         if (!definitions)
             return missions;
 
+        MapConfigDefinition config = GetMapConfigForMap(mapId);
+        if (!IsMapConfigEnabledForContext(config, context))
+            return missions;
+
         for (MissionDefinition const& definition : *definitions)
         {
             if (IsDifficultyAllowed(
-                    definition.difficultyMask, difficultyMask))
+                    definition.difficultyMask, context.difficultyMask))
                 missions.push_back(&definition);
         }
 
@@ -1209,11 +1798,11 @@ namespace
 
     MissionSelection SelectMissionFallback(
         uint32 mapId,
-        uint32 difficultyMask)
+        PartyContext const& context)
     {
         MissionSelection selection;
         std::vector<MissionDefinition const*> candidates =
-            CollectEligibleMissions(mapId, difficultyMask);
+            CollectEligibleMissions(mapId, context);
         if (candidates.empty())
             return selection;
 
@@ -1233,15 +1822,16 @@ namespace
         PartyContext const& ctx)
     {
         MissionSelection fallback = SelectMissionFallback(
-            map->GetId(), ctx.difficultyMask);
+            map->GetId(), ctx);
         if (!fallback.definition)
             return fallback;
 
-        if (!MissionStore::Instance().IsLlmEnabled())
+        MapConfigDefinition config = GetMapConfigForMap(map->GetId());
+        if (!MissionStore::Instance().IsLlmEnabled() || !config.allowLlm)
             return fallback;
 
         std::vector<MissionDefinition const*> definitions =
-            CollectEligibleMissions(map->GetId(), ctx.difficultyMask);
+            CollectEligibleMissions(map->GetId(), ctx);
         if (definitions.empty())
             return fallback;
 
@@ -1375,8 +1965,11 @@ namespace
 
     void RewardMissionToMap(Map* map, MissionState const& state)
     {
-        if (!map || !state.rewardItem || !state.rewardCount)
+        if (!map)
             return;
+
+        std::vector<RewardProfileItem> profileItems =
+            GetRewardProfileItems(state.rewardProfileId);
 
         Map::PlayerList const& players = map->GetPlayers();
         for (auto const& ref : players)
@@ -1393,7 +1986,26 @@ namespace
                 continue;
             }
 
-            player->AddItem(state.rewardItem, state.rewardCount);
+            bool rewarded = false;
+            if (!profileItems.empty())
+            {
+                for (RewardProfileItem const& item : profileItems)
+                {
+                    player->AddItem(item.itemEntry, item.itemCount);
+                    LogReward(state, player, item.itemEntry, item.itemCount);
+                    rewarded = true;
+                }
+            }
+            else if (state.rewardItem && state.rewardCount)
+            {
+                player->AddItem(state.rewardItem, state.rewardCount);
+                LogReward(state, player, state.rewardItem, state.rewardCount);
+                rewarded = true;
+            }
+
+            if (!rewarded)
+                continue;
+
             IncrementDailyMissionCount(map->GetId(), player);
         }
     }
@@ -1576,6 +2188,13 @@ public:
         }
 
         PartyContext context = BuildPartyContext(map);
+        MapConfigDefinition config = GetMapConfigForMap(map->GetId());
+        if (!IsMapConfigEnabledForContext(config, context))
+        {
+            SendMissionUiClear(player);
+            return;
+        }
+
         MissionSelection missionSelection = TrySelectMissionWithLlm(
             map, context);
         if (!missionSelection.definition)
@@ -1584,6 +2203,7 @@ public:
         MissionState& state = MissionStateStore::Instance().Create(
             instanceId,
             missionSelection);
+        state.difficultyMask = context.difficultyMask;
 
         state.announcement = "추가 미션이 제안되었습니다. 과반수 찬성이 필요합니다.";
         SaveLiveState(instanceId, state);
@@ -1599,6 +2219,9 @@ public:
             player,
             std::string(kMissionPrefix) + state.announcement);
         SendMissionUiStateToMap(map, state);
+
+        if (!config.allowVote)
+            ApproveMissionVote(map, state);
     }
 
     void OnPlayerLogin(Player* player) override

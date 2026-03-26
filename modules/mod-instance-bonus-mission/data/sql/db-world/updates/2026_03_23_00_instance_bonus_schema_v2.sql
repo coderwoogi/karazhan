@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS `instance_bonus_map_config` (
     `map_id` INT UNSIGNED NOT NULL,
     `map_name` VARCHAR(120) NOT NULL DEFAULT '',
+    `difficulty_mask` INT UNSIGNED NOT NULL DEFAULT 0,
     `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `allow_llm` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `allow_vote` TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -9,6 +10,8 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_map_config` (
     `default_time_limit_sec` INT UNSIGNED NOT NULL DEFAULT 0,
     `min_party_size` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `max_party_size` TINYINT UNSIGNED NOT NULL DEFAULT 5,
+    `max_concurrent_missions` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `notes` TEXT NULL,
     `theme_selection_mode` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `mission_selection_mode` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `max_active_missions` TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -116,6 +119,8 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_theme_mission_link` (
 
 CREATE TABLE IF NOT EXISTS `instance_bonus_reward_profile` (
     `reward_profile_id` INT UNSIGNED NOT NULL,
+    `map_id` INT UNSIGNED NOT NULL DEFAULT 0,
+    `profile_key` VARCHAR(80) NOT NULL DEFAULT '',
     `name` VARCHAR(120) NOT NULL DEFAULT '',
     `description` VARCHAR(255) NOT NULL DEFAULT '',
     `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -126,11 +131,13 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_reward_profile` (
     `created_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (`reward_profile_id`),
+    UNIQUE KEY `idx_instance_bonus_reward_profile_key` (`profile_key`),
     KEY `idx_instance_bonus_reward_profile_enabled`
         (`enabled`, `publish_status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `instance_bonus_reward_profile_item` (
+    `item_id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `reward_profile_id` INT UNSIGNED NOT NULL,
     `grade` CHAR(1) NOT NULL,
     `slot` TINYINT UNSIGNED NOT NULL DEFAULT 1,
@@ -138,6 +145,9 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_reward_profile_item` (
     `item_count` INT UNSIGNED NOT NULL DEFAULT 0,
     `bind_type` TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `chance` INT UNSIGNED NOT NULL DEFAULT 10000,
+    `sort_order` INT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    UNIQUE KEY `idx_instance_bonus_reward_profile_item_id` (`item_id`),
     PRIMARY KEY (`reward_profile_id`, `grade`, `slot`),
     KEY `idx_instance_bonus_reward_profile_grade`
         (`reward_profile_id`, `grade`)
