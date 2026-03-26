@@ -52,6 +52,13 @@ local themeIcons = {
   boss_focus = "Interface\\Icons\\Ability_Warrior_BattleShout",
 }
 
+local missionTypeIcons = {
+  [1] = "Interface\\Icons\\Spell_Shadow_DarkSummoning",
+  [2] = "Interface\\Icons\\Spell_Holy_Renew",
+  [3] = "Interface\\Icons\\Ability_Rogue_Sprint",
+  [4] = "Interface\\Icons\\Achievement_Boss_PrinceMalchezaar_02",
+}
+
 local function Split(input, sep)
   local parts = {}
   local start = 1
@@ -128,6 +135,18 @@ local function CreateText(parent, layer, font, size, r, g, b, justify)
   fs:SetJustifyH(justify or "LEFT")
   fs:SetJustifyV("TOP")
   return fs
+end
+
+local function BuildObjectiveSummary()
+  local label = KBM.state and KBM.state.targetLabel or "-"
+  local current = KBM.state and KBM.state.currentCount or 0
+  local target = KBM.state and KBM.state.targetCount or 0
+
+  if label == "-" or label == "" or target <= 0 then
+    return (KBM.state and KBM.state.title) or "추가 미션"
+  end
+
+  return string.format("%s %d/%d", label, current, target)
 end
 
 local function SkinDialogueButton(button, label)
@@ -212,7 +231,11 @@ local close = CreateFrame("Button", nil, KBM, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", KBM, "TOPRIGHT", -10, -10)
 close:SetScript("OnClick", function()
   KBM:Hide()
-  KBM.reopen:Show()
+  if KBM.UpdateCollapsedState then
+    KBM:UpdateCollapsedState()
+  else
+    KBM.reopen:Show()
+  end
 end)
 
 KBM.reopen = CreateFrame(
@@ -221,14 +244,33 @@ KBM.reopen = CreateFrame(
   UIParent,
   "UIPanelButtonTemplate"
 )
-KBM.reopen:SetSize(88, 22)
-KBM.reopen:SetPoint("TOP", UIParent, "TOP", 0, -20)
+KBM.reopen:SetSize(92, 22)
+KBM.reopen:SetPoint("TOP", UIParent, "TOP", 0, -38)
 KBM.reopen:SetText("임무 보기")
 KBM.reopen:SetScript("OnClick", function()
   KBM:Show()
-  KBM.reopen:Hide()
+  if KBM.UpdateCollapsedState then
+    KBM:UpdateCollapsedState()
+  else
+    KBM.reopen:Hide()
+  end
 end)
 KBM.reopen:Hide()
+
+KBM.reopenSummary = CreateText(
+  UIParent,
+  "OVERLAY",
+  "GameFontNormalSmall",
+  12,
+  1.0,
+  0.92,
+  0.76,
+  "CENTER"
+)
+KBM.reopenSummary:SetPoint("BOTTOM", KBM.reopen, "TOP", 0, 4)
+KBM.reopenSummary:SetWidth(280)
+KBM.reopenSummary:SetText("")
+KBM.reopenSummary:Hide()
 
 KBM.headerTitle = CreateText(
   KBM,
@@ -543,10 +585,32 @@ local function SetQuestModeVisible(visible)
   end
 end
 
+function KBM:UpdateCollapsedState()
+  local hasMission = (self.state.targetCount or 0) > 0
+    or ((self.state.title or "") ~= "" and (self.state.title or "") ~= "추가 미션")
+
+  if self:IsShown() then
+    self.reopen:Hide()
+    self.reopenSummary:Hide()
+    return
+  end
+
+  if hasMission then
+    self.reopenSummary:SetText(BuildObjectiveSummary())
+    self.reopenSummary:Show()
+    self.reopen:Show()
+  else
+    self.reopen:Hide()
+    self.reopenSummary:Hide()
+  end
+end
+
 local function UpdateThemeVisuals()
   KBM.theme:SetText(GetThemeText(KBM.state.themeKey, KBM.state.themeName))
   KBM.icon:SetTexture(
-    themeIcons[KBM.state.themeKey] or "Interface\\Icons\\INV_Misc_QuestionMark"
+    themeIcons[KBM.state.themeKey]
+      or missionTypeIcons[KBM.state.missionType]
+      or "Interface\\Icons\\Achievement_Character_Bloodelf_Female"
   )
 end
 
@@ -686,10 +750,12 @@ local function Refresh()
 
   KBM.notice:SetText(KBM.state.announcement or "")
   RefreshVoteUi()
+  KBM:UpdateCollapsedState()
 end
 
 local function ResetState()
   KBM.state = NewState()
+  KBM.lastMissionSignature = nil
   KBM.accept:ClearAllPoints()
   KBM.accept:SetPoint("BOTTOMLEFT", KBM, "BOTTOMLEFT", 42, 36)
   KBM.fold:ClearAllPoints()
@@ -697,7 +763,18 @@ local function ResetState()
   Refresh()
 end
 
+local function BuildMissionSignature()
+  return table.concat({
+    KBM.state.title or "",
+    KBM.state.targetLabel or "",
+    tostring(KBM.state.targetCount or 0),
+    tostring(KBM.state.timeLimit or 0),
+    tostring(KBM.state.missionType or 0),
+  }, "|")
+end
+
 local function ApplyState(parts)
+  local previousSignature = KBM.lastMissionSignature
   KBM.state.themeKey = parts[4] or ""
   KBM.state.themeName = parts[5] or "-"
   KBM.state.title = parts[6] or "추가 미션"
@@ -714,9 +791,14 @@ local function ApplyState(parts)
   KBM.state.voteRequired = tonumber(parts[17]) or 1
   KBM.state.playerVote = parts[18] or "none"
   KBM.state.expiresAt = GetTime() + (KBM.state.remaining or 0)
+  KBM.lastMissionSignature = BuildMissionSignature()
   Refresh()
-  KBM:Show()
-  KBM.reopen:Hide()
+
+  if previousSignature == nil or previousSignature ~= KBM.lastMissionSignature then
+    KBM:Show()
+  end
+
+  KBM:UpdateCollapsedState()
 end
 
 KBM:SetScript("OnUpdate", function(self, elapsed)
@@ -747,10 +829,10 @@ KBM:SetScript("OnEvent", function(self, event, prefix, message)
     SlashCmdList.KARAZHANBONUSMISSION = function()
       if self:IsShown() then
         self:Hide()
-        self.reopen:Show()
+        self:UpdateCollapsedState()
       else
         self:Show()
-        self.reopen:Hide()
+        self:UpdateCollapsedState()
       end
     end
 
@@ -768,7 +850,7 @@ KBM:SetScript("OnEvent", function(self, event, prefix, message)
   if kind == "CLEAR" then
     ResetState()
     self:Hide()
-    self.reopen:Hide()
+    self:UpdateCollapsedState()
     return
   end
 
@@ -786,8 +868,6 @@ KBM:SetScript("OnEvent", function(self, event, prefix, message)
   if kind == "ANNOUNCEMENT" then
     self.state.announcement = parts[2] or ""
     Refresh()
-    self:Show()
-    self.reopen:Hide()
     return
   end
 
@@ -795,8 +875,6 @@ KBM:SetScript("OnEvent", function(self, event, prefix, message)
     local alertMessage = parts[2] or ""
     self.state.announcement = alertMessage
     Refresh()
-    self:Show()
-    self.reopen:Hide()
     ShowRaidAlert(alertMessage)
     return
   end
