@@ -956,7 +956,7 @@ namespace
         return GetPlayerDailySuccessCount(mapId, player) < limit;
     }
 
-    bool MapHasAnyEligibleMissionPlayer(Map* map)
+    bool MapHasAnyEligibleMissionPlayer(Map* map, Player* seedPlayer = nullptr)
     {
         if (!map)
             return false;
@@ -975,6 +975,9 @@ namespace
             if (HasRemainingDailyMissionCount(map->GetId(), player))
                 return true;
         }
+
+        if (seedPlayer && HasRemainingDailyMissionCount(map->GetId(), seedPlayer))
+            return true;
 
         return false;
     }
@@ -1676,7 +1679,7 @@ namespace
         return true;
     }
 
-    std::vector<Player*> GetInstancePlayers(Map* map)
+    std::vector<Player*> GetInstancePlayers(Map* map, Player* seedPlayer = nullptr)
     {
         std::vector<Player*> players;
         if (!map)
@@ -1692,13 +1695,27 @@ namespace
             players.push_back(player);
         }
 
+        if (seedPlayer && !seedPlayer->IsGameMaster())
+        {
+            bool found = std::any_of(
+                players.begin(),
+                players.end(),
+                [seedPlayer](Player* entry)
+                {
+                    return entry && entry->GetGUID() == seedPlayer->GetGUID();
+                });
+
+            if (!found)
+                players.push_back(seedPlayer);
+        }
+
         return players;
     }
 
-    PartyContext BuildPartyContext(Map* map)
+    PartyContext BuildPartyContext(Map* map, Player* seedPlayer = nullptr)
     {
         PartyContext context;
-        std::vector<Player*> players = GetInstancePlayers(map);
+        std::vector<Player*> players = GetInstancePlayers(map, seedPlayer);
         context.partySize = uint32(players.size());
         if (players.empty())
             return context;
@@ -2178,7 +2195,7 @@ public:
             return;
         }
 
-        if (!MapHasAnyEligibleMissionPlayer(map))
+        if (!MapHasAnyEligibleMissionPlayer(map, player))
         {
             SendMissionMessageToPlayer(
                 player,
@@ -2187,7 +2204,7 @@ public:
             return;
         }
 
-        PartyContext context = BuildPartyContext(map);
+        PartyContext context = BuildPartyContext(map, player);
         MapConfigDefinition config = GetMapConfigForMap(map->GetId());
         if (!IsMapConfigEnabledForContext(config, context))
         {
