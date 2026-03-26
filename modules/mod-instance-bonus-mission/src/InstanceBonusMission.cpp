@@ -85,13 +85,6 @@ namespace
         DIFFICULTY_MASK_RAID_25_HEROIC = 1 << 5
     };
 
-    struct ThemeSelection
-    {
-        ThemeDefinition const* definition = nullptr;
-        std::string briefing;
-        std::string source = "fallback";
-    };
-
     struct MissionSelection
     {
         MissionDefinition const* definition = nullptr;
@@ -283,8 +276,6 @@ namespace
                 return;
 
             LoadMissions();
-            LoadThemes();
-            LoadThemeMissionLinks();
         }
 
         bool IsEnabled() const
@@ -486,16 +477,13 @@ namespace
 
         MissionState& Create(
             uint32 instanceId,
-            ThemeSelection const& themeSelection,
             MissionSelection const& missionSelection)
         {
             MissionDefinition const& mission = *missionSelection.definition;
             MissionState& state = _states[instanceId];
             state.missionId = mission.missionId;
             state.mapId = mission.mapId;
-            state.themeId = themeSelection.definition
-                ? themeSelection.definition->themeId
-                : 0;
+            state.themeId = 0;
             state.missionType = mission.missionType;
             state.targetEntry = mission.targetEntry;
             state.targetCount = mission.targetCount;
@@ -505,13 +493,9 @@ namespace
             state.rewardCount = mission.rewardCount;
             state.title = mission.title;
             state.targetLabel = mission.targetLabel;
-            state.themeKey = themeSelection.definition
-                ? themeSelection.definition->themeKey
-                : std::string();
-            state.themeName = themeSelection.definition
-                ? themeSelection.definition->name
-                : std::string();
-            state.briefing = themeSelection.briefing;
+            state.themeKey.clear();
+            state.themeName.clear();
+            state.briefing.clear();
             state.announcement = missionSelection.announcement.empty()
                 ? mission.fallbackAnnouncement
                 : missionSelection.announcement;
@@ -1205,232 +1189,19 @@ namespace
         return json.str();
     }
 
-    ThemeSelection SelectThemeFallback(uint32 mapId, PartyContext const& ctx)
-    {
-        ThemeSelection selection;
-        auto themes = MissionStore::Instance().GetThemesByMap(mapId);
-        if (!themes || themes->empty())
-            return selection;
-
-        std::vector<ThemeDefinition const*> eligible;
-        for (ThemeDefinition const& theme : *themes)
-        {
-            if (IsThemeEligible(theme, ctx))
-                eligible.push_back(&theme);
-        }
-
-        if (!eligible.empty())
-        {
-            uint32 totalWeight = 0;
-            for (ThemeDefinition const* theme : eligible)
-                totalWeight += std::max<uint32>(1, theme->weight);
-
-            uint32 roll = urand(1, std::max<uint32>(1, totalWeight));
-            for (ThemeDefinition const* theme : eligible)
-            {
-                uint32 weight = std::max<uint32>(1, theme->weight);
-                if (roll <= weight)
-                {
-                    selection.definition = theme;
-                    break;
-                }
-                roll -= weight;
-            }
-        }
-
-        if (!selection.definition)
-            selection.definition = &themes->front();
-
-        selection.briefing =
-            "이번 판의 추가 미션 유형은 " +
-            selection.definition->name + "입니다.";
-        selection.source = "fallback";
-        return selection;
-    }
-
-    ThemeSelection TrySelectThemeWithLlm(Map* map, PartyContext const& ctx)
-    {
-        ThemeSelection fallback = SelectThemeFallback(map->GetId(), ctx);
-        if (!fallback.definition)
-            return fallback;
-
-        if (!MissionStore::Instance().IsLlmEnabled())
-            return fallback;
-
-        auto themes = MissionStore::Instance().GetThemesByMap(map->GetId());
-        if (!themes || themes->empty())
-            return fallback;
-
-        std::vector<ThemeDefinition const*> candidates;
-        for (ThemeDefinition const& theme : *themes)
-        {
-            if (IsThemeEligible(theme, ctx))
-                candidates.push_back(&theme);
-        }
-
-        if (candidates.empty())
-        {
-            for (ThemeDefinition const& theme : *themes)
-                candidates.push_back(&theme);
-        }
-
-        std::string host;
-        std::string path;
-        std::string endpoint = MissionStore::Instance().GetLlmUrl() +
-            "/theme/select";
-
-        if (!ParseHttpUrl(endpoint, host, path))
-        {
-            LOG_ERROR(
-                "module.instance_bonus_mission",
-                "Failed to parse LLM URL: {}",
-                endpoint);
-            return fallback;
-        }
-
-        std::ostringstream json;
-        json << "{";
-        json << "\"map_id\":" << map->GetId() << ",";
-        json << "\"instance_name\":\""
-             << EscapeJson(Acore::StringFormat("instance_{}", map->GetId()))
-             << "\",";
-        json << "\"difficulty\":\"" << EscapeJson(ctx.difficulty)
-             << "\",";
-        json << "\"party_size\":" << ctx.partySize << ",";
-        json << "\"average_item_level\":" << ctx.averageItemLevel
-             << ",";
-        json << "\"has_tank\":" << (ctx.hasTank ? "true" : "false")
-             << ",";
-        json << "\"has_healer\":"
-             << (ctx.hasHealer ? "true" : "false") << ",";
-        json << "\"likely_tank_count\":" << ctx.likelyTankCount
-             << ",";
-        json << "\"likely_healer_count\":" << ctx.likelyHealerCount
-             << ",";
-        json << "\"class_counts\":" << BuildClassCountsJson(ctx) << ",";
-        json << "\"candidates\":[";
-
-        bool first = true;
-        for (ThemeDefinition const* theme : candidates)
-        {
-            if (!first)
-                json << ",";
-
-            first = false;
-            json << "{";
-            json << "\"theme_id\":" << theme->themeId << ",";
-            json << "\"theme_key\":\""
-                 << EscapeJson(theme->themeKey) << "\",";
-            json << "\"name\":\"" << EscapeJson(theme->name)
-                 << "\",";
-            json << "\"description\":\""
-                 << EscapeJson(theme->description) << "\"";
-            json << "}";
-        }
-        json << "]}";
-
-        try
-        {
-            httplib::Client cli(host);
-            uint32 timeoutMs = MissionStore::Instance().GetLlmTimeoutMs();
-            time_t timeoutSec = std::max<time_t>(1, timeoutMs / 1000);
-            time_t timeoutUsec = (timeoutMs % 1000) * 1000;
-            cli.set_connection_timeout(timeoutSec, timeoutUsec);
-            cli.set_read_timeout(timeoutSec, timeoutUsec);
-            cli.set_write_timeout(timeoutSec, timeoutUsec);
-
-            httplib::Headers headers = {
-                { "Content-Type", "application/json; charset=utf-8" }
-            };
-            httplib::Result result = cli.Post(
-                path.c_str(), headers, json.str(),
-                "application/json; charset=utf-8");
-
-            if (!result)
-            {
-                LOG_ERROR(
-                    "module.instance_bonus_mission",
-                    "Theme LLM request failed: {}",
-                    httplib::to_string(result.error()));
-                return fallback;
-            }
-
-            if (result->status != 200)
-            {
-                LOG_ERROR(
-                    "module.instance_bonus_mission",
-                    "Theme LLM returned status {}",
-                    result->status);
-                return fallback;
-            }
-
-            uint32 selectedThemeId = 0;
-            std::string briefing;
-            if (!TryExtractUInt(
-                    result->body, "selected_theme_id",
-                    selectedThemeId))
-            {
-                LOG_ERROR(
-                    "module.instance_bonus_mission",
-                    "Theme LLM response missing selected_theme_id: {}",
-                    result->body);
-                return fallback;
-            }
-
-            TryExtractString(result->body, "briefing", briefing);
-
-            for (ThemeDefinition const* theme : candidates)
-            {
-                if (theme->themeId != selectedThemeId)
-                    continue;
-
-                ThemeSelection selection;
-                selection.definition = theme;
-                selection.briefing = briefing.empty()
-                    ? "이번 판의 추가 미션 유형은 " +
-                        theme->name + "입니다."
-                    : briefing;
-                selection.source = "llm";
-                return selection;
-            }
-
-            LOG_ERROR(
-                "module.instance_bonus_mission",
-                "Theme LLM selected unknown theme_id {} for map {}",
-                selectedThemeId, map->GetId());
-            return fallback;
-        }
-        catch (std::exception const& ex)
-        {
-            LOG_ERROR(
-                "module.instance_bonus_mission",
-                "Theme LLM request exception: {}",
-                ex.what());
-            return fallback;
-        }
-    }
-
-    std::vector<MissionDefinition const*> CollectThemeMissions(
-        uint32 mapId, uint32 themeId, uint32 difficultyMask)
+    std::vector<MissionDefinition const*> CollectEligibleMissions(
+        uint32 mapId, uint32 difficultyMask)
     {
         std::vector<MissionDefinition const*> missions;
         auto definitions = MissionStore::Instance().GetByMap(mapId);
-        auto missionIds = MissionStore::Instance().GetMissionIdsForTheme(
-            mapId, themeId);
-        if (!definitions || !missionIds)
+        if (!definitions)
             return missions;
 
-        for (uint32 missionId : *missionIds)
+        for (MissionDefinition const& definition : *definitions)
         {
-            for (MissionDefinition const& definition : *definitions)
-            {
-                if (definition.missionId == missionId)
-                {
-                    if (IsDifficultyAllowed(
-                            definition.difficultyMask, difficultyMask))
-                        missions.push_back(&definition);
-                }
-            }
+            if (IsDifficultyAllowed(
+                    definition.difficultyMask, difficultyMask))
+                missions.push_back(&definition);
         }
 
         return missions;
@@ -1438,14 +1209,11 @@ namespace
 
     MissionSelection SelectMissionFallback(
         uint32 mapId,
-        ThemeSelection const& themeSelection,
         uint32 difficultyMask)
     {
         MissionSelection selection;
         std::vector<MissionDefinition const*> candidates =
-            CollectThemeMissions(mapId, themeSelection.definition
-                ? themeSelection.definition->themeId
-                : 0, difficultyMask);
+            CollectEligibleMissions(mapId, difficultyMask);
         if (candidates.empty())
             return selection;
 
@@ -1462,11 +1230,10 @@ namespace
 
     MissionSelection TrySelectMissionWithLlm(
         Map* map,
-        PartyContext const& ctx,
-        ThemeSelection const& themeSelection)
+        PartyContext const& ctx)
     {
         MissionSelection fallback = SelectMissionFallback(
-            map->GetId(), themeSelection, ctx.difficultyMask);
+            map->GetId(), ctx.difficultyMask);
         if (!fallback.definition)
             return fallback;
 
@@ -1474,10 +1241,7 @@ namespace
             return fallback;
 
         std::vector<MissionDefinition const*> definitions =
-            CollectThemeMissions(
-                map->GetId(),
-                themeSelection.definition ? themeSelection.definition->themeId : 0,
-                ctx.difficultyMask);
+            CollectEligibleMissions(map->GetId(), ctx.difficultyMask);
         if (definitions.empty())
             return fallback;
 
@@ -1504,16 +1268,6 @@ namespace
         json << "\"difficulty\":\"" << EscapeJson(ctx.difficulty)
              << "\",";
         json << "\"party_size\":" << ctx.partySize << ",";
-        json << "\"theme_key\":\""
-             << EscapeJson(themeSelection.definition
-                    ? themeSelection.definition->themeKey
-                    : std::string())
-             << "\",";
-        json << "\"theme_name\":\""
-             << EscapeJson(themeSelection.definition
-                    ? themeSelection.definition->name
-                    : std::string())
-             << "\",";
         json << "\"candidates\":[";
 
         bool first = true;
@@ -1822,18 +1576,13 @@ public:
         }
 
         PartyContext context = BuildPartyContext(map);
-        ThemeSelection themeSelection = TrySelectThemeWithLlm(map, context);
-        if (!themeSelection.definition)
-            return;
-
         MissionSelection missionSelection = TrySelectMissionWithLlm(
-            map, context, themeSelection);
+            map, context);
         if (!missionSelection.definition)
             return;
 
         MissionState& state = MissionStateStore::Instance().Create(
             instanceId,
-            themeSelection,
             missionSelection);
 
         state.announcement = "추가 미션이 제안되었습니다. 과반수 찬성이 필요합니다.";

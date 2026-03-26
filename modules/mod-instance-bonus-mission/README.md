@@ -1,15 +1,16 @@
 # mod-instance-bonus-mission
 
-This module adds theme-driven bonus mission content for dungeon and raid
+This module adds random bonus mission content for dungeon and raid
 instances.
 
 ## Direction
 
-The first prototype used a single random mission per instance.
-The next iteration turns the system into a themed run evaluator.
+The current runtime keeps the mission rules server-side and selects one
+eligible mission at random for the current map and difficulty.
 
 The local LLM is not used as a free-form game rules engine.
-It is used as a selector and narrator inside a server-controlled framework.
+It is only used as an optional selector/narrator inside a
+server-controlled framework.
 
 ## High-level flow
 
@@ -20,13 +21,9 @@ It is used as a selector and narrator inside a server-controlled framework.
    - role composition
    - average item level
    - dungeon and difficulty
-3. The LLM selects a run theme.
-   - slaughter
-   - clean_run
-   - speed_run
-   - boss_focus
-4. The server narrows the mission pool to the selected theme.
-5. The LLM selects one mission bundle and writes the briefing text.
+3. The server filters the mission pool by map and difficulty.
+4. One mission is selected from the eligible candidates.
+5. The optional local LLM can choose one mission from the same candidate list.
 6. The server tracks gameplay metrics.
    - clear time
    - deaths
@@ -38,15 +35,13 @@ It is used as a selector and narrator inside a server-controlled framework.
 8. The server assigns a grade.
    - S / A / B / C / D
 9. The LLM writes a result summary.
-10. The server grants the reward tier bound to the grade and theme.
+10. The server grants the configured reward.
 
 ## Responsibility split
 
 ### LLM
-- choose the run theme from server-provided candidates
-- choose one mission bundle from the server-provided candidates
-- generate the entry briefing text
-- generate the completion summary text
+- optionally choose one mission from server-provided candidates
+- optionally refine the mission announcement text
 
 ### Server
 - validate all candidates
@@ -57,38 +52,24 @@ It is used as a selector and narrator inside a server-controlled framework.
 
 ## Why this structure matters
 
-A purely random mission picker is easy to replace with code only.
-The LLM becomes valuable only when it changes the feel of each run by
-selecting the theme that best fits the current party and dungeon.
-
-This means the same dungeon can feel different from run to run.
-
-Examples:
-- slaughter: heavy kill-count pressure
-- clean_run: no-death or no-wipe emphasis
-- speed_run: strict timer and faster routing
-- boss_focus: short path to key bosses and high-value targets
+The runtime now favors predictability and easier content management.
+Mission authors can pre-build missions in the database, and the server
+simply chooses one that matches the current map and difficulty.
 
 ## Planned database structure
 
 ### instance_bonus_mission_pool
 Defines the individual mission objectives.
 
-### instance_bonus_theme_pool
-Defines the run themes per instance.
-
-### instance_bonus_theme_mission
-Maps themes to valid missions.
-
 ### instance_bonus_reward_tier
-Defines reward tiers per theme and grade.
+Reserved for reward-tier expansion.
 
 ## V2 schema for web and audit
 
 The current runtime still uses the prototype tables below:
 - `instance_bonus_mission_pool`
-- `instance_bonus_theme_pool`
-- `instance_bonus_theme_mission`
+- `instance_bonus_theme_pool` (legacy-compatible, not used by runtime)
+- `instance_bonus_theme_mission` (legacy-compatible, not used by runtime)
 - `instance_bonus_reward_tier`
 - `instance_bonus_mission_live`
 
@@ -134,13 +115,10 @@ Suggested grades:
 
 ## Next implementation targets
 
-1. Add theme tables and reward-tier tables.
-2. Add party-context collection in the module.
-3. Send theme-selection requests to the local bridge.
-4. Support mission bundles instead of one mission only.
-5. Add death-safe and no-wipe conditions.
-6. Add end-of-run scoring and grade handling.
-7. Add LLM completion summaries.
+1. Expand the mission catalog per map and difficulty.
+2. Add richer completion scoring if needed.
+3. Add optional LLM completion summaries.
+4. Add more audit and web tooling on top of the v2 schema.
 
 ## AIO UI
 
@@ -156,12 +134,11 @@ The C++ module writes live mission state to this table and the AIO layer polls
 it for display.
 
 The current panel shows:
-- current theme
 - mission title
 - progress
 - remaining time
 - mission status
-- briefing text
+- briefing or announcement text
 
 Client slash command:
 - `/kbm`
