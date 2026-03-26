@@ -34,6 +34,7 @@ namespace
         uint32 mapId = 0;
         uint32 missionId = 0;
         uint8 missionType = 0;
+        uint32 difficultyMask = 0;
         uint32 targetEntry = 0;
         uint32 targetCount = 0;
         uint32 timeLimitSec = 0;
@@ -51,6 +52,7 @@ namespace
         std::string themeKey;
         std::string name;
         std::string description;
+        uint32 difficultyMask = 0;
         uint8 minPartySize = 1;
         uint8 maxPartySize = 5;
         uint32 minAvgItemLevel = 0;
@@ -68,8 +70,19 @@ namespace
         bool hasHealer = false;
         uint32 likelyTankCount = 0;
         uint32 likelyHealerCount = 0;
+        uint32 difficultyMask = 0;
         std::string difficulty = "normal";
         std::unordered_map<uint8, uint32> classCounts;
+    };
+
+    enum MissionDifficultyMask : uint32
+    {
+        DIFFICULTY_MASK_DUNGEON_NORMAL = 1 << 0,
+        DIFFICULTY_MASK_DUNGEON_HEROIC = 1 << 1,
+        DIFFICULTY_MASK_RAID_10_NORMAL = 1 << 2,
+        DIFFICULTY_MASK_RAID_10_HEROIC = 1 << 3,
+        DIFFICULTY_MASK_RAID_25_NORMAL = 1 << 4,
+        DIFFICULTY_MASK_RAID_25_HEROIC = 1 << 5
     };
 
     struct ThemeSelection
@@ -188,6 +201,54 @@ namespace
         }
     }
 
+    uint32 GetDifficultyMaskForMap(Map* map)
+    {
+        if (!map)
+            return 0;
+
+        if (!map->IsRaid())
+            return map->IsHeroic()
+                ? DIFFICULTY_MASK_DUNGEON_HEROIC
+                : DIFFICULTY_MASK_DUNGEON_NORMAL;
+
+        if (map->Is25ManRaid())
+            return map->IsHeroic()
+                ? DIFFICULTY_MASK_RAID_25_HEROIC
+                : DIFFICULTY_MASK_RAID_25_NORMAL;
+
+        return map->IsHeroic()
+            ? DIFFICULTY_MASK_RAID_10_HEROIC
+            : DIFFICULTY_MASK_RAID_10_NORMAL;
+    }
+
+    std::string GetDifficultyTokenForMap(Map* map)
+    {
+        if (!map)
+            return "unknown";
+
+        if (!map->IsRaid())
+            return map->IsHeroic()
+                ? "dungeon_heroic"
+                : "dungeon_normal";
+
+        if (map->Is25ManRaid())
+            return map->IsHeroic()
+                ? "raid_25_heroic"
+                : "raid_25_normal";
+
+        return map->IsHeroic()
+            ? "raid_10_heroic"
+            : "raid_10_normal";
+    }
+
+    bool IsDifficultyAllowed(uint32 allowedMask, uint32 currentMask)
+    {
+        if (!allowedMask || !currentMask)
+            return true;
+
+        return (allowedMask & currentMask) != 0;
+    }
+
     class MissionStore
     {
     public:
@@ -287,9 +348,10 @@ namespace
         void LoadMissions()
         {
             QueryResult result = WorldDatabase.Query(
-                "SELECT map_id, mission_id, mission_type, target_entry, "
-                "target_count, time_limit_sec, title, target_label, "
-                "fallback_announcement, reward_item, reward_count "
+                "SELECT map_id, mission_id, mission_type, difficulty_mask, "
+                "target_entry, target_count, time_limit_sec, title, "
+                "target_label, fallback_announcement, reward_item, "
+                "reward_count "
                 "FROM instance_bonus_mission_pool "
                 "WHERE enabled = 1 "
                 "ORDER BY map_id, mission_id");
@@ -305,15 +367,16 @@ namespace
                 definition.mapId = fields[0].Get<uint32>();
                 definition.missionId = fields[1].Get<uint32>();
                 definition.missionType = fields[2].Get<uint8>();
-                definition.targetEntry = fields[3].Get<uint32>();
-                definition.targetCount = fields[4].Get<uint32>();
-                definition.timeLimitSec = fields[5].Get<uint32>();
-                definition.title = fields[6].Get<std::string>();
-                definition.targetLabel = fields[7].Get<std::string>();
+                definition.difficultyMask = fields[3].Get<uint32>();
+                definition.targetEntry = fields[4].Get<uint32>();
+                definition.targetCount = fields[5].Get<uint32>();
+                definition.timeLimitSec = fields[6].Get<uint32>();
+                definition.title = fields[7].Get<std::string>();
+                definition.targetLabel = fields[8].Get<std::string>();
                 definition.fallbackAnnouncement =
-                    fields[8].Get<std::string>();
-                definition.rewardItem = fields[9].Get<uint32>();
-                definition.rewardCount = fields[10].Get<uint32>();
+                    fields[9].Get<std::string>();
+                definition.rewardItem = fields[10].Get<uint32>();
+                definition.rewardCount = fields[11].Get<uint32>();
 
                 if (definition.targetLabel.empty())
                     definition.targetLabel = definition.title;
@@ -332,9 +395,9 @@ namespace
         {
             QueryResult result = WorldDatabase.Query(
                 "SELECT map_id, theme_id, theme_key, name, description, "
-                "min_party_size, max_party_size, min_avg_item_level, "
-                "max_avg_item_level, required_tank, required_healer, "
-                "weight "
+                "difficulty_mask, min_party_size, max_party_size, "
+                "min_avg_item_level, max_avg_item_level, required_tank, "
+                "required_healer, weight "
                 "FROM instance_bonus_theme_pool "
                 "WHERE enabled = 1 "
                 "ORDER BY map_id, theme_id");
@@ -352,13 +415,14 @@ namespace
                 definition.themeKey = fields[2].Get<std::string>();
                 definition.name = fields[3].Get<std::string>();
                 definition.description = fields[4].Get<std::string>();
-                definition.minPartySize = fields[5].Get<uint8>();
-                definition.maxPartySize = fields[6].Get<uint8>();
-                definition.minAvgItemLevel = fields[7].Get<uint32>();
-                definition.maxAvgItemLevel = fields[8].Get<uint32>();
-                definition.requiredTank = fields[9].Get<uint8>() != 0;
-                definition.requiredHealer = fields[10].Get<uint8>() != 0;
-                definition.weight = fields[11].Get<uint32>();
+                definition.difficultyMask = fields[5].Get<uint32>();
+                definition.minPartySize = fields[6].Get<uint8>();
+                definition.maxPartySize = fields[7].Get<uint8>();
+                definition.minAvgItemLevel = fields[8].Get<uint32>();
+                definition.maxAvgItemLevel = fields[9].Get<uint32>();
+                definition.requiredTank = fields[10].Get<uint8>() != 0;
+                definition.requiredHealer = fields[11].Get<uint8>() != 0;
+                definition.weight = fields[12].Get<uint32>();
 
                 _themes[definition.mapId].push_back(definition);
             } while (result->NextRow());
@@ -1072,13 +1136,8 @@ namespace
             return context;
 
         float totalItemLevel = 0.0f;
-        Player* anchor = players.front();
-        if (map->IsRaid())
-            context.difficulty = Acore::StringFormat(
-                "raid_{}", uint32(anchor->GetRaidDifficulty()));
-        else
-            context.difficulty = Acore::StringFormat(
-                "dungeon_{}", uint32(anchor->GetDungeonDifficulty()));
+        context.difficultyMask = GetDifficultyMaskForMap(map);
+        context.difficulty = GetDifficultyTokenForMap(map);
 
         for (Player* player : players)
         {
@@ -1107,6 +1166,10 @@ namespace
             return false;
 
         if (context.partySize > definition.maxPartySize)
+            return false;
+
+        if (!IsDifficultyAllowed(
+                definition.difficultyMask, context.difficultyMask))
             return false;
 
         if (context.averageItemLevel < definition.minAvgItemLevel)
@@ -1348,7 +1411,7 @@ namespace
     }
 
     std::vector<MissionDefinition const*> CollectThemeMissions(
-        uint32 mapId, uint32 themeId)
+        uint32 mapId, uint32 themeId, uint32 difficultyMask)
     {
         std::vector<MissionDefinition const*> missions;
         auto definitions = MissionStore::Instance().GetByMap(mapId);
@@ -1362,7 +1425,11 @@ namespace
             for (MissionDefinition const& definition : *definitions)
             {
                 if (definition.missionId == missionId)
-                    missions.push_back(&definition);
+                {
+                    if (IsDifficultyAllowed(
+                            definition.difficultyMask, difficultyMask))
+                        missions.push_back(&definition);
+                }
             }
         }
 
@@ -1371,13 +1438,14 @@ namespace
 
     MissionSelection SelectMissionFallback(
         uint32 mapId,
-        ThemeSelection const& themeSelection)
+        ThemeSelection const& themeSelection,
+        uint32 difficultyMask)
     {
         MissionSelection selection;
         std::vector<MissionDefinition const*> candidates =
             CollectThemeMissions(mapId, themeSelection.definition
                 ? themeSelection.definition->themeId
-                : 0);
+                : 0, difficultyMask);
         if (candidates.empty())
             return selection;
 
@@ -1398,7 +1466,7 @@ namespace
         ThemeSelection const& themeSelection)
     {
         MissionSelection fallback = SelectMissionFallback(
-            map->GetId(), themeSelection);
+            map->GetId(), themeSelection, ctx.difficultyMask);
         if (!fallback.definition)
             return fallback;
 
@@ -1408,7 +1476,8 @@ namespace
         std::vector<MissionDefinition const*> definitions =
             CollectThemeMissions(
                 map->GetId(),
-                themeSelection.definition ? themeSelection.definition->themeId : 0);
+                themeSelection.definition ? themeSelection.definition->themeId : 0,
+                ctx.difficultyMask);
         if (definitions.empty())
             return fallback;
 
