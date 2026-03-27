@@ -1,0 +1,29 @@
+[worldserver]
+
+#
+#    SoloArena.Enable
+#        Description: Enable the solo arena challenge module.
+#        Default:     1
+#
+SoloArena.Enable = 1
+
+#
+#    SoloArena.NpcEntry
+#        Description: Creature template entry used by the arena master.
+#        Default:     910000
+#
+SoloArena.NpcEntry = 910000
+
+#
+#    SoloArena.ShadowEntry
+#        Description: Creature template entry used by the shadow bot.
+#        Default:     910001
+#
+SoloArena.ShadowEntry = 910001
+
+#
+#    SoloArena.Debug
+#        Description: Print debug lines to worldserver log.
+#        Default:     0
+#
+SoloArena.Debug = 0
