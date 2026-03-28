@@ -61,13 +61,13 @@ Frame:SetBackdrop({
 Frame:SetBackdropColor(0.04, 0.04, 0.04, 0.96)
 
 Frame.state = {
-  title = "이동술사",
+  title = "Teleport Master",
   subtitle = "The Karazhan",
   body = "",
   npcDisplayId = 0,
-  section = "이동 가능한 지역",
-  closeText = "닫기",
-  refreshText = "새로고침",
+  section = "Available Destinations",
+  closeText = "Close",
+  refreshText = "Refresh",
   items = {},
 }
 
@@ -109,7 +109,7 @@ local leftHeader = CreateLabel(
   0.25
 )
 leftHeader:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 6, 0)
-leftHeader:SetText("지역 선택")
+leftHeader:SetText("Destination List")
 
 local leftDivider = leftPane:CreateTexture(nil, "ARTWORK")
 leftDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -155,29 +155,22 @@ rightBorder:SetBackdrop({
 })
 rightBorder:SetBackdropBorderColor(0.45, 0.30, 0.10, 0.80)
 
-local stageBadge = CreateFrame("Frame", nil, rightPane)
-stageBadge:SetSize(52, 52)
-stageBadge:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 18, -16)
-stageBadge:SetBackdrop({
+local iconFrame = CreateFrame("Frame", nil, rightPane)
+iconFrame:SetSize(52, 52)
+iconFrame:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 18, -16)
+iconFrame:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
   edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   edgeSize = 12,
   insets = { left = 2, right = 2, top = 2, bottom = 2 },
 })
-stageBadge:SetBackdropColor(0.12, 0.08, 0.02, 0.95)
-stageBadge:SetBackdropBorderColor(0.88, 0.70, 0.22, 0.90)
+iconFrame:SetBackdropColor(0.12, 0.08, 0.02, 0.95)
+iconFrame:SetBackdropBorderColor(0.88, 0.70, 0.22, 0.90)
 
-local stageBadgeText = CreateLabel(
-  stageBadge,
-  "GameFontHighlightLarge",
-  18,
-  1.0,
-  0.84,
-  0.25,
-  "CENTER"
-)
-stageBadgeText:SetPoint("CENTER", stageBadge, "CENTER", 0, 0)
-stageBadgeText:SetText("N")
+local iconTexture = iconFrame:CreateTexture(nil, "ARTWORK")
+iconTexture:SetPoint("TOPLEFT", iconFrame, "TOPLEFT", 8, -8)
+iconTexture:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMRIGHT", -8, 8)
+iconTexture:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
 
 local rightTitle = CreateLabel(
   rightPane,
@@ -187,7 +180,7 @@ local rightTitle = CreateLabel(
   0.92,
   0.86
 )
-rightTitle:SetPoint("TOPLEFT", stageBadge, "TOPRIGHT", 14, -2)
+rightTitle:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 14, -2)
 rightTitle:SetWidth(420)
 
 local rightMeta = CreateLabel(
@@ -210,9 +203,16 @@ rightDivider:SetHeight(8)
 
 local npcModel = CreateFrame("PlayerModel", nil, rightPane)
 npcModel:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -104)
-npcModel:SetPoint("BOTTOMRIGHT", rightPane, "BOTTOMRIGHT", -20, 126)
+npcModel:SetSize(494, 238)
 npcModel:SetCamDistanceScale(1)
 npcModel:SetPosition(0, 0, 0)
+
+local modelBg = rightPane:CreateTexture(nil, "BORDER")
+modelBg:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-General-TopLeft")
+modelBg:SetTexCoord(0.12, 0.88, 0.08, 0.92)
+modelBg:SetVertexColor(0.65, 0.20, 0.14, 0.22)
+modelBg:SetPoint("TOPLEFT", npcModel, "TOPLEFT", 0, 0)
+modelBg:SetPoint("BOTTOMRIGHT", npcModel, "BOTTOMRIGHT", 0, 0)
 
 local bodyText = CreateLabel(
   rightPane,
@@ -222,21 +222,9 @@ local bodyText = CreateLabel(
   0.82,
   0.24
 )
-bodyText:SetPoint("TOPLEFT", npcModel, "BOTTOMLEFT", 0, -14)
-bodyText:SetPoint("TOPRIGHT", npcModel, "BOTTOMRIGHT", 0, -14)
+bodyText:SetPoint("TOPLEFT", npcModel, "BOTTOMLEFT", 0, -16)
+bodyText:SetPoint("TOPRIGHT", npcModel, "BOTTOMRIGHT", 0, -16)
 bodyText:SetJustifyH("LEFT")
-
-local refreshButton = CreateFrame(
-  "Button",
-  nil,
-  rightPane,
-  "UIPanelButtonTemplate"
-)
-refreshButton:SetSize(120, 28)
-refreshButton:SetPoint("BOTTOMRIGHT", rightPane, "BOTTOMRIGHT", -18, 16)
-refreshButton:SetScript("OnClick", function()
-  SendCommand("REFRESH", "")
-end)
 
 local closeButton = CreateFrame(
   "Button",
@@ -245,9 +233,21 @@ local closeButton = CreateFrame(
   "UIPanelButtonTemplate"
 )
 closeButton:SetSize(120, 28)
-closeButton:SetPoint("RIGHT", refreshButton, "LEFT", -10, 0)
+closeButton:SetPoint("BOTTOMLEFT", rightPane, "BOTTOMLEFT", 18, 16)
 closeButton:SetScript("OnClick", function()
   Frame:Hide()
+end)
+
+local refreshButton = CreateFrame(
+  "Button",
+  nil,
+  rightPane,
+  "UIPanelButtonTemplate"
+)
+refreshButton:SetSize(120, 28)
+refreshButton:SetPoint("LEFT", closeButton, "RIGHT", 10, 0)
+refreshButton:SetScript("OnClick", function()
+  SendCommand("REFRESH", "")
 end)
 
 Frame.buttons = {}
@@ -333,13 +333,13 @@ local function UpdateNpcModel()
 end
 
 local function ResetState()
-  Frame.state.title = "이동술사"
+  Frame.state.title = "Teleport Master"
   Frame.state.subtitle = "The Karazhan"
   Frame.state.body = ""
   Frame.state.npcDisplayId = 0
-  Frame.state.section = "이동 가능한 지역"
-  Frame.state.closeText = "닫기"
-  Frame.state.refreshText = "새로고침"
+  Frame.state.section = "Available Destinations"
+  Frame.state.closeText = "Close"
+  Frame.state.refreshText = "Refresh"
   Frame.state.items = {}
 end
 
@@ -368,13 +368,13 @@ local function RefreshList()
 end
 
 local function Refresh()
-  title:SetText(Frame.state.title or "이동술사")
+  title:SetText(Frame.state.title or "Teleport Master")
   subtitle:SetText(Frame.state.subtitle or "")
-  rightTitle:SetText(Frame.state.title or "이동술사")
-  rightMeta:SetText(Frame.state.section or "이동 가능한 지역")
+  rightTitle:SetText(Frame.state.title or "Teleport Master")
+  rightMeta:SetText(Frame.state.section or "Available Destinations")
   bodyText:SetText(Frame.state.body or "")
-  closeButton:SetText(Frame.state.closeText or "닫기")
-  refreshButton:SetText(Frame.state.refreshText or "새로고침")
+  closeButton:SetText(Frame.state.closeText or "Close")
+  refreshButton:SetText(Frame.state.refreshText or "Refresh")
   UpdateNpcModel()
   RefreshList()
 end

@@ -1,10 +1,6 @@
 local addonName = ...
 
-local VALID_PREFIXES = {
-  HERO_STONE_UI = true,
-}
-
-local activePrefix = "HERO_STONE_UI"
+local PREFIX = "HERO_STONE_UI"
 
 local function Split(input, sep)
   local parts = {}
@@ -30,7 +26,7 @@ local function SendCommand(command, value)
     payload = payload .. "\t" .. tostring(value)
   end
 
-  SendAddonMessage(activePrefix, payload, "WHISPER", playerName)
+  SendAddonMessage(PREFIX, payload, "WHISPER", playerName)
 end
 
 local function CreateLabel(parent, template, size, r, g, b, justify)
@@ -43,7 +39,7 @@ local function CreateLabel(parent, template, size, r, g, b, justify)
 end
 
 local Frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
-Frame:SetSize(860, 540)
+Frame:SetSize(600, 378)
 Frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 Frame:SetClampedToScreen(true)
 Frame:EnableMouse(true)
@@ -65,15 +61,16 @@ Frame:SetBackdrop({
 Frame:SetBackdropColor(0.04, 0.04, 0.04, 0.96)
 
 Frame.state = {
-  title = "영웅석",
+  title = "Hero Stone",
   subtitle = "",
   body = "",
   icon = "Interface\\Icons\\INV_Misc_Rune_01",
-  npcDisplayId = 0,
-  section = "사용 가능한 기능",
-  closeText = "닫기",
-  refreshText = "새로고침",
+  section = "Available Features",
+  closeText = "Close",
+  refreshText = "Refresh",
   items = {},
+  isSubscriber = false,
+  remainDays = 0,
 }
 
 local title = CreateLabel(
@@ -102,8 +99,8 @@ local close = CreateFrame("Button", nil, Frame, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -10, -10)
 
 local leftPane = CreateFrame("Frame", nil, Frame)
-leftPane:SetPoint("TOPLEFT", Frame, "TOPLEFT", 24, -54)
-leftPane:SetSize(268, 452)
+leftPane:SetPoint("TOPLEFT", Frame, "TOPLEFT", 20, -52)
+leftPane:SetSize(220, 300)
 
 local leftHeader = CreateLabel(
   leftPane,
@@ -114,7 +111,7 @@ local leftHeader = CreateLabel(
   0.25
 )
 leftHeader:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 6, 0)
-leftHeader:SetText("기능 선택")
+leftHeader:SetText("Feature List")
 
 local leftDivider = leftPane:CreateTexture(nil, "ARTWORK")
 leftDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -139,12 +136,12 @@ leftScroll:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 4, -34)
 leftScroll:SetPoint("BOTTOMRIGHT", leftPane, "BOTTOMRIGHT", -28, 4)
 
 local leftContent = CreateFrame("Frame", nil, leftScroll)
-leftContent:SetSize(236, 1)
+leftContent:SetSize(188, 1)
 leftScroll:SetScrollChild(leftContent)
 
 local rightPane = CreateFrame("Frame", nil, Frame)
-rightPane:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -24, -54)
-rightPane:SetSize(534, 452)
+rightPane:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -20, -52)
+rightPane:SetSize(336, 300)
 
 local rightBg = rightPane:CreateTexture(nil, "BACKGROUND")
 rightBg:SetTexture("Interface\\Buttons\\WHITE8x8")
@@ -161,8 +158,8 @@ rightBorder:SetBackdrop({
 rightBorder:SetBackdropBorderColor(0.45, 0.30, 0.10, 0.80)
 
 local iconFrame = CreateFrame("Frame", nil, rightPane)
-iconFrame:SetSize(84, 84)
-iconFrame:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 18, -16)
+iconFrame:SetSize(66, 66)
+iconFrame:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -16)
 iconFrame:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
   edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -173,22 +170,22 @@ iconFrame:SetBackdropColor(0.12, 0.08, 0.02, 0.95)
 iconFrame:SetBackdropBorderColor(0.88, 0.70, 0.22, 0.90)
 
 local iconTexture = iconFrame:CreateTexture(nil, "ARTWORK")
-iconTexture:SetPoint("TOPLEFT", iconFrame, "TOPLEFT", 10, -10)
-iconTexture:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMRIGHT", -10, 10)
+iconTexture:SetPoint("TOPLEFT", iconFrame, "TOPLEFT", 8, -8)
+iconTexture:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMRIGHT", -8, 8)
 iconTexture:SetTexture(Frame.state.icon)
 
-local rightTitle = CreateLabel(
+local infoTitle = CreateLabel(
   rightPane,
   "GameFontHighlightLarge",
-  22,
+  18,
   0.96,
   0.92,
   0.86
 )
-rightTitle:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 14, -2)
-rightTitle:SetWidth(400)
+infoTitle:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 12, -2)
+infoTitle:SetWidth(236)
 
-local rightMeta = CreateLabel(
+local infoSubtitle = CreateLabel(
   rightPane,
   "GameFontNormal",
   12,
@@ -196,46 +193,78 @@ local rightMeta = CreateLabel(
   0.76,
   0.34
 )
-rightMeta:SetPoint("TOPLEFT", rightTitle, "BOTTOMLEFT", 0, -6)
-rightMeta:SetWidth(400)
+infoSubtitle:SetPoint("TOPLEFT", infoTitle, "BOTTOMLEFT", 0, -4)
+infoSubtitle:SetWidth(236)
 
-local rightDivider = rightPane:CreateTexture(nil, "ARTWORK")
-rightDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
-rightDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
-rightDivider:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -108)
-rightDivider:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -108)
-rightDivider:SetHeight(8)
+local gaugeLabel = CreateLabel(
+  rightPane,
+  "GameFontHighlight",
+  12,
+  1.0,
+  0.84,
+  0.25
+)
+gaugeLabel:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -94)
+gaugeLabel:SetText("Subscription")
 
-local playerModel = CreateFrame("DressUpModel", nil, rightPane)
-playerModel:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -126)
-playerModel:SetPoint("BOTTOMRIGHT", rightPane, "BOTTOMRIGHT", -20, 126)
-playerModel:SetFacing(0.45)
-playerModel:SetModelScale(1.0)
-playerModel:SetUnit("player")
+local gaugeBg = CreateFrame("Frame", nil, rightPane)
+gaugeBg:SetSize(304, 18)
+gaugeBg:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -116)
+gaugeBg:SetBackdrop({
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+  edgeSize = 10,
+  insets = { left = 2, right = 2, top = 2, bottom = 2 },
+})
+gaugeBg:SetBackdropColor(0.05, 0.05, 0.05, 0.92)
+gaugeBg:SetBackdropBorderColor(0.30, 0.24, 0.12, 0.90)
+
+local gaugeFill = gaugeBg:CreateTexture(nil, "ARTWORK")
+gaugeFill:SetTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
+gaugeFill:SetVertexColor(0.92, 0.70, 0.18, 0.95)
+gaugeFill:SetPoint("TOPLEFT", gaugeBg, "TOPLEFT", 2, -2)
+gaugeFill:SetPoint("BOTTOMLEFT", gaugeBg, "BOTTOMLEFT", 2, 2)
+gaugeFill:SetWidth(1)
+
+local gaugeText = CreateLabel(
+  gaugeBg,
+  "GameFontNormalSmall",
+  11,
+  1.0,
+  1.0,
+  1.0,
+  "CENTER"
+)
+gaugeText:SetPoint("CENTER", gaugeBg, "CENTER", 0, 0)
+
+local sectionTitle = CreateLabel(
+  rightPane,
+  "GameFontHighlight",
+  13,
+  1.0,
+  0.84,
+  0.25
+)
+sectionTitle:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -146)
+
+local divider = rightPane:CreateTexture(nil, "ARTWORK")
+divider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
+divider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
+divider:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -166)
+divider:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -166)
+divider:SetHeight(8)
 
 local bodyText = CreateLabel(
   rightPane,
   "GameFontNormal",
-  13,
+  12,
   0.95,
   0.82,
   0.24
 )
-bodyText:SetPoint("TOPLEFT", playerModel, "BOTTOMLEFT", 0, -14)
-bodyText:SetPoint("TOPRIGHT", playerModel, "BOTTOMRIGHT", 0, -14)
+bodyText:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -182)
+bodyText:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -182)
 bodyText:SetJustifyH("LEFT")
-
-local refreshButton = CreateFrame(
-  "Button",
-  nil,
-  rightPane,
-  "UIPanelButtonTemplate"
-)
-refreshButton:SetSize(120, 28)
-refreshButton:SetPoint("BOTTOMRIGHT", rightPane, "BOTTOMRIGHT", -18, 16)
-refreshButton:SetScript("OnClick", function()
-  SendCommand("REFRESH", "")
-end)
 
 local closeButton = CreateFrame(
   "Button",
@@ -243,18 +272,30 @@ local closeButton = CreateFrame(
   rightPane,
   "UIPanelButtonTemplate"
 )
-closeButton:SetSize(120, 28)
-closeButton:SetPoint("RIGHT", refreshButton, "LEFT", -10, 0)
+closeButton:SetSize(110, 26)
+closeButton:SetPoint("BOTTOMLEFT", rightPane, "BOTTOMLEFT", 16, 14)
 closeButton:SetScript("OnClick", function()
   Frame:Hide()
+end)
+
+local refreshButton = CreateFrame(
+  "Button",
+  nil,
+  rightPane,
+  "UIPanelButtonTemplate"
+)
+refreshButton:SetSize(110, 26)
+refreshButton:SetPoint("LEFT", closeButton, "RIGHT", 10, 0)
+refreshButton:SetScript("OnClick", function()
+  SendCommand("REFRESH", "")
 end)
 
 Frame.buttons = {}
 
 local function CreateListButton(index)
   local button = CreateFrame("Button", nil, leftContent)
-  button:SetSize(236, 52)
-  button:SetPoint("TOPLEFT", leftContent, "TOPLEFT", 0, -((index - 1) * 56))
+  button:SetSize(188, 48)
+  button:SetPoint("TOPLEFT", leftContent, "TOPLEFT", 0, -((index - 1) * 52))
   button:SetBackdrop({
     bgFile = "Interface\\Buttons\\WHITE8x8",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -267,8 +308,8 @@ local function CreateListButton(index)
 
   button.iconBg = button:CreateTexture(nil, "ARTWORK")
   button.iconBg:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-  button.iconBg:SetSize(32, 32)
-  button.iconBg:SetPoint("LEFT", button, "LEFT", 10, 0)
+  button.iconBg:SetSize(28, 28)
+  button.iconBg:SetPoint("LEFT", button, "LEFT", 8, 0)
 
   button.icon = button:CreateTexture(nil, "OVERLAY")
   button.icon:SetPoint("TOPLEFT", button.iconBg, "TOPLEFT", 4, -4)
@@ -278,24 +319,24 @@ local function CreateListButton(index)
   button.name = CreateLabel(
     button,
     "GameFontHighlight",
-    14,
+    13,
     1.0,
     0.84,
     0.25
   )
   button.name:SetPoint("TOPLEFT", button.iconBg, "TOPRIGHT", 10, -2)
-  button.name:SetWidth(170)
+  button.name:SetWidth(134)
 
   button.meta = CreateLabel(
     button,
     "GameFontNormalSmall",
-    11,
+    10,
     0.72,
     0.72,
     0.72
   )
-  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -5)
-  button.meta:SetWidth(170)
+  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -4)
+  button.meta:SetWidth(134)
 
   button:SetScript("OnClick", function(self)
     if self.actionId then
@@ -311,76 +352,47 @@ for i = 1, 10 do
   CreateListButton(i)
 end
 
-local PortraitUpdater = CreateFrame("Frame")
-PortraitUpdater.queue = {}
-
-local function SetSafePortraitTexture(textureObject, unit)
-  if not textureObject or not unit or not UnitExists(unit) then
-    return false
-  end
-
-  if IsUnitModelReadyForUI and IsUnitModelReadyForUI(unit) then
-    PortraitUpdater.queue[textureObject] = nil
-    SetPortraitTexture(textureObject, unit)
-    return true
-  end
-
-  PortraitUpdater.queue[textureObject] = unit
-  PortraitUpdater.t = 0
-  PortraitUpdater:SetScript("OnUpdate", function(self, elapsed)
-    self.t = self.t + elapsed
-    if self.t < 0.4 then
-      return
-    end
-
-    self.t = 0
-    self:SetScript("OnUpdate", nil)
-    for texture, queuedUnit in pairs(self.queue) do
-      if texture:IsVisible() and UnitExists(queuedUnit) then
-        SetPortraitTexture(texture, queuedUnit)
-      end
-    end
-    wipe(self.queue)
-  end)
-
-  return true
+local function ParseSubscription()
+  local remainDays = tonumber(string.match(Frame.state.subtitle or "", "(%d+)"))
+    or 0
+  local isSubscriber = remainDays > 0
+  Frame.state.remainDays = remainDays
+  Frame.state.isSubscriber = isSubscriber and remainDays > 0
 end
 
-local function UpdateHeaderIcon()
-  if Frame.state.icon == "PORTRAIT_NPC" then
-    if SetSafePortraitTexture(iconTexture, "npc") then
-      return
-    end
+local function UpdateGauge()
+  local value = 0
+  local maxDays = 30
 
-    if SetSafePortraitTexture(iconTexture, "target") then
-      return
-    end
-
-    if Frame.state.npcDisplayId and Frame.state.npcDisplayId > 0
-        and SetPortraitTextureFromCreatureDisplayID then
-      SetPortraitTextureFromCreatureDisplayID(
-        iconTexture,
-        Frame.state.npcDisplayId
-      )
-      return
-    end
+  if Frame.state.isSubscriber then
+    value = math.min(Frame.state.remainDays, maxDays)
+    gaugeFill:SetVertexColor(0.92, 0.70, 0.18, 0.95)
+    gaugeText:SetText(string.format("%d days remaining", Frame.state.remainDays))
+  else
+    value = 0
+    gaugeFill:SetVertexColor(0.45, 0.12, 0.12, 0.95)
+    gaugeText:SetText("No subscription")
   end
 
-  iconTexture:SetTexture(
-    Frame.state.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
-  )
+  local totalWidth = 300
+  local width = math.max(1, math.floor((value / maxDays) * totalWidth))
+  if value <= 0 then
+    width = 1
+  end
+  gaugeFill:SetWidth(width)
 end
 
 local function ResetState()
-  Frame.state.title = "영웅석"
+  Frame.state.title = "Hero Stone"
   Frame.state.subtitle = ""
   Frame.state.body = ""
   Frame.state.icon = "Interface\\Icons\\INV_Misc_Rune_01"
-  Frame.state.npcDisplayId = 0
-  Frame.state.section = "사용 가능한 기능"
-  Frame.state.closeText = "닫기"
-  Frame.state.refreshText = "새로고침"
+  Frame.state.section = "Available Features"
+  Frame.state.closeText = "Close"
+  Frame.state.refreshText = "Refresh"
   Frame.state.items = {}
+  Frame.state.isSubscriber = false
+  Frame.state.remainDays = 0
 end
 
 local function RefreshList()
@@ -388,7 +400,7 @@ local function RefreshList()
   if count < 1 then
     count = 1
   end
-  leftContent:SetHeight((count * 56) - 4)
+  leftContent:SetHeight((count * 52) - 4)
 
   for index, button in ipairs(Frame.buttons) do
     local item = Frame.state.items[index]
@@ -408,15 +420,19 @@ local function RefreshList()
 end
 
 local function Refresh()
-  UpdateHeaderIcon()
-  title:SetText(Frame.state.title or "영웅석")
+  ParseSubscription()
+  iconTexture:SetTexture(
+    Frame.state.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
+  )
+  title:SetText(Frame.state.title or "Hero Stone")
   subtitle:SetText(Frame.state.subtitle or "")
-  rightTitle:SetText(Frame.state.title or "영웅석")
-  rightMeta:SetText(Frame.state.section or "사용 가능한 기능")
+  infoTitle:SetText(Frame.state.title or "Hero Stone")
+  infoSubtitle:SetText(Frame.state.subtitle or "")
+  sectionTitle:SetText(Frame.state.section or "Available Features")
   bodyText:SetText(Frame.state.body or "")
-  closeButton:SetText(Frame.state.closeText or "닫기")
-  refreshButton:SetText(Frame.state.refreshText or "새로고침")
-  playerModel:SetUnit("player")
+  closeButton:SetText(Frame.state.closeText or "Close")
+  refreshButton:SetText(Frame.state.refreshText or "Refresh")
+  UpdateGauge()
   RefreshList()
 end
 
@@ -425,18 +441,14 @@ Frame:RegisterEvent("CHAT_MSG_ADDON")
 Frame:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
-      for knownPrefix in pairs(VALID_PREFIXES) do
-        RegisterAddonMessagePrefix(knownPrefix)
-      end
+      RegisterAddonMessagePrefix(PREFIX)
     end
     return
   end
 
-  if not VALID_PREFIXES[prefix] or type(message) ~= "string" then
+  if prefix ~= PREFIX or type(message) ~= "string" then
     return
   end
-
-  activePrefix = prefix
 
   local parts = Split(message, "\t")
   local kind = parts[1]
@@ -451,7 +463,6 @@ Frame:SetScript("OnEvent", function(self, event, prefix, message)
     Frame.state.title = parts[2] or Frame.state.title
     Frame.state.subtitle = parts[3] or ""
     Frame.state.icon = parts[4] or Frame.state.icon
-    Frame.state.npcDisplayId = tonumber(parts[5]) or 0
     Refresh()
     return
   end
