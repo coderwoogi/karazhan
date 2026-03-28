@@ -373,10 +373,17 @@ namespace
         if (!player || !StartsWith(msg, "TRIAL_CMD\t"))
             return false;
 
+        LOG_INFO("module",
+            "SoloArena addon command: player='{}' msg='{}'",
+            player->GetName(), msg);
+
         if (StartsWith(msg, "TRIAL_CMD\tSTART\t"))
         {
             std::string stageText = msg.substr(16);
             uint8 stageId = uint8(std::max(0, atoi(stageText.c_str())));
+            LOG_INFO("module",
+                "SoloArena start request: player='{}' stage={}",
+                player->GetName(), uint32(stageId));
             SoloArenaMgr::Instance().StartChallenge(player, stageId);
             return true;
         }
