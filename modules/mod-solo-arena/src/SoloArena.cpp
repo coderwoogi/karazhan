@@ -45,6 +45,22 @@ namespace
         PendingFinish = 3
     };
 
+    enum CloneVisualSpells : uint32
+    {
+        SPELL_CLONE_CASTER_VISUAL = 50218,
+        SPELL_COPY_MAINHAND = 41055,
+        SPELL_COPY_OFFHAND = 45206,
+        SPELL_COPY_RANGED = 57593
+    };
+
+    enum ShadowEvents : uint32
+    {
+        EVENT_PRIMARY = 1,
+        EVENT_SECONDARY = 2,
+        EVENT_TERTIARY = 3,
+        EVENT_DEFENSIVE = 4
+    };
+
     struct StageConfig
     {
         uint8 StageId = 0;
@@ -100,13 +116,41 @@ namespace
     {
         uint32 PrimarySpell = 0;
         uint32 SecondarySpell = 0;
+        uint32 TertiarySpell = 0;
+        uint32 DefensiveSpell = 0;
         SpellSchoolMask PrimarySchool = SPELL_SCHOOL_MASK_NORMAL;
         SpellSchoolMask SecondarySchool = SPELL_SCHOOL_MASK_NORMAL;
+        SpellSchoolMask TertiarySchool = SPELL_SCHOOL_MASK_NORMAL;
+        SpellSchoolMask DefensiveSchool = SPELL_SCHOOL_MASK_NORMAL;
         float PrimaryDamageFactor = 1.0f;
         float SecondaryDamageFactor = 1.2f;
+        float TertiaryDamageFactor = 1.05f;
+        float DefensiveDamageFactor = 0.0f;
         float PrimaryRange = 30.0f;
         float SecondaryRange = 20.0f;
+        float TertiaryRange = 20.0f;
+        float DefensiveRange = 0.0f;
+        uint32 PrimaryCooldownMs = 3500;
+        uint32 SecondaryCooldownMs = 5200;
+        uint32 TertiaryCooldownMs = 7000;
+        uint32 DefensiveCooldownMs = 12000;
+        float DefensiveHealthPct = 0.45f;
     };
+
+    void ApplyShadowCloneVisual(Player* player, Creature* summon)
+    {
+        if (!player || !summon)
+            return;
+
+        summon->SetDisplayId(player->GetDisplayId(), player->GetObjectScale());
+        summon->SetNativeDisplayId(player->GetDisplayId());
+        summon->SetUnitFlag2(UNIT_FLAG2_MIRROR_IMAGE);
+
+        player->CastSpell(summon, SPELL_CLONE_CASTER_VISUAL, true);
+        player->CastSpell(summon, SPELL_COPY_MAINHAND, true);
+        player->CastSpell(summon, SPELL_COPY_OFFHAND, true);
+        player->CastSpell(summon, SPELL_COPY_RANGED, true);
+    }
 
     void StartShadowCombat(Player* player, Creature* bot)
     {
@@ -215,7 +259,7 @@ namespace
         std::unordered_set<uint32> _managedArenaInstances;
     };
 
-    SpellPackage GetSpellPackage(uint8 playerClass);
+    SpellPackage GetSpellPackage(uint8 playerClass, uint32 activeSpec);
     uint32 ComputeShadowSpellDamage(Creature* me,
         ShadowProfile const& profile,
         float factor);
@@ -627,7 +671,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     profile.PlayerGuid = player->GetGUID();
     profile.StageId = stage->StageId;
     profile.PlayerClass = player->getClass();
-    profile.ActiveSpec = player->GetSpec();
+    profile.ActiveSpec = player->GetSpec(player->GetActiveSpec());
     profile.DamageMultiplier = stage->DamageMultiplier;
     profile.SpellIntervalMs = stage->SpellIntervalMs;
     _shadowProfiles[summon->GetGUID().GetCounter()] = profile;
@@ -645,9 +689,8 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
     StageConfig const& stage)
 {
-    summon->SetName(Acore::StringFormat("{}'s Shadow", player->GetName()));
-    summon->SetDisplayId(player->GetNativeDisplayId(), 1.0f);
-    summon->SetNativeDisplayId(player->GetNativeDisplayId());
+    summon->SetName(player->GetName());
+    ApplyShadowCloneVisual(player, summon);
     summon->SetLevel(player->GetLevel());
     summon->SetByteValue(UNIT_FIELD_BYTES_0, 0, player->getRace());
     summon->SetByteValue(UNIT_FIELD_BYTES_0, 1, player->getClass());
@@ -860,43 +903,285 @@ void SoloArenaMgr::LoadDefaultStages()
 
 namespace
 {
-    SpellPackage GetSpellPackage(uint8 playerClass)
+    SpellPackage GetSpellPackage(uint8 playerClass, uint32 activeSpec)
     {
         switch (playerClass)
         {
             case CLASS_WARRIOR:
-                return { 47450, 47486, SPELL_SCHOOL_MASK_NORMAL,
-                    SPELL_SCHOOL_MASK_NORMAL, 0.85f, 1.20f, 5.0f, 5.0f };
+                switch (activeSpec)
+                {
+                    case TALENT_TREE_WARRIOR_FURY:
+                        return { 23881, 47450, 47520, 12975,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            0.95f, 1.10f, 1.25f, 0.0f,
+                            5.0f, 5.0f, 8.0f, 0.0f,
+                            3200, 4500, 6500, 15000, 0.40f };
+                    case TALENT_TREE_WARRIOR_PROTECTION:
+                        return { 47488, 57823, 47498, 871,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            0.90f, 1.00f, 1.05f, 0.0f,
+                            5.0f, 5.0f, 5.0f, 0.0f,
+                            3300, 4800, 7000, 18000, 0.45f };
+                    default:
+                        return { 47486, 47450, 7384, 871,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            1.00f, 0.95f, 1.10f, 0.0f,
+                            5.0f, 5.0f, 5.0f, 0.0f,
+                            3200, 4200, 6000, 18000, 0.45f };
+                }
             case CLASS_PALADIN:
-                return { 35395, 48806, SPELL_SCHOOL_MASK_HOLY,
-                    SPELL_SCHOOL_MASK_HOLY, 0.90f, 1.30f, 5.0f, 20.0f };
+                switch (activeSpec)
+                {
+                    case TALENT_TREE_PALADIN_HOLY:
+                        return { 48825, 48819, 48817, 48785,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            0.95f, 0.90f, 1.05f, 0.0f,
+                            20.0f, 8.0f, 20.0f, 0.0f,
+                            3200, 5200, 6500, 16000, 0.50f };
+                    case TALENT_TREE_PALADIN_PROTECTION:
+                        return { 53595, 48827, 48806, 642,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            0.95f, 1.00f, 1.10f, 0.0f,
+                            5.0f, 10.0f, 20.0f, 0.0f,
+                            3200, 5200, 7000, 18000, 0.45f };
+                    default:
+                        return { 35395, 48806, 48801, 642,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            1.00f, 1.10f, 1.05f, 0.0f,
+                            5.0f, 20.0f, 20.0f, 0.0f,
+                            3000, 5200, 7000, 18000, 0.40f };
+                }
             case CLASS_HUNTER:
-                return { 49045, 49052, SPELL_SCHOOL_MASK_ARCANE,
-                    SPELL_SCHOOL_MASK_NORMAL, 0.80f, 1.10f, 30.0f, 30.0f };
+                return { 49045, 49052, 49050, 19263,
+                    SPELL_SCHOOL_MASK_ARCANE,
+                    SPELL_SCHOOL_MASK_NORMAL,
+                    SPELL_SCHOOL_MASK_NORMAL,
+                    SPELL_SCHOOL_MASK_NORMAL,
+                    0.95f, 1.00f, 1.15f, 0.0f,
+                    30.0f, 30.0f, 35.0f, 0.0f,
+                    2800, 4200, 6500, 18000, 0.45f };
             case CLASS_ROGUE:
-                return { 48638, 48668, SPELL_SCHOOL_MASK_NORMAL,
-                    SPELL_SCHOOL_MASK_NORMAL, 0.85f, 1.25f, 5.0f, 5.0f };
+                return { 48638, 48668, 57993, 26669,
+                    SPELL_SCHOOL_MASK_NORMAL,
+                    SPELL_SCHOOL_MASK_NORMAL,
+                    SPELL_SCHOOL_MASK_NORMAL,
+                    SPELL_SCHOOL_MASK_NORMAL,
+                    0.95f, 1.05f, 1.15f, 0.0f,
+                    5.0f, 5.0f, 5.0f, 0.0f,
+                    2600, 4300, 6200, 16000, 0.40f };
             case CLASS_PRIEST:
-                return { 48127, 48156, SPELL_SCHOOL_MASK_SHADOW,
-                    SPELL_SCHOOL_MASK_SHADOW, 0.85f, 1.15f, 30.0f, 20.0f };
+                switch (activeSpec)
+                {
+                    case TALENT_TREE_PRIEST_DISCIPLINE:
+                        return { 48066, 53007, 48123, 47585,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            0.0f, 1.00f, 0.95f, 0.0f,
+                            0.0f, 30.0f, 30.0f, 0.0f,
+                            5000, 3500, 5200, 16000, 0.45f };
+                    case TALENT_TREE_PRIEST_HOLY:
+                        return { 48135, 48134, 48071, 47788,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            0.95f, 1.00f, 0.0f, 0.0f,
+                            30.0f, 30.0f, 0.0f, 0.0f,
+                            3200, 4500, 6200, 16000, 0.45f };
+                    default:
+                        return { 48127, 48156, 48300, 47585,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_HOLY,
+                            1.00f, 0.95f, 1.10f, 0.0f,
+                            30.0f, 20.0f, 30.0f, 0.0f,
+                            3200, 4200, 6500, 16000, 0.40f };
+                }
             case CLASS_DEATH_KNIGHT:
-                return { 49909, 49895, SPELL_SCHOOL_MASK_FROST,
-                    SPELL_SCHOOL_MASK_SHADOW, 0.90f, 1.25f, 20.0f, 30.0f };
+                switch (activeSpec)
+                {
+                    case TALENT_TREE_DEATH_KNIGHT_BLOOD:
+                        return { 49924, 49930, 49941, 48743,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            1.00f, 1.05f, 1.15f, 0.0f,
+                            5.0f, 20.0f, 5.0f, 0.0f,
+                            3200, 4800, 6500, 16000, 0.45f };
+                    case TALENT_TREE_DEATH_KNIGHT_UNHOLY:
+                        return { 49909, 49895, 49938, 48792,
+                            SPELL_SCHOOL_MASK_FROST,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_FROST,
+                            0.95f, 1.05f, 1.10f, 0.0f,
+                            20.0f, 30.0f, 5.0f, 0.0f,
+                            3000, 4200, 6200, 18000, 0.45f };
+                    default:
+                        return { 51425, 49909, 49930, 48792,
+                            SPELL_SCHOOL_MASK_FROST,
+                            SPELL_SCHOOL_MASK_FROST,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_FROST,
+                            1.10f, 0.95f, 1.00f, 0.0f,
+                            5.0f, 20.0f, 20.0f, 0.0f,
+                            3000, 4200, 6500, 18000, 0.45f };
+                }
             case CLASS_SHAMAN:
-                return { 49238, 49233, SPELL_SCHOOL_MASK_NATURE,
-                    SPELL_SCHOOL_MASK_FIRE, 0.85f, 1.15f, 30.0f, 20.0f };
+                switch (activeSpec)
+                {
+                    case TALENT_TREE_SHAMAN_ENHANCEMENT:
+                        return { 17364, 49231, 49238, 30823,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            1.00f, 1.05f, 0.90f, 0.0f,
+                            5.0f, 20.0f, 25.0f, 0.0f,
+                            2800, 4300, 6000, 15000, 0.45f };
+                    case TALENT_TREE_SHAMAN_RESTORATION:
+                        return { 49238, 49276, 49233, 30823,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            0.90f, 0.0f, 1.00f, 0.0f,
+                            30.0f, 0.0f, 20.0f, 0.0f,
+                            3200, 7000, 5200, 15000, 0.40f };
+                    default:
+                        return { 49238, 60043, 49233, 30823,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            0.95f, 1.15f, 1.00f, 0.0f,
+                            30.0f, 30.0f, 20.0f, 0.0f,
+                            3000, 4500, 6000, 15000, 0.40f };
+                }
             case CLASS_MAGE:
-                return { 42842, 42873, SPELL_SCHOOL_MASK_FROST,
-                    SPELL_SCHOOL_MASK_FIRE, 0.85f, 1.15f, 30.0f, 20.0f };
+                switch (activeSpec)
+                {
+                    case TALENT_TREE_MAGE_FIRE:
+                        return { 42833, 55360, 42891, 45438,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_FROST,
+                            1.00f, 1.15f, 0.95f, 0.0f,
+                            30.0f, 30.0f, 30.0f, 0.0f,
+                            2800, 5200, 4200, 16000, 0.40f };
+                    case TALENT_TREE_MAGE_ARCANE:
+                        return { 42897, 42846, 44781, 45438,
+                            SPELL_SCHOOL_MASK_ARCANE,
+                            SPELL_SCHOOL_MASK_ARCANE,
+                            SPELL_SCHOOL_MASK_ARCANE,
+                            SPELL_SCHOOL_MASK_FROST,
+                            1.05f, 0.95f, 1.10f, 0.0f,
+                            30.0f, 30.0f, 30.0f, 0.0f,
+                            2600, 4200, 5600, 16000, 0.40f };
+                    default:
+                        return { 42842, 42917, 33395, 45438,
+                            SPELL_SCHOOL_MASK_FROST,
+                            SPELL_SCHOOL_MASK_FROST,
+                            SPELL_SCHOOL_MASK_FROST,
+                            SPELL_SCHOOL_MASK_FROST,
+                            1.00f, 0.95f, 1.10f, 0.0f,
+                            30.0f, 20.0f, 20.0f, 0.0f,
+                            2800, 4500, 6500, 16000, 0.40f };
+                }
             case CLASS_WARLOCK:
-                return { 47809, 47813, SPELL_SCHOOL_MASK_SHADOW,
-                    SPELL_SCHOOL_MASK_SHADOW, 0.85f, 1.15f, 30.0f, 30.0f };
+                switch (activeSpec)
+                {
+                    case TALENT_TREE_WARLOCK_DEMONOLOGY:
+                        return { 47809, 47811, 47813, 48020,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            0.95f, 1.00f, 1.10f, 0.0f,
+                            30.0f, 30.0f, 30.0f, 0.0f,
+                            2800, 4500, 6200, 17000, 0.45f };
+                    case TALENT_TREE_WARLOCK_DESTRUCTION:
+                        return { 47811, 17962, 47809, 48020,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            1.00f, 1.15f, 0.95f, 0.0f,
+                            30.0f, 20.0f, 30.0f, 0.0f,
+                            3000, 5000, 4200, 17000, 0.45f };
+                    default:
+                        return { 47809, 47813, 47811, 48020,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_SHADOW,
+                            0.95f, 1.10f, 1.00f, 0.0f,
+                            30.0f, 30.0f, 30.0f, 0.0f,
+                            2800, 5000, 4200, 17000, 0.45f };
+                }
             case CLASS_DRUID:
-                return { 48461, 48463, SPELL_SCHOOL_MASK_NATURE,
-                    SPELL_SCHOOL_MASK_ARCANE, 0.85f, 1.10f, 30.0f, 30.0f };
+                switch (activeSpec)
+                {
+                    case TALENT_TREE_DRUID_FERAL_COMBAT:
+                        return { 48566, 49800, 48570, 22812,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NORMAL,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            1.00f, 1.10f, 0.95f, 0.0f,
+                            5.0f, 5.0f, 5.0f, 0.0f,
+                            2800, 4300, 6200, 15000, 0.40f };
+                    case TALENT_TREE_DRUID_RESTORATION:
+                        return { 48461, 48465, 48463, 22812,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            SPELL_SCHOOL_MASK_ARCANE,
+                            SPELL_SCHOOL_MASK_ARCANE,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            0.90f, 1.00f, 1.05f, 0.0f,
+                            30.0f, 30.0f, 30.0f, 0.0f,
+                            3200, 5000, 4200, 15000, 0.45f };
+                    default:
+                        return { 48461, 48465, 48463, 22812,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            SPELL_SCHOOL_MASK_ARCANE,
+                            SPELL_SCHOOL_MASK_ARCANE,
+                            SPELL_SCHOOL_MASK_NATURE,
+                            0.95f, 1.10f, 1.00f, 0.0f,
+                            30.0f, 30.0f, 30.0f, 0.0f,
+                            2800, 5000, 4200, 15000, 0.45f };
+                }
             default:
-                return { 585, 589, SPELL_SCHOOL_MASK_HOLY,
-                    SPELL_SCHOOL_MASK_SHADOW, 0.80f, 1.0f, 30.0f, 30.0f };
+                return { 585, 589, 48135, 17,
+                    SPELL_SCHOOL_MASK_HOLY,
+                    SPELL_SCHOOL_MASK_SHADOW,
+                    SPELL_SCHOOL_MASK_HOLY,
+                    SPELL_SCHOOL_MASK_HOLY,
+                    0.80f, 1.0f, 0.9f, 0.0f,
+                    30.0f, 30.0f, 30.0f, 0.0f,
+                    3000, 4500, 6000, 15000, 0.45f };
         }
     }
 
@@ -1011,9 +1296,14 @@ namespace
             if (!_initialized)
                 return;
 
-            events.ScheduleEvent(1, Milliseconds(_profile.SpellIntervalMs));
-            events.ScheduleEvent(2,
+            events.ScheduleEvent(EVENT_PRIMARY,
+                Milliseconds(_package.PrimaryCooldownMs));
+            events.ScheduleEvent(EVENT_SECONDARY,
                 Milliseconds(_profile.SpellIntervalMs / 2));
+            events.ScheduleEvent(EVENT_TERTIARY,
+                Milliseconds(_package.TertiaryCooldownMs));
+            events.ScheduleEvent(EVENT_DEFENSIVE,
+                Milliseconds(_package.DefensiveCooldownMs));
         }
 
         void KilledUnit(Unit* victim) override
@@ -1048,22 +1338,37 @@ namespace
             {
                 switch (eventId)
                 {
-                    case 1:
+                    case EVENT_PRIMARY:
                         ExecuteSpell(_package.PrimarySpell,
                             _package.PrimarySchool,
                             _package.PrimaryDamageFactor,
-                            _package.PrimaryRange);
-                        events.ScheduleEvent(1,
-                            Milliseconds(_profile.SpellIntervalMs));
+                            _package.PrimaryRange, false);
+                        events.ScheduleEvent(EVENT_PRIMARY,
+                            Milliseconds(_package.PrimaryCooldownMs));
                         break;
-                    case 2:
+                    case EVENT_SECONDARY:
                         ExecuteSpell(_package.SecondarySpell,
                             _package.SecondarySchool,
                             _package.SecondaryDamageFactor,
-                            _package.SecondaryRange);
-                        events.ScheduleEvent(2, Milliseconds(
-                            _profile.SpellIntervalMs +
-                            (_profile.SpellIntervalMs / 2)));
+                            _package.SecondaryRange, false);
+                        events.ScheduleEvent(EVENT_SECONDARY,
+                            Milliseconds(_package.SecondaryCooldownMs));
+                        break;
+                    case EVENT_TERTIARY:
+                        ExecuteSpell(_package.TertiarySpell,
+                            _package.TertiarySchool,
+                            _package.TertiaryDamageFactor,
+                            _package.TertiaryRange, false);
+                        events.ScheduleEvent(EVENT_TERTIARY,
+                            Milliseconds(_package.TertiaryCooldownMs));
+                        break;
+                    case EVENT_DEFENSIVE:
+                        ExecuteSpell(_package.DefensiveSpell,
+                            _package.DefensiveSchool,
+                            _package.DefensiveDamageFactor,
+                            _package.DefensiveRange, true);
+                        events.ScheduleEvent(EVENT_DEFENSIVE,
+                            Milliseconds(_package.DefensiveCooldownMs));
                         break;
                 }
             }
@@ -1080,15 +1385,25 @@ namespace
                 return;
 
             _profile = *profile;
-            _package = GetSpellPackage(_profile.PlayerClass);
+            _package = GetSpellPackage(_profile.PlayerClass,
+                _profile.ActiveSpec);
             _initialized = true;
         }
 
         void ExecuteSpell(uint32 spellId, SpellSchoolMask schoolMask,
-            float damageFactor, float range)
+            float damageFactor, float range, bool selfCast)
         {
             if (!spellId)
                 return;
+
+            if (selfCast)
+            {
+                if (me->GetHealthPct() > (_package.DefensiveHealthPct * 100.0f))
+                    return;
+
+                me->CastSpell(me, spellId, true);
+                return;
+            }
 
             Unit* victim = me->GetVictim();
             if (!victim || !victim->IsAlive())
