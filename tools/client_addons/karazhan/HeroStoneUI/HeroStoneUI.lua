@@ -89,12 +89,16 @@ frame.title:SetPoint("TOP", 0, -18)
 frame.close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
 frame.close:SetPoint("TOPRIGHT", -6, -6)
 
-frame.headerIcon = CreateFrame("Button", nil, frame, "ItemButtonTemplate")
+frame.headerIcon = CreateFrame("Frame", nil, frame)
 frame.headerIcon:SetSize(40, 40)
 frame.headerIcon:SetPoint("TOPLEFT", 22, -24)
-frame.headerIcon.icon = _G[frame.headerIcon:GetName() .. "IconTexture"]
+frame.headerIcon.bg = frame.headerIcon:CreateTexture(nil, "BACKGROUND")
+frame.headerIcon.bg:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+frame.headerIcon.bg:SetAllPoints()
+frame.headerIcon.icon = frame.headerIcon:CreateTexture(nil, "ARTWORK")
+frame.headerIcon.icon:SetPoint("TOPLEFT", 6, -6)
+frame.headerIcon.icon:SetPoint("BOTTOMRIGHT", -6, 6)
 frame.headerIcon.icon:SetTexture(frame.state.icon)
-frame.headerIcon:SetScript("OnClick", function() end)
 
 frame.subtitle = CreateText(frame, "GameFontNormal")
 frame.subtitle:SetPoint("TOPLEFT", frame.headerIcon, "TOPRIGHT", 12, -2)
@@ -146,12 +150,16 @@ for index = 1, 8 do
     )
   end
 
-  button.iconHolder = CreateFrame("Button", nil, button, "ItemButtonTemplate")
+  button.iconHolder = CreateFrame("Frame", nil, button)
   button.iconHolder:SetSize(24, 24)
   button.iconHolder:SetPoint("LEFT", button, "LEFT", 4, 0)
-  button.icon = _G[button.iconHolder:GetName() .. "IconTexture"]
+  button.iconHolder.bg = button.iconHolder:CreateTexture(nil, "BACKGROUND")
+  button.iconHolder.bg:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+  button.iconHolder.bg:SetAllPoints()
+  button.icon = button.iconHolder:CreateTexture(nil, "ARTWORK")
+  button.icon:SetPoint("TOPLEFT", 4, -4)
+  button.icon:SetPoint("BOTTOMRIGHT", -4, 4)
   button.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-  button.iconHolder:SetScript("OnClick", function() end)
 
   button.text = CreateText(button, "GameFontNormal")
   button.text:SetPoint("LEFT", button.iconHolder, "RIGHT", 8, 0)
