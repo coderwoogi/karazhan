@@ -283,6 +283,46 @@ Trial.stageDesc:SetPoint("TOPLEFT", Trial.model, "BOTTOMLEFT", 0, -14)
 Trial.stageDesc:SetPoint("TOPRIGHT", Trial.model, "BOTTOMRIGHT", 0, -14)
 Trial.stageDesc:SetJustifyH("LEFT")
 
+Trial.rewardTitle = CreateLabel(
+  Trial.rightPane,
+  "GameFontHighlight",
+  13,
+  1.0,
+  0.84,
+  0.25
+)
+Trial.rewardTitle:SetPoint("TOPLEFT", Trial.stageDesc, "BOTTOMLEFT", 0, -12)
+Trial.rewardTitle:SetText("Reward")
+
+Trial.rewardIconBg = CreateFrame("Frame", nil, Trial.rightPane)
+Trial.rewardIconBg:SetSize(40, 40)
+Trial.rewardIconBg:SetPoint("TOPLEFT", Trial.rewardTitle, "BOTTOMLEFT", 0, -8)
+Trial.rewardIconBg:SetBackdrop({
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+  edgeSize = 10,
+  insets = { left = 2, right = 2, top = 2, bottom = 2 },
+})
+Trial.rewardIconBg:SetBackdropColor(0.12, 0.08, 0.02, 0.95)
+Trial.rewardIconBg:SetBackdropBorderColor(0.88, 0.70, 0.22, 0.90)
+
+Trial.rewardIcon = Trial.rewardIconBg:CreateTexture(nil, "ARTWORK")
+Trial.rewardIcon:SetPoint("TOPLEFT", Trial.rewardIconBg, "TOPLEFT", 4, -4)
+Trial.rewardIcon:SetPoint("BOTTOMRIGHT", Trial.rewardIconBg, "BOTTOMRIGHT", -4, 4)
+Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+
+Trial.rewardText = CreateLabel(
+  Trial.rightPane,
+  "GameFontNormal",
+  12,
+  0.95,
+  0.82,
+  0.24
+)
+Trial.rewardText:SetPoint("TOPLEFT", Trial.rewardIconBg, "TOPRIGHT", 12, -2)
+Trial.rewardText:SetPoint("TOPRIGHT", Trial.rightPane, "TOPRIGHT", -20, -408)
+Trial.rewardText:SetJustifyH("LEFT")
+
 Trial.start = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
 Trial.start:SetSize(160, 28)
 Trial.start:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -18, 16)
@@ -374,6 +414,26 @@ local function GetStageDescription(stage)
   return table.concat(lines, "\n")
 end
 
+local function GetStageReward(stage)
+  if not stage then
+    return {
+      icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+      text = "No reward selected.",
+    }
+  end
+
+  local icons = {
+    [1] = "Interface\\Icons\\INV_Misc_Coin_01",
+    [2] = "Interface\\Icons\\INV_Chest_Cloth_17",
+    [3] = "Interface\\Icons\\INV_Misc_Trophy_04",
+  }
+
+  return {
+    icon = icons[stage.stageId] or "Interface\\Icons\\INV_Misc_QuestionMark",
+    text = string.format("Stage %d placeholder reward", stage.stageId),
+  }
+end
+
 local function RefreshSelection()
   local stage = Trial.state.stages[Trial.state.selected]
   if not stage then
@@ -381,6 +441,8 @@ local function RefreshSelection()
     Trial.stageTitle:SetText("선택 가능한 시련이 없습니다")
     Trial.stageMeta:SetText("이전 단계를 먼저 클리어해야 다음 시련이 나타납니다.")
     Trial.stageDesc:SetText("")
+    Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+    Trial.rewardText:SetText("No reward selected.")
     Trial.start:Disable()
     Trial.abandon:Hide()
     return
@@ -392,6 +454,9 @@ local function RefreshSelection()
     string.format("해금 상태: %d단계 클리어", Trial.state.highestCleared)
   )
   Trial.stageDesc:SetText(GetStageDescription(stage))
+  local reward = GetStageReward(stage)
+  Trial.rewardIcon:SetTexture(reward.icon)
+  Trial.rewardText:SetText(reward.text)
   if Trial.state.inProgress then
     Trial.start:Disable()
     Trial.abandon:Show()
