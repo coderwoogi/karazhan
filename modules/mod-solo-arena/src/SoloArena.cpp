@@ -14,6 +14,7 @@
 #include "SpellMgr.h"
 #include "StringFormat.h"
 #include "TemporarySummon.h"
+#include "WorldPacket.h"
 #include "WorldSession.h"
 
 #include <algorithm>
@@ -141,15 +142,73 @@ namespace
         if (!player || !summon)
             return;
 
-        // Full mirror-image flags make generic creatures invisible on 3.3.5
-        // in this flow, so keep the player model copy on the safe path.
         summon->SetDisplayId(player->GetNativeDisplayId(),
             player->GetObjectScale());
         summon->SetNativeDisplayId(player->GetNativeDisplayId());
-        summon->RemoveUnitFlag2(UNIT_FLAG2_MIRROR_IMAGE);
+        summon->SetUnitFlag2(UNIT_FLAG2_MIRROR_IMAGE);
         player->CastSpell(summon, SPELL_COPY_MAINHAND, true);
         player->CastSpell(summon, SPELL_COPY_OFFHAND, true);
         player->CastSpell(summon, SPELL_COPY_RANGED, true);
+    }
+
+    void BuildMirrorImagePacket(WorldPacket& data,
+        ObjectGuid const& shadowGuid, Player* player)
+    {
+        data.Initialize(SMSG_MIRRORIMAGE_DATA, 68);
+        data << shadowGuid;
+        data << uint32(player->GetDisplayId());
+        data << uint8(player->getRace());
+        data << uint8(player->getGender());
+        data << uint8(player->getClass());
+        data << uint8(player->GetByteValue(PLAYER_BYTES, 0));
+        data << uint8(player->GetByteValue(PLAYER_BYTES, 1));
+        data << uint8(player->GetByteValue(PLAYER_BYTES, 2));
+        data << uint8(player->GetByteValue(PLAYER_BYTES, 3));
+        data << uint8(player->GetByteValue(PLAYER_BYTES_2, 0));
+        data << uint32(player->GetGuildId());
+
+        static EquipmentSlots const itemSlots[] =
+        {
+            EQUIPMENT_SLOT_HEAD,
+            EQUIPMENT_SLOT_SHOULDERS,
+            EQUIPMENT_SLOT_BODY,
+            EQUIPMENT_SLOT_CHEST,
+            EQUIPMENT_SLOT_WAIST,
+            EQUIPMENT_SLOT_LEGS,
+            EQUIPMENT_SLOT_FEET,
+            EQUIPMENT_SLOT_WRISTS,
+            EQUIPMENT_SLOT_HANDS,
+            EQUIPMENT_SLOT_BACK,
+            EQUIPMENT_SLOT_TABARD,
+            EQUIPMENT_SLOT_END
+        };
+
+        for (EquipmentSlots const* itr = &itemSlots[0];
+             *itr != EQUIPMENT_SLOT_END; ++itr)
+        {
+            if (*itr == EQUIPMENT_SLOT_HEAD &&
+                player->HasPlayerFlag(PLAYER_FLAGS_HIDE_HELM))
+            {
+                data << uint32(0);
+            }
+            else if (*itr == EQUIPMENT_SLOT_BACK &&
+                player->HasPlayerFlag(PLAYER_FLAGS_HIDE_CLOAK))
+            {
+                data << uint32(0);
+            }
+            else if (Item const* item =
+                player->GetItemByPos(INVENTORY_SLOT_BAG_0, *itr))
+            {
+                uint32 displayInfoId = item->GetTemplate()->DisplayInfoID;
+                sScriptMgr->OnGlobalMirrorImageDisplayItem(item,
+                    displayInfoId);
+                data << uint32(displayInfoId);
+            }
+            else
+            {
+                data << uint32(0);
+            }
+        }
     }
 
     void StartShadowCombat(Player* player, Creature* bot)
@@ -263,6 +322,8 @@ namespace
     uint32 ComputeShadowSpellDamage(Creature* me,
         ShadowProfile const& profile,
         float factor);
+    void BuildMirrorImagePacket(WorldPacket& data,
+        ObjectGuid const& shadowGuid, Player* player);
 }
 
 void SoloArenaMgr::LoadStages()
@@ -678,6 +739,13 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 
     summon->ClearInCombat();
     player->ClearInCombat();
+
+    if (WorldSession* playerSession = player->GetSession())
+    {
+        WorldPacket data;
+        BuildMirrorImagePacket(data, summon->GetGUID(), player);
+        playerSession->SendPacket(&data);
+    }
 
     SendSystem(player,
         "Shadow spawned. Combat begins when the gates open.");
@@ -1522,6 +1590,44 @@ namespace
             return false;
         }
     };
+
+    class SoloArenaServerScript : public ServerScript
+    {
+    public:
+        SoloArenaServerScript() : ServerScript("SoloArenaServerScript")
+        {
+        }
+
+        bool CanPacketReceive(WorldSession* session,
+            WorldPacket& packet) override
+        {
+            if (!session ||
+                packet.GetOpcode() != CMSG_GET_MIRRORIMAGE_DATA)
+                return true;
+
+            Player* viewer = session->GetPlayer();
+            if (!viewer)
+                return true;
+
+            ObjectGuid shadowGuid;
+            packet >> shadowGuid;
+
+            ShadowProfile const* profile =
+                SoloArenaMgr::Instance().GetShadowProfile(shadowGuid);
+            if (!profile)
+                return true;
+
+            Player* player = ObjectAccessor::FindConnectedPlayer(
+                profile->PlayerGuid);
+            if (!player)
+                return false;
+
+            WorldPacket data;
+            BuildMirrorImagePacket(data, shadowGuid, player);
+            session->SendPacket(&data);
+            return false;
+        }
+    };
 }
 
 void AddSoloArenaScripts()
@@ -1529,6 +1635,7 @@ void AddSoloArenaScripts()
     new SoloArenaWorldScript();
     new SoloArenaPlayerScript();
     new SoloArenaArenaScript();
+    new SoloArenaServerScript();
     new npc_solo_arena_master();
     new npc_solo_arena_shadow();
 }
