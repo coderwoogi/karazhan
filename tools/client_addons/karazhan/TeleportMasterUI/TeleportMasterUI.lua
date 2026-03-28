@@ -61,10 +61,10 @@ Frame:SetBackdrop({
 Frame:SetBackdropColor(0.04, 0.04, 0.04, 0.96)
 
 Frame.state = {
-  title = "Teleport Master",
+  title = "이동술사",
   subtitle = "",
-  closeText = "Close",
-  refreshText = "Refresh",
+  closeText = "닫기",
+  refreshText = "",
   items = {},
 }
 
@@ -103,7 +103,7 @@ local listHeader = CreateLabel(
   0.25
 )
 listHeader:SetPoint("TOPLEFT", Frame, "TOPLEFT", 18, -56)
-listHeader:SetText("Destination List")
+listHeader:SetText("목적지 선택")
 
 local divider = Frame:CreateTexture(nil, "ARTWORK")
 divider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -138,21 +138,9 @@ local closeButton = CreateFrame(
   "UIPanelButtonTemplate"
 )
 closeButton:SetSize(110, 26)
-closeButton:SetPoint("BOTTOMLEFT", Frame, "BOTTOMLEFT", 18, 18)
+closeButton:SetPoint("BOTTOM", Frame, "BOTTOM", 0, 18)
 closeButton:SetScript("OnClick", function()
   Frame:Hide()
-end)
-
-local refreshButton = CreateFrame(
-  "Button",
-  nil,
-  Frame,
-  "UIPanelButtonTemplate"
-)
-refreshButton:SetSize(110, 26)
-refreshButton:SetPoint("RIGHT", Frame, "BOTTOM", 58, 18)
-refreshButton:SetScript("OnClick", function()
-  SendCommand("REFRESH", "")
 end)
 
 Frame.buttons = {}
@@ -226,10 +214,10 @@ for i = 1, 12 do
 end
 
 local function ResetState()
-  Frame.state.title = "Teleport Master"
+  Frame.state.title = "이동술사"
   Frame.state.subtitle = ""
-  Frame.state.closeText = "Close"
-  Frame.state.refreshText = "Refresh"
+  Frame.state.closeText = "닫기"
+  Frame.state.refreshText = ""
   Frame.state.items = {}
 end
 
@@ -258,10 +246,9 @@ local function RefreshList()
 end
 
 local function Refresh()
-  title:SetText(Frame.state.title or "Teleport Master")
+  title:SetText(Frame.state.title or "이동술사")
   subtitle:SetText(Frame.state.subtitle or "")
-  closeButton:SetText(Frame.state.closeText or "Close")
-  refreshButton:SetText(Frame.state.refreshText or "Refresh")
+  closeButton:SetText(Frame.state.closeText or "닫기")
   RefreshList()
 end
 
@@ -297,7 +284,6 @@ Frame:SetScript("OnEvent", function(self, event, prefix, message)
 
   if kind == "CONTROL" then
     Frame.state.closeText = parts[2] or Frame.state.closeText
-    Frame.state.refreshText = parts[3] or Frame.state.refreshText
     Refresh()
     return
   end

@@ -275,21 +275,9 @@ local closeButton = CreateFrame(
   "UIPanelButtonTemplate"
 )
 closeButton:SetSize(110, 26)
-closeButton:SetPoint("BOTTOMLEFT", rightPane, "BOTTOMLEFT", 16, 14)
+closeButton:SetPoint("BOTTOM", rightPane, "BOTTOM", 0, 14)
 closeButton:SetScript("OnClick", function()
   Frame:Hide()
-end)
-
-local refreshButton = CreateFrame(
-  "Button",
-  nil,
-  rightPane,
-  "UIPanelButtonTemplate"
-)
-refreshButton:SetSize(110, 26)
-refreshButton:SetPoint("LEFT", closeButton, "RIGHT", 10, 0)
-refreshButton:SetScript("OnClick", function()
-  SendCommand("REFRESH", "")
 end)
 
 Frame.buttons = {}
@@ -392,7 +380,7 @@ local function ResetState()
   Frame.state.icon = "Interface\\Icons\\INV_Misc_Rune_01"
   Frame.state.section = "사용 가능한 기능"
   Frame.state.closeText = "닫기"
-  Frame.state.refreshText = "새로고침"
+  Frame.state.refreshText = ""
   Frame.state.items = {}
   Frame.state.remainDays = 0
 end
@@ -433,7 +421,6 @@ local function Refresh()
   sectionTitle:SetText(Frame.state.section or "사용 가능한 기능")
   bodyText:SetText(Frame.state.body or "")
   closeButton:SetText(Frame.state.closeText or "닫기")
-  refreshButton:SetText(Frame.state.refreshText or "새로고침")
   UpdateGauge()
   RefreshList()
 end
@@ -483,7 +470,6 @@ Frame:SetScript("OnEvent", function(self, event, prefix, message)
 
   if kind == "CONTROL" then
     Frame.state.closeText = parts[2] or Frame.state.closeText
-    Frame.state.refreshText = parts[3] or Frame.state.refreshText
     Refresh()
     return
   end
