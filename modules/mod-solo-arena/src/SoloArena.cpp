@@ -47,7 +47,6 @@ namespace
 
     enum CloneVisualSpells : uint32
     {
-        SPELL_CLONE_CASTER_VISUAL = 50218,
         SPELL_COPY_MAINHAND = 41055,
         SPELL_COPY_OFFHAND = 45206,
         SPELL_COPY_RANGED = 57593
@@ -142,11 +141,12 @@ namespace
         if (!player || !summon)
             return;
 
-        summon->SetDisplayId(player->GetDisplayId(), player->GetObjectScale());
-        summon->SetNativeDisplayId(player->GetDisplayId());
-        summon->SetUnitFlag2(UNIT_FLAG2_MIRROR_IMAGE);
-
-        player->CastSpell(summon, SPELL_CLONE_CASTER_VISUAL, true);
+        // Full mirror-image flags make generic creatures invisible on 3.3.5
+        // in this flow, so keep the player model copy on the safe path.
+        summon->SetDisplayId(player->GetNativeDisplayId(),
+            player->GetObjectScale());
+        summon->SetNativeDisplayId(player->GetNativeDisplayId());
+        summon->RemoveUnitFlag2(UNIT_FLAG2_MIRROR_IMAGE);
         player->CastSpell(summon, SPELL_COPY_MAINHAND, true);
         player->CastSpell(summon, SPELL_COPY_OFFHAND, true);
         player->CastSpell(summon, SPELL_COPY_RANGED, true);
