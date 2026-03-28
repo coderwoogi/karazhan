@@ -585,7 +585,6 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
 
     _sessions[player->GetGUID().GetCounter()] = session;
     _managedArenaInstances.insert(session.ArenaInstanceId);
-    SendTrialTimePayload(player, _sessions[player->GetGUID().GetCounter()]);
 
     TeamId teamId = Player::TeamIdForRace(player->getRace());
     uint32 queueSlot = 0;
@@ -602,6 +601,20 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
 
     player->SetBattlegroundId(arena->GetInstanceID(), arena->GetBgTypeID(),
         queueSlot, true, false, teamId);
+
+    if (Battleground* playerBg = player->GetBattleground())
+    {
+        ArenaSession& activeSession = _sessions[player->GetGUID().GetCounter()];
+        activeSession.PreparationEndsAt = std::time(nullptr) +
+            std::max<int32>(0, playerBg->GetStartDelayTime()) / 1000;
+        SendTrialTimePayload(player, activeSession);
+    }
+    else
+    {
+        ArenaSession& activeSession = _sessions[player->GetGUID().GetCounter()];
+        activeSession.PreparationEndsAt = std::time(nullptr) + 60;
+        SendTrialTimePayload(player, activeSession);
+    }
 
     if (!player->TeleportTo(stage->ArenaMapId, stage->PlayerX, stage->PlayerY,
         stage->PlayerZ, stage->PlayerO, TELE_TO_GM_MODE))
