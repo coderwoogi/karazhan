@@ -597,7 +597,8 @@ void SoloArenaMgr::SendUi(Player* player)
     std::ostringstream payload;
     payload << "OPEN\t";
     payload << uint32(highestStage) << "\t";
-    payload << entries.str();
+    payload << entries.str() << "\t";
+    payload << (HasSession(player->GetGUID()) ? 1 : 0);
     SendAddonPayload(player, "TRIAL_UI", payload.str());
 }
 
@@ -1632,9 +1633,6 @@ namespace
             if (!player || language != LANG_ADDON)
                 return true;
 
-            if (!receiver || receiver != player)
-                return true;
-
             if (!StartsWith(msg, "TRIAL_CMD\t"))
                 return true;
 
@@ -1649,6 +1647,12 @@ namespace
             if (msg == "TRIAL_CMD\tOPEN")
             {
                 SoloArenaMgr::Instance().SendUi(player);
+                return false;
+            }
+
+            if (msg == "TRIAL_CMD\tABANDON")
+            {
+                SoloArenaMgr::Instance().MarkAbandoned(player->GetGUID());
                 return false;
             }
 

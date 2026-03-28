@@ -48,11 +48,13 @@ local function NewState()
     highestCleared = 0,
     stages = {},
     selected = 1,
+    inProgress = false,
   }
 end
 
 Trial.state = NewState()
 Trial.buttons = {}
+local SendCommand
 
 local title = CreateLabel(Trial, "GameFontHighlightLarge", 20, 0.96, 0.84, 0.30)
 title:SetPoint("TOP", Trial, "TOP", 0, -18)
@@ -212,7 +214,17 @@ Trial.cancel:SetScript("OnClick", function()
   Trial:Hide()
 end)
 
-local function SendCommand(payload)
+Trial.abandon = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
+Trial.abandon:SetSize(120, 28)
+Trial.abandon:SetPoint("RIGHT", Trial.cancel, "LEFT", -10, 0)
+Trial.abandon:SetText("시련 포기")
+Trial.abandon:Hide()
+Trial.abandon:SetScript("OnClick", function()
+  SendCommand("ABANDON")
+  Trial:Hide()
+end)
+
+SendCommand = function(payload)
   SendAddonMessage("TRIAL_CMD", payload, "WHISPER", UnitName("player"))
 end
 
@@ -238,6 +250,7 @@ local function RefreshSelection()
     Trial.stageMeta:SetText("이전 단계를 먼저 클리어해야 다음 시련이 나타납니다.")
     Trial.stageDesc:SetText("")
     Trial.start:Disable()
+    Trial.abandon:Hide()
     return
   end
 
@@ -247,7 +260,13 @@ local function RefreshSelection()
     string.format("해금 상태: %d단계 클리어", Trial.state.highestCleared)
   )
   Trial.stageDesc:SetText(GetStageDescription(stage))
-  Trial.start:Enable()
+  if Trial.state.inProgress then
+    Trial.start:Disable()
+    Trial.abandon:Show()
+  else
+    Trial.start:Enable()
+    Trial.abandon:Hide()
+  end
 end
 
 local function SelectStage(index)
@@ -331,6 +350,7 @@ end
 local function ApplyOpen(parts)
   Trial.state = NewState()
   Trial.state.highestCleared = tonumber(parts[2]) or 0
+  Trial.state.inProgress = tonumber(parts[4]) == 1
 
   local encoded = parts[3] or ""
   if encoded ~= "" then
@@ -359,7 +379,8 @@ Trial.start:SetScript("OnClick", function()
     return
   end
   SendCommand("START\t" .. tostring(stage.stageId))
-  Trial:Hide()
+  Trial.state.inProgress = true
+  RefreshSelection()
 end)
 
 Trial:RegisterEvent("PLAYER_LOGIN")
