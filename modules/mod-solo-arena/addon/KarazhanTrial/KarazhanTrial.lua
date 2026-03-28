@@ -596,7 +596,7 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   end
 end)
 
-Trial:SetScript("OnUpdate", function(_, elapsed)
+Trial.statusBox:SetScript("OnUpdate", function(_, elapsed)
   Trial._clockElapsed = (Trial._clockElapsed or 0) + elapsed
   if Trial._clockElapsed < 1 then
     return
