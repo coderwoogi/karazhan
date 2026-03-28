@@ -367,6 +367,34 @@ namespace
     {
         return text.compare(0, token.size(), token) == 0;
     }
+
+    bool HandleTrialAddonCommand(Player* player, std::string const& msg)
+    {
+        if (!player || !StartsWith(msg, "TRIAL_CMD\t"))
+            return false;
+
+        if (StartsWith(msg, "TRIAL_CMD\tSTART\t"))
+        {
+            std::string stageText = msg.substr(16);
+            uint8 stageId = uint8(std::max(0, atoi(stageText.c_str())));
+            SoloArenaMgr::Instance().StartChallenge(player, stageId);
+            return true;
+        }
+
+        if (msg == "TRIAL_CMD\tOPEN")
+        {
+            SoloArenaMgr::Instance().SendUi(player);
+            return true;
+        }
+
+        if (msg == "TRIAL_CMD\tABANDON")
+        {
+            SoloArenaMgr::Instance().MarkAbandoned(player->GetGUID());
+            return true;
+        }
+
+        return true;
+    }
 }
 
 void SoloArenaMgr::LoadStages()
@@ -1627,6 +1655,21 @@ namespace
             Player* player,
             uint32 /*type*/,
             uint32 language,
+            std::string& msg) override
+        {
+            if (!player || language != LANG_ADDON)
+                return true;
+
+            if (!StartsWith(msg, "TRIAL_CMD\t"))
+                return true;
+
+            return !HandleTrialAddonCommand(player, msg);
+        }
+
+        bool OnPlayerCanUseChat(
+            Player* player,
+            uint32 /*type*/,
+            uint32 language,
             std::string& msg,
             Player* receiver) override
         {
@@ -1636,27 +1679,7 @@ namespace
             if (!StartsWith(msg, "TRIAL_CMD\t"))
                 return true;
 
-            if (StartsWith(msg, "TRIAL_CMD\tSTART\t"))
-            {
-                std::string stageText = msg.substr(16);
-                uint8 stageId = uint8(std::max(0, atoi(stageText.c_str())));
-                SoloArenaMgr::Instance().StartChallenge(player, stageId);
-                return false;
-            }
-
-            if (msg == "TRIAL_CMD\tOPEN")
-            {
-                SoloArenaMgr::Instance().SendUi(player);
-                return false;
-            }
-
-            if (msg == "TRIAL_CMD\tABANDON")
-            {
-                SoloArenaMgr::Instance().MarkAbandoned(player->GetGUID());
-                return false;
-            }
-
-            return false;
+            return !HandleTrialAddonCommand(player, msg);
         }
     };
 
