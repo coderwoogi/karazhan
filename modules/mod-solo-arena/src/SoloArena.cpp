@@ -18,6 +18,7 @@
 #include "WorldSession.h"
 
 #include <algorithm>
+#include <cstdlib>
 #include <ctime>
 #include <unordered_map>
 #include <unordered_set>
@@ -270,6 +271,7 @@ namespace
         bool HasSession(ObjectGuid const& playerGuid) const;
         ArenaSession const* GetSession(ObjectGuid const& playerGuid) const;
         bool StartChallenge(Player* player, uint8 stageId);
+        void SendUi(Player* player);
         void Update(uint32 diff);
         void OnPlayerMapChanged(Player* player);
         void MarkVictory(ObjectGuid const& playerGuid);
@@ -324,6 +326,47 @@ namespace
         float factor);
     void BuildMirrorImagePacket(WorldPacket& data,
         ObjectGuid const& shadowGuid, Player* player);
+
+    std::string SanitizeAddonField(std::string text, size_t maxLen)
+    {
+        std::replace(text.begin(), text.end(), '\t', ' ');
+        std::replace(text.begin(), text.end(), '\n', ' ');
+        std::replace(text.begin(), text.end(), '\r', ' ');
+        std::replace(text.begin(), text.end(), '|', '/');
+        std::replace(text.begin(), text.end(), '~', '-');
+
+        if (text.size() > maxLen)
+            text.resize(maxLen);
+
+        return text;
+    }
+
+    void SendAddonPayload(
+        Player* player,
+        std::string const& prefix,
+        std::string const& payload)
+    {
+        if (!player || !player->GetSession())
+            return;
+
+        std::string fullMessage = prefix + "\t" + payload;
+
+        WorldPacket data(SMSG_MESSAGECHAT, 100);
+        data << uint8(CHAT_MSG_WHISPER);
+        data << int32(LANG_ADDON);
+        data << player->GetGUID();
+        data << uint32(0);
+        data << player->GetGUID();
+        data << uint32(fullMessage.length() + 1);
+        data << fullMessage;
+        data << uint8(0);
+        player->GetSession()->SendPacket(&data);
+    }
+
+    bool StartsWith(std::string const& text, std::string const& token)
+    {
+        return text.compare(0, token.size(), token) == 0;
+    }
 }
 
 void SoloArenaMgr::LoadStages()
@@ -518,6 +561,44 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     Debug("Solo arena started: player='{}' stage={} map={} instance={}",
         player->GetName(), stageId, stage->ArenaMapId, session.ArenaInstanceId);
     return true;
+}
+
+void SoloArenaMgr::SendUi(Player* player)
+{
+    if (!SoloArenaConfig::Instance().IsEnabled() || !player)
+        return;
+
+    uint8 highestStage = GetHighestStageCleared(player);
+    uint8 maxUnlockedStage = highestStage + 1;
+
+    std::ostringstream entries;
+    bool first = true;
+
+    for (StageConfig const& stage : GetStages())
+    {
+        if (!stage.Enabled)
+            continue;
+
+        if (stage.StageId > maxUnlockedStage)
+            continue;
+
+        if (!first)
+            entries << "|";
+
+        first = false;
+        entries << uint32(stage.StageId) << "~";
+        entries << SanitizeAddonField(stage.Name, 64) << "~";
+        entries << stage.HealthMultiplier << "~";
+        entries << stage.DamageMultiplier << "~";
+        entries << stage.SpellIntervalMs << "~";
+        entries << stage.MoveSpeedRate;
+    }
+
+    std::ostringstream payload;
+    payload << "OPEN\t";
+    payload << uint32(highestStage) << "\t";
+    payload << entries.str();
+    SendAddonPayload(player, "TRIAL_UI", payload.str());
 }
 
 void SoloArenaMgr::Update(uint32 diff)
@@ -1294,37 +1375,8 @@ namespace
                 return true;
             }
 
-            if (SoloArenaMgr::Instance().HasSession(player->GetGUID()))
-            {
-                AddGossipItemFor(player, GOSSIP_ICON_CHAT,
-                    "진행 중인 시련을 포기합니다.",
-                    GOSSIP_SENDER_MAIN, ACTION_ABANDON);
-                SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE,
-                    creature->GetGUID());
-                return true;
-            }
-
-            uint8 highestStage = 0;
-            if (QueryResult result = CharacterDatabase.Query(
-                "SELECT highest_stage_cleared "
-                "FROM solo_arena_progress WHERE guid = {}",
-                player->GetGUID().GetCounter()))
-            {
-                highestStage = result->Fetch()[0].Get<uint8>();
-            }
-
-            for (StageConfig const& stage : SoloArenaMgr::Instance().GetStages())
-            {
-                std::string label = stage.Name;
-                if (stage.StageId > highestStage + 1)
-                    label = Acore::StringFormat("[잠김] {}", stage.Name);
-
-                AddGossipItemFor(player, GOSSIP_ICON_BATTLE, label,
-                    GOSSIP_SENDER_MAIN, ACTION_STAGE_BASE + stage.StageId);
-            }
-
-            SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE,
-                creature->GetGUID());
+            SoloArenaMgr::Instance().SendUi(player);
+            CloseGossipMenuFor(player);
             return true;
         }
 
@@ -1568,6 +1620,39 @@ namespace
                 return;
 
             SoloArenaMgr::Instance().MarkFailure(killed->GetGUID());
+        }
+
+        bool OnPlayerCanUseChat(
+            Player* player,
+            uint32 /*type*/,
+            uint32 language,
+            std::string& msg,
+            Player* receiver) override
+        {
+            if (!player || language != LANG_ADDON)
+                return true;
+
+            if (!receiver || receiver != player)
+                return true;
+
+            if (!StartsWith(msg, "TRIAL_CMD\t"))
+                return true;
+
+            if (StartsWith(msg, "TRIAL_CMD\tSTART\t"))
+            {
+                std::string stageText = msg.substr(16);
+                uint8 stageId = uint8(std::max(0, atoi(stageText.c_str())));
+                SoloArenaMgr::Instance().StartChallenge(player, stageId);
+                return false;
+            }
+
+            if (msg == "TRIAL_CMD\tOPEN")
+            {
+                SoloArenaMgr::Instance().SendUi(player);
+                return false;
+            }
+
+            return false;
         }
     };
 

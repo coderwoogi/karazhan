@@ -1,0 +1,6 @@
+## Interface: 30300
+## Title: 카라잔 시련
+## Notes: 시련 단계 선택 UI
+## Author: coderwoogi
+## Version: 1.0.0
+KarazhanTrial.lua
