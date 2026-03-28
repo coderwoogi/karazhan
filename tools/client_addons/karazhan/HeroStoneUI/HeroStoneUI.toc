@@ -1,0 +1,7 @@
+## Interface: 30300
+## Title: HeroStoneUI
+## Notes: Dialogue-style UI for Hero Stone
+## Author: Codex
+## Version: 1.0.0
+
+HeroStoneUI.lua

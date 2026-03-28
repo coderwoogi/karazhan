@@ -1,0 +1,10 @@
+## Interface: 30300
+## Title: Item Enhancement
+## Author: YourName
+## Version: 1.0.0
+## Notes: 아이템 강화 시스템 클라이언트
+## SavedVariables: ItemEnhancementDB
+
+Data.lua
+Core.lua
+Tooltip.lua

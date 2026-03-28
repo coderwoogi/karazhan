@@ -1,0 +1,7 @@
+## Interface: 30300
+## Title: TeleportMasterUI
+## Notes: Brown dialogue UI for teleport master
+## Author: Codex
+## Version: 1.0.0
+
+TeleportMasterUI.lua
