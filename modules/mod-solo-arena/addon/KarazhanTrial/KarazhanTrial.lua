@@ -100,7 +100,7 @@ local close = CreateFrame("Button", nil, Trial, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", Trial, "TOPRIGHT", -10, -10)
 
 Trial.statusBox = CreateFrame("Frame", nil, UIParent)
-Trial.statusBox:SetSize(260, 152)
+Trial.statusBox:SetSize(260, 108)
 Trial.statusBox:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 54)
 Trial.statusBox:SetClampedToScreen(true)
 Trial.statusBox:EnableMouse(true)
@@ -141,28 +141,6 @@ Trial.currentTimeText = CreateLabel(
   "CENTER"
 )
 Trial.currentTimeText:SetPoint("TOP", Trial.statusTitle, "BOTTOM", 0, -10)
-
-Trial.startTimeText = CreateLabel(
-  Trial.statusBox,
-  "GameFontNormal",
-  12,
-  0.92,
-  0.92,
-  0.92,
-  "CENTER"
-)
-Trial.startTimeText:SetPoint("TOP", Trial.currentTimeText, "BOTTOM", 0, -6)
-
-Trial.endTimeText = CreateLabel(
-  Trial.statusBox,
-  "GameFontNormal",
-  12,
-  0.92,
-  0.92,
-  0.92,
-  "CENTER"
-)
-Trial.endTimeText:SetPoint("TOP", Trial.startTimeText, "BOTTOM", 0, -6)
 
 Trial.exitButton = CreateFrame("Button", "KarazhanTrialExitButton",
   Trial.statusBox, "UIPanelButtonTemplate")
@@ -367,14 +345,6 @@ local function RefreshStatusTimes()
       "전투 시작까지: " .. FormatRemaining(Trial.state.preparationEndsAt)
     )
   end
-  Trial.startTimeText:SetText(
-    "전투 시작 시간: " .. FormatClock(Trial.state.startedAt)
-  )
-  Trial.endTimeText:SetText(
-    "전투 종료 시간: " ..
-      (Trial.state.endedAt and FormatClock(Trial.state.endedAt)
-        or FormatClock(Trial.state.combatEndsAt))
-  )
 end
 
 local function RefreshExitButton()
