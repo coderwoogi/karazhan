@@ -225,7 +225,7 @@ Trial.abandon:SetScript("OnClick", function()
 end)
 
 SendCommand = function(payload)
-  SendChatMessage("#TRIAL# " .. payload, "SAY")
+  SendAddonMessage("TRIAL_CMD", payload, "WHISPER", UnitName("player"))
 end
 
 local function GetStageDescription(stage)

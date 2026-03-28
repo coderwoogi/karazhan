@@ -368,42 +368,6 @@ namespace
         return text.compare(0, token.size(), token) == 0;
     }
 
-    bool HandleTrialHiddenCommand(Player* player, std::string const& msg)
-    {
-        if (!player || !StartsWith(msg, "#TRIAL# "))
-            return false;
-
-        std::string payload = msg.substr(8);
-        LOG_INFO("module",
-            "SoloArena hidden command: player='{}' msg='{}'",
-            player->GetName(), payload);
-
-        if (StartsWith(payload, "START\t"))
-        {
-            std::string stageText = payload.substr(6);
-            uint8 stageId = uint8(std::max(0, atoi(stageText.c_str())));
-            LOG_INFO("module",
-                "SoloArena start request: player='{}' stage={}",
-                player->GetName(), uint32(stageId));
-            SoloArenaMgr::Instance().StartChallenge(player, stageId);
-            return true;
-        }
-
-        if (payload == "OPEN")
-        {
-            SoloArenaMgr::Instance().SendUi(player);
-            return true;
-        }
-
-        if (payload == "ABANDON")
-        {
-            SoloArenaMgr::Instance().MarkAbandoned(player->GetGUID());
-            return true;
-        }
-
-        return true;
-    }
-
     bool HandleTrialAddonCommand(Player* player, std::string const& msg)
     {
         if (!player || !StartsWith(msg, "TRIAL_CMD\t"))
@@ -1700,9 +1664,6 @@ namespace
             uint32 language,
             std::string& msg) override
         {
-            if (HandleTrialHiddenCommand(player, msg))
-                return false;
-
             if (!player || language != LANG_ADDON)
                 return true;
 
@@ -1719,9 +1680,6 @@ namespace
             std::string& msg,
             Player* receiver) override
         {
-            if (HandleTrialHiddenCommand(player, msg))
-                return false;
-
             if (!player || language != LANG_ADDON)
                 return true;
 
@@ -1762,12 +1720,38 @@ namespace
         bool CanPacketReceive(WorldSession* session,
             WorldPacket& packet) override
         {
-            if (!session ||
-                packet.GetOpcode() != CMSG_GET_MIRRORIMAGE_DATA)
+            if (!session)
                 return true;
 
             Player* viewer = session->GetPlayer();
             if (!viewer)
+                return true;
+
+            if (packet.GetOpcode() == CMSG_MESSAGECHAT)
+            {
+                WorldPacket copy(packet);
+                uint32 type = 0;
+                uint32 language = 0;
+                copy >> type;
+                copy >> language;
+
+                if (language == LANG_ADDON && type == CHAT_MSG_WHISPER)
+                {
+                    std::string to;
+                    copy >> to;
+                    std::string msg = copy.ReadCString(false);
+
+                    if (StartsWith(msg, "TRIAL_CMD\t"))
+                    {
+                        HandleTrialAddonCommand(viewer, msg);
+                        return false;
+                    }
+                }
+
+                return true;
+            }
+
+            if (packet.GetOpcode() != CMSG_GET_MIRRORIMAGE_DATA)
                 return true;
 
             ObjectGuid shadowGuid;
