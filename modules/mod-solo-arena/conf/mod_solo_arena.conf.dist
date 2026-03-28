@@ -10,16 +10,16 @@ SoloArena.Enable = 1
 #
 #    SoloArena.NpcEntry
 #        Description: Creature template entry used by the arena master.
-#        Default:     910000
+#        Default:     190021
 #
-SoloArena.NpcEntry = 910000
+SoloArena.NpcEntry = 190021
 
 #
 #    SoloArena.ShadowEntry
 #        Description: Creature template entry used by the shadow bot.
-#        Default:     910001
+#        Default:     190022
 #
-SoloArena.ShadowEntry = 910001
+SoloArena.ShadowEntry = 190022
 
 #
 #    SoloArena.Debug

@@ -237,9 +237,9 @@ namespace
         {
             _enabled = sConfigMgr->GetOption<bool>("SoloArena.Enable", true);
             _npcEntry = sConfigMgr->GetOption<uint32>("SoloArena.NpcEntry",
-                910000);
+                190021);
             _shadowEntry = sConfigMgr->GetOption<uint32>(
-                "SoloArena.ShadowEntry", 910001);
+                "SoloArena.ShadowEntry", 190022);
             _debug = sConfigMgr->GetOption<bool>("SoloArena.Debug", false);
         }
 
@@ -250,8 +250,8 @@ namespace
 
     private:
         bool _enabled = true;
-        uint32 _npcEntry = 910000;
-        uint32 _shadowEntry = 910001;
+        uint32 _npcEntry = 190021;
+        uint32 _shadowEntry = 190022;
         bool _debug = false;
     };
 
