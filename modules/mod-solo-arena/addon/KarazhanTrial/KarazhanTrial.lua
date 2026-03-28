@@ -176,7 +176,7 @@ Trial.stageDivider:SetHeight(8)
 
 Trial.model = CreateFrame("DressUpModel", nil, Trial.rightPane)
 Trial.model:SetPoint("TOPLEFT", Trial.rightPane, "TOPLEFT", 20, -104)
-Trial.model:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -20, 64)
+Trial.model:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -20, 126)
 Trial.model:SetFacing(0.45)
 Trial.model:SetModelScale(1.0)
 
@@ -195,16 +195,16 @@ Trial.stageDesc = CreateLabel(
   0.82,
   0.24
 )
-Trial.stageDesc:SetPoint("BOTTOMLEFT", Trial.rightPane, "BOTTOMLEFT", 20, 54)
-Trial.stageDesc:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -20, 54)
+Trial.stageDesc:SetPoint("TOPLEFT", Trial.model, "BOTTOMLEFT", 0, -14)
+Trial.stageDesc:SetPoint("TOPRIGHT", Trial.model, "BOTTOMRIGHT", 0, -14)
 Trial.stageDesc:SetJustifyH("LEFT")
 
-Trial.start = CreateFrame("Button", nil, Trial, "UIPanelButtonTemplate")
+Trial.start = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
 Trial.start:SetSize(160, 28)
-Trial.start:SetPoint("BOTTOMRIGHT", Trial, "BOTTOMRIGHT", -120, 18)
+Trial.start:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -18, 16)
 Trial.start:SetText("도전 시작")
 
-Trial.cancel = CreateFrame("Button", nil, Trial, "UIPanelButtonTemplate")
+Trial.cancel = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
 Trial.cancel:SetSize(120, 28)
 Trial.cancel:SetPoint("RIGHT", Trial.start, "LEFT", -10, 0)
 Trial.cancel:SetText("닫기")
