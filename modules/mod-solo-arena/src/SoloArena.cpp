@@ -1,7 +1,10 @@
+#include "Battleground.h"
+#include "BattlegroundMgr.h"
 #include "Chat.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "Duration.h"
+#include "LFGMgr.h"
 #include "ObjectAccessor.h"
 #include "Player.h"
 #include "ScriptMgr.h"
@@ -20,6 +23,7 @@
 namespace
 {
     constexpr uint32 DEFAULT_ARENA_MAP_ID = 617;
+    constexpr BattlegroundTypeId DEFAULT_ARENA_BG_TYPE = BATTLEGROUND_DS;
     constexpr uint32 ACTION_STAGE_BASE = 100;
     constexpr uint32 ACTION_ABANDON = 500;
 
@@ -316,10 +320,37 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         return false;
     }
 
+    Battleground* arenaTemplate =
+        sBattlegroundMgr->GetBattlegroundTemplate(BATTLEGROUND_AA);
+    if (!arenaTemplate)
+    {
+        SendSystem(player, "솔로 투기장 템플릿을 찾지 못했습니다.");
+        return false;
+    }
+
+    PvPDifficultyEntry const* bracketEntry = GetBattlegroundBracketById(
+        arenaTemplate->GetMapId(), arenaTemplate->GetBracketId());
+    if (!bracketEntry)
+    {
+        SendSystem(player, "솔로 투기장 등급 정보를 찾지 못했습니다.");
+        return false;
+    }
+
+    Battleground* arena = sBattlegroundMgr->CreateNewBattleground(
+        DEFAULT_ARENA_BG_TYPE, bracketEntry, ARENA_TYPE_2v2, false);
+    if (!arena)
+    {
+        SendSystem(player, "투기장 인스턴스를 만들지 못했습니다.");
+        return false;
+    }
+
+    arena->StartBattleground();
+
     ArenaSession session;
     session.PlayerGuid = player->GetGUID();
     session.StageId = stageId;
     session.ArenaMapId = stage->ArenaMapId;
+    session.ArenaInstanceId = arena->GetInstanceID();
     session.ReturnMapId = player->GetMapId();
     session.ReturnX = player->GetPositionX();
     session.ReturnY = player->GetPositionY();
@@ -329,11 +360,28 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
 
     _sessions[player->GetGUID().GetCounter()] = session;
 
+    TeamId teamId = Player::TeamIdForRace(player->getRace());
+    uint32 queueSlot = 0;
+
+    player->SetEntryPoint();
+
+    WorldPacket data;
+    sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, arena, queueSlot,
+        STATUS_IN_PROGRESS, 0, arena->GetStartTime(), arena->GetArenaType(),
+        teamId);
+    player->SendDirectMessage(&data);
+
+    sLFGMgr->LeaveAllLfgQueues(player->GetGUID(), false);
+
+    player->SetBattlegroundId(arena->GetInstanceID(), arena->GetBgTypeID(),
+        queueSlot, true, false, teamId);
+
     if (!player->TeleportTo(stage->ArenaMapId, stage->PlayerX, stage->PlayerY,
-        stage->PlayerZ, stage->PlayerO, TELE_TO_NOT_LEAVE_COMBAT, nullptr,
-        true))
+        stage->PlayerZ, stage->PlayerO, TELE_TO_GM_MODE))
     {
         _sessions.erase(player->GetGUID().GetCounter());
+        player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
+            PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
         SendSystem(player, "투기장으로 이동하지 못했습니다.");
         return false;
     }
@@ -592,6 +640,13 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
         player->ResurrectPlayer(1.0f);
         player->SpawnCorpseBones();
     }
+
+    if (Battleground* battleground = player->GetBattleground())
+        battleground->RemovePlayerAtLeave(player);
+    else if (session.ArenaInstanceId)
+        if (Battleground* arena = sBattlegroundMgr->GetBattleground(
+                session.ArenaInstanceId, DEFAULT_ARENA_BG_TYPE))
+            arena->RemovePlayerAtLeave(player);
 
     player->TeleportTo(session.ReturnMapId, session.ReturnX, session.ReturnY,
         session.ReturnZ, session.ReturnO);
