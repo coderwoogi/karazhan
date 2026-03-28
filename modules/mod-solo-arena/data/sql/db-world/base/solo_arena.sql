@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS `solo_arena_stage` (
+DROP TABLE IF EXISTS `solo_arena_stage`;
+CREATE TABLE `solo_arena_stage` (
     `stage_id` TINYINT UNSIGNED NOT NULL,
     `name` VARCHAR(80) NOT NULL,
     `arena_map_id` SMALLINT UNSIGNED NOT NULL DEFAULT 572,

@@ -20,6 +20,24 @@ CREATE TABLE IF NOT EXISTS `solo_arena_stage` (
     PRIMARY KEY (`stage_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+SET @solo_arena_has_preparation_ms := (
+    SELECT COUNT(*)
+    FROM `INFORMATION_SCHEMA`.`COLUMNS`
+    WHERE `TABLE_SCHEMA` = DATABASE()
+      AND `TABLE_NAME` = 'solo_arena_stage'
+      AND `COLUMN_NAME` = 'preparation_ms'
+);
+
+SET @solo_arena_stage_alter_sql := IF(
+    @solo_arena_has_preparation_ms = 0,
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `preparation_ms` INT UNSIGNED NOT NULL DEFAULT 6000 AFTER `move_speed_rate`',
+    'SELECT 1'
+);
+
+PREPARE solo_arena_stage_stmt FROM @solo_arena_stage_alter_sql;
+EXECUTE solo_arena_stage_stmt;
+DEALLOCATE PREPARE solo_arena_stage_stmt;
+
 DELETE FROM `solo_arena_stage`;
 INSERT INTO `solo_arena_stage` (
     `stage_id`, `name`, `arena_map_id`,
