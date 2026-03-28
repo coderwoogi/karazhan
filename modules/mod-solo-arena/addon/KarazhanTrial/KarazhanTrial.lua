@@ -1,4 +1,5 @@
 local addonName = ...
+local ARENA_INSTANCE_TYPE = "arena"
 
 local Trial = CreateFrame("Frame", "KarazhanTrialFrame", UIParent)
 Trial:SetSize(860, 540)
@@ -49,6 +50,7 @@ local function NewState()
     stages = {},
     selected = 1,
     inProgress = false,
+    pendingArena = false,
   }
 end
 
@@ -66,6 +68,13 @@ subtitle:SetText("단계를 선택하고 당신의 그림자와 결투를 시작
 
 local close = CreateFrame("Button", nil, Trial, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", Trial, "TOPRIGHT", -10, -10)
+
+Trial.exitButton = CreateFrame("Button", "KarazhanTrialExitButton", UIParent,
+  "UIPanelButtonTemplate")
+Trial.exitButton:SetSize(120, 28)
+Trial.exitButton:SetPoint("TOP", UIParent, "TOP", 0, -120)
+Trial.exitButton:SetText("시련 종료")
+Trial.exitButton:Hide()
 
 Trial.leftPane = CreateFrame("Frame", nil, Trial)
 Trial.leftPane:SetPoint("TOPLEFT", Trial, "TOPLEFT", 24, -54)
@@ -221,11 +230,36 @@ Trial.abandon:SetText("시련 포기")
 Trial.abandon:Hide()
 Trial.abandon:SetScript("OnClick", function()
   SendCommand("ABANDON")
+  Trial.state.inProgress = false
+  Trial.state.pendingArena = false
+  Trial.exitButton:Hide()
   Trial:Hide()
+end)
+
+Trial.exitButton:SetScript("OnClick", function()
+  SendCommand("ABANDON")
+  Trial.state.inProgress = false
+  Trial.state.pendingArena = false
+  Trial.exitButton:Hide()
 end)
 
 SendCommand = function(payload)
   SendAddonMessage("TRIAL_CMD", payload, "WHISPER", UnitName("player"))
+end
+
+local function IsInArenaInstance()
+  local _, instanceType = GetInstanceInfo()
+  return instanceType == ARENA_INSTANCE_TYPE
+end
+
+local function RefreshExitButton()
+  if (Trial.state.inProgress or Trial.state.pendingArena)
+    and IsInArenaInstance()
+    and not Trial:IsShown() then
+    Trial.exitButton:Show()
+  else
+    Trial.exitButton:Hide()
+  end
 end
 
 local function GetStageDescription(stage)
@@ -345,12 +379,15 @@ local function RefreshList()
     Trial.state.selected = 0
     RefreshSelection()
   end
+
+  RefreshExitButton()
 end
 
 local function ApplyOpen(parts)
   Trial.state = NewState()
   Trial.state.highestCleared = tonumber(parts[2]) or 0
   Trial.state.inProgress = tonumber(parts[4]) == 1
+  Trial.state.pendingArena = Trial.state.inProgress
 
   local encoded = parts[3] or ""
   if encoded ~= "" then
@@ -371,6 +408,7 @@ local function ApplyOpen(parts)
   RefreshList()
   Trial.model:SetUnit("player")
   Trial:Show()
+  RefreshExitButton()
 end
 
 Trial.start:SetScript("OnClick", function()
@@ -378,11 +416,16 @@ Trial.start:SetScript("OnClick", function()
   if not stage then
     return
   end
+  Trial.state.pendingArena = true
   SendCommand("START\t" .. tostring(stage.stageId))
+  Trial:Hide()
+  RefreshExitButton()
 end)
 
 Trial:RegisterEvent("PLAYER_LOGIN")
 Trial:RegisterEvent("CHAT_MSG_ADDON")
+Trial:RegisterEvent("PLAYER_ENTERING_WORLD")
+Trial:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 Trial:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
@@ -394,6 +437,18 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     SlashCmdList.KARAZHANTRIAL = function()
       SendCommand("OPEN")
     end
+    RefreshExitButton()
+    return
+  end
+
+  if event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+    if not IsInArenaInstance() then
+      Trial.state.pendingArena = false
+      if not Trial:IsShown() then
+        Trial.state.inProgress = false
+      end
+    end
+    RefreshExitButton()
     return
   end
 
