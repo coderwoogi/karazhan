@@ -1,6 +1,27 @@
 local addonName = ...
 local ARENA_INSTANCE_TYPE = "arena"
 
+StaticPopupDialogs["KARAZHAN_TRIAL_ABANDON_CONFIRM"] = {
+  text = "시련 종료시 어떠한 보상을 받을 수 없고, 미션 또한 실패로 간주합니다.\n그래도 종료 하시겠습니까?",
+  button1 = ACCEPT,
+  button2 = CANCEL,
+  OnAccept = function()
+    SendAddonMessage("TRIAL_CMD", "ABANDON", "WHISPER", UnitName("player"))
+    if KarazhanTrialFrame then
+      KarazhanTrialFrame.state.inProgress = false
+      KarazhanTrialFrame.state.pendingArena = false
+      KarazhanTrialFrame.state.endedAt = time()
+      KarazhanTrialFrame.statusBox:Hide()
+      KarazhanTrialFrame.exitButton:Hide()
+      KarazhanTrialFrame:Hide()
+    end
+  end,
+  timeout = 0,
+  whileDead = true,
+  hideOnEscape = true,
+  preferredIndex = STATICPOPUP_NUMDIALOGS,
+}
+
 local Trial = CreateFrame("Frame", "KarazhanTrialFrame", UIParent)
 Trial:SetSize(860, 540)
 Trial:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
@@ -296,22 +317,11 @@ Trial.abandon:SetPoint("RIGHT", Trial.cancel, "LEFT", -10, 0)
 Trial.abandon:SetText("시련 포기")
 Trial.abandon:Hide()
 Trial.abandon:SetScript("OnClick", function()
-  SendCommand("ABANDON")
-  Trial.state.inProgress = false
-  Trial.state.pendingArena = false
-  Trial.state.endedAt = time()
-  Trial.statusBox:Hide()
-  Trial.exitButton:Hide()
-  Trial:Hide()
+  StaticPopup_Show("KARAZHAN_TRIAL_ABANDON_CONFIRM")
 end)
 
 Trial.exitButton:SetScript("OnClick", function()
-  SendCommand("ABANDON")
-  Trial.state.inProgress = false
-  Trial.state.pendingArena = false
-  Trial.state.endedAt = time()
-  Trial.statusBox:Hide()
-  Trial.exitButton:Hide()
+  StaticPopup_Show("KARAZHAN_TRIAL_ABANDON_CONFIRM")
 end)
 
 SendCommand = function(payload)
