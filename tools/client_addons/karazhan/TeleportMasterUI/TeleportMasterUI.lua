@@ -39,7 +39,7 @@ local function CreateLabel(parent, template, size, r, g, b, justify)
 end
 
 local Frame = CreateFrame("Frame", "TeleportMasterUIFrame", UIParent)
-Frame:SetSize(860, 540)
+Frame:SetSize(320, 520)
 Frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 Frame:SetClampedToScreen(true)
 Frame:EnableMouse(true)
@@ -61,19 +61,17 @@ Frame:SetBackdrop({
 Frame:SetBackdropColor(0.04, 0.04, 0.04, 0.96)
 
 Frame.state = {
-  title = "이동술사",
-  subtitle = "The Karazhan",
-  body = "",
-  section = "이동 가능한 지역",
-  closeText = "닫기",
-  refreshText = "새로고침",
+  title = "Teleport Master",
+  subtitle = "",
+  closeText = "Close",
+  refreshText = "Refresh",
   items = {},
 }
 
 local title = CreateLabel(
   Frame,
   "GameFontHighlightLarge",
-  20,
+  18,
   0.96,
   0.84,
   0.30,
@@ -84,156 +82,63 @@ title:SetPoint("TOP", Frame, "TOP", 0, -18)
 local subtitle = CreateLabel(
   Frame,
   "GameFontNormal",
-  12,
+  11,
   0.72,
   0.72,
   0.72,
   "CENTER"
 )
 subtitle:SetPoint("TOP", title, "BOTTOM", 0, -4)
+subtitle:SetWidth(240)
 
 local close = CreateFrame("Button", nil, Frame, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -10, -10)
 
-local leftPane = CreateFrame("Frame", nil, Frame)
-leftPane:SetPoint("TOPLEFT", Frame, "TOPLEFT", 24, -54)
-leftPane:SetSize(268, 452)
-
-local leftHeader = CreateLabel(
-  leftPane,
+local listHeader = CreateLabel(
+  Frame,
   "GameFontHighlight",
-  14,
+  13,
   1.0,
   0.84,
   0.25
 )
-leftHeader:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 6, 0)
-leftHeader:SetText("목적지 선택")
+listHeader:SetPoint("TOPLEFT", Frame, "TOPLEFT", 18, -56)
+listHeader:SetText("Destination List")
 
-local leftDivider = leftPane:CreateTexture(nil, "ARTWORK")
-leftDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
-leftDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
-leftDivider:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 0, -22)
-leftDivider:SetPoint("TOPRIGHT", leftPane, "TOPRIGHT", 0, -22)
-leftDivider:SetHeight(8)
+local divider = Frame:CreateTexture(nil, "ARTWORK")
+divider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
+divider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
+divider:SetPoint("TOPLEFT", Frame, "TOPLEFT", 12, -76)
+divider:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -12, -76)
+divider:SetHeight(8)
 
-local leftBg = leftPane:CreateTexture(nil, "BACKGROUND")
-leftBg:SetTexture("Interface\\Buttons\\WHITE8x8")
-leftBg:SetVertexColor(0.02, 0.02, 0.02, 0.55)
-leftBg:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 0, -30)
-leftBg:SetPoint("BOTTOMRIGHT", leftPane, "BOTTOMRIGHT", 0, 0)
+local listBg = Frame:CreateTexture(nil, "BACKGROUND")
+listBg:SetTexture("Interface\\Buttons\\WHITE8x8")
+listBg:SetVertexColor(0.02, 0.02, 0.02, 0.55)
+listBg:SetPoint("TOPLEFT", Frame, "TOPLEFT", 14, -84)
+listBg:SetPoint("BOTTOMRIGHT", Frame, "BOTTOMRIGHT", -14, 54)
 
-local leftScroll = CreateFrame(
+local scroll = CreateFrame(
   "ScrollFrame",
   "TeleportMasterUILeftScroll",
-  leftPane,
+  Frame,
   "UIPanelScrollFrameTemplate"
 )
-leftScroll:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 4, -34)
-leftScroll:SetPoint("BOTTOMRIGHT", leftPane, "BOTTOMRIGHT", -28, 4)
+scroll:SetPoint("TOPLEFT", Frame, "TOPLEFT", 18, -88)
+scroll:SetPoint("BOTTOMRIGHT", Frame, "BOTTOMRIGHT", -38, 58)
 
-local leftContent = CreateFrame("Frame", nil, leftScroll)
-leftContent:SetSize(236, 1)
-leftScroll:SetScrollChild(leftContent)
-
-local rightPane = CreateFrame("Frame", nil, Frame)
-rightPane:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -24, -54)
-rightPane:SetSize(534, 452)
-
-local rightBg = rightPane:CreateTexture(nil, "BACKGROUND")
-rightBg:SetTexture("Interface\\Buttons\\WHITE8x8")
-rightBg:SetVertexColor(0.08, 0.03, 0.03, 0.62)
-rightBg:SetAllPoints(rightPane)
-
-local rightBorder = CreateFrame("Frame", nil, rightPane)
-rightBorder:SetAllPoints(rightPane)
-rightBorder:SetBackdrop({
-  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-  edgeSize = 12,
-  insets = { left = 2, right = 2, top = 2, bottom = 2 },
-})
-rightBorder:SetBackdropBorderColor(0.45, 0.30, 0.10, 0.80)
-
-local portraitFrame = CreateFrame("Frame", nil, rightPane)
-portraitFrame:SetSize(86, 86)
-portraitFrame:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 18, -16)
-portraitFrame:SetBackdrop({
-  bgFile = "Interface\\Buttons\\WHITE8x8",
-  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-  edgeSize = 12,
-  insets = { left = 2, right = 2, top = 2, bottom = 2 },
-})
-portraitFrame:SetBackdropColor(0.12, 0.08, 0.02, 0.95)
-portraitFrame:SetBackdropBorderColor(0.88, 0.70, 0.22, 0.90)
-
-local portraitTexture = portraitFrame:CreateTexture(nil, "ARTWORK")
-portraitTexture:SetPoint("TOPLEFT", portraitFrame, "TOPLEFT", 8, -8)
-portraitTexture:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", -8, 8)
-portraitTexture:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
-
-local rightTitle = CreateLabel(
-  rightPane,
-  "GameFontHighlightLarge",
-  22,
-  0.96,
-  0.92,
-  0.86
-)
-rightTitle:SetPoint("TOPLEFT", portraitFrame, "TOPRIGHT", 14, -2)
-rightTitle:SetWidth(396)
-
-local rightMeta = CreateLabel(
-  rightPane,
-  "GameFontNormal",
-  12,
-  0.86,
-  0.76,
-  0.34
-)
-rightMeta:SetPoint("TOPLEFT", rightTitle, "BOTTOMLEFT", 0, -6)
-rightMeta:SetWidth(396)
-
-local rightDivider = rightPane:CreateTexture(nil, "ARTWORK")
-rightDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
-rightDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
-rightDivider:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -110)
-rightDivider:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -110)
-rightDivider:SetHeight(8)
-
-local previewTitle = CreateLabel(
-  rightPane,
-  "GameFontHighlight",
-  13,
-  1.0,
-  0.84,
-  0.25
-)
-previewTitle:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -126)
-previewTitle:SetText("현재 선택 정보")
-
-local bodyText = CreateLabel(
-  rightPane,
-  "GameFontNormal",
-  13,
-  0.95,
-  0.82,
-  0.24
-)
-bodyText:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -150)
-bodyText:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -20, -150)
-bodyText:SetJustifyH("LEFT")
-if bodyText.SetWordWrap then
-  bodyText:SetWordWrap(true)
-end
+local content = CreateFrame("Frame", nil, scroll)
+content:SetSize(248, 1)
+scroll:SetScrollChild(content)
 
 local closeButton = CreateFrame(
   "Button",
   nil,
-  rightPane,
+  Frame,
   "UIPanelButtonTemplate"
 )
-closeButton:SetSize(120, 28)
-closeButton:SetPoint("BOTTOMLEFT", rightPane, "BOTTOMLEFT", 18, 16)
+closeButton:SetSize(110, 26)
+closeButton:SetPoint("BOTTOMLEFT", Frame, "BOTTOMLEFT", 18, 18)
 closeButton:SetScript("OnClick", function()
   Frame:Hide()
 end)
@@ -241,11 +146,11 @@ end)
 local refreshButton = CreateFrame(
   "Button",
   nil,
-  rightPane,
+  Frame,
   "UIPanelButtonTemplate"
 )
-refreshButton:SetSize(120, 28)
-refreshButton:SetPoint("LEFT", closeButton, "RIGHT", 10, 0)
+refreshButton:SetSize(110, 26)
+refreshButton:SetPoint("RIGHT", Frame, "BOTTOM", 58, 18)
 refreshButton:SetScript("OnClick", function()
   SendCommand("REFRESH", "")
 end)
@@ -253,9 +158,9 @@ end)
 Frame.buttons = {}
 
 local function CreateListButton(index)
-  local button = CreateFrame("Button", nil, leftContent)
-  button:SetSize(236, 52)
-  button:SetPoint("TOPLEFT", leftContent, "TOPLEFT", 0, -((index - 1) * 56))
+  local button = CreateFrame("Button", nil, content)
+  button:SetSize(248, 56)
+  button:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -((index - 1) * 60))
   button:SetBackdrop({
     bgFile = "Interface\\Buttons\\WHITE8x8",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -268,7 +173,7 @@ local function CreateListButton(index)
 
   button.iconBg = button:CreateTexture(nil, "ARTWORK")
   button.iconBg:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-  button.iconBg:SetSize(32, 32)
+  button.iconBg:SetSize(30, 30)
   button.iconBg:SetPoint("LEFT", button, "LEFT", 10, 0)
 
   button.icon = button:CreateTexture(nil, "OVERLAY")
@@ -279,24 +184,32 @@ local function CreateListButton(index)
   button.name = CreateLabel(
     button,
     "GameFontHighlight",
-    14,
+    13,
     1.0,
     0.84,
     0.25
   )
   button.name:SetPoint("TOPLEFT", button.iconBg, "TOPRIGHT", 10, -2)
-  button.name:SetWidth(170)
+  button.name:SetWidth(190)
+  button.name:SetHeight(26)
+  if button.name.SetWordWrap then
+    button.name:SetWordWrap(true)
+  end
 
   button.meta = CreateLabel(
     button,
     "GameFontNormalSmall",
-    11,
+    10,
     0.72,
     0.72,
     0.72
   )
-  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -5)
-  button.meta:SetWidth(170)
+  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -2)
+  button.meta:SetWidth(190)
+  button.meta:SetHeight(22)
+  if button.meta.SetWordWrap then
+    button.meta:SetWordWrap(true)
+  end
 
   button:SetScript("OnClick", function(self)
     if self.actionId then
@@ -312,27 +225,11 @@ for i = 1, 12 do
   CreateListButton(i)
 end
 
-local function UpdateNpcPortrait()
-  if UnitExists("npc") then
-    SetPortraitTexture(portraitTexture, "npc")
-    return
-  end
-
-  if UnitExists("target") then
-    SetPortraitTexture(portraitTexture, "target")
-    return
-  end
-
-  portraitTexture:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
-end
-
 local function ResetState()
-  Frame.state.title = "이동술사"
-  Frame.state.subtitle = "The Karazhan"
-  Frame.state.body = ""
-  Frame.state.section = "이동 가능한 지역"
-  Frame.state.closeText = "닫기"
-  Frame.state.refreshText = "새로고침"
+  Frame.state.title = "Teleport Master"
+  Frame.state.subtitle = ""
+  Frame.state.closeText = "Close"
+  Frame.state.refreshText = "Refresh"
   Frame.state.items = {}
 end
 
@@ -341,7 +238,7 @@ local function RefreshList()
   if count < 1 then
     count = 1
   end
-  leftContent:SetHeight((count * 56) - 4)
+  content:SetHeight((count * 60) - 4)
 
   for index, button in ipairs(Frame.buttons) do
     local item = Frame.state.items[index]
@@ -361,14 +258,10 @@ local function RefreshList()
 end
 
 local function Refresh()
-  title:SetText(Frame.state.title or "이동술사")
+  title:SetText(Frame.state.title or "Teleport Master")
   subtitle:SetText(Frame.state.subtitle or "")
-  rightTitle:SetText(Frame.state.title or "이동술사")
-  rightMeta:SetText(Frame.state.section or "이동 가능한 지역")
-  bodyText:SetText(Frame.state.body or "")
-  closeButton:SetText(Frame.state.closeText or "닫기")
-  refreshButton:SetText(Frame.state.refreshText or "새로고침")
-  UpdateNpcPortrait()
+  closeButton:SetText(Frame.state.closeText or "Close")
+  refreshButton:SetText(Frame.state.refreshText or "Refresh")
   RefreshList()
 end
 
@@ -398,18 +291,6 @@ Frame:SetScript("OnEvent", function(self, event, prefix, message)
   if kind == "HEADER" then
     Frame.state.title = parts[2] or Frame.state.title
     Frame.state.subtitle = parts[3] or ""
-    Refresh()
-    return
-  end
-
-  if kind == "BODY" then
-    Frame.state.body = parts[2] or ""
-    Refresh()
-    return
-  end
-
-  if kind == "SECTION" then
-    Frame.state.section = parts[2] or Frame.state.section
     Refresh()
     return
   end
