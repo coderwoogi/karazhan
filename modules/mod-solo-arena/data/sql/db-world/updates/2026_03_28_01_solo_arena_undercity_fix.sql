@@ -1,17 +1,21 @@
+ALTER TABLE `solo_arena_stage`
+    ADD COLUMN IF NOT EXISTS `preparation_ms` INT UNSIGNED NOT NULL DEFAULT 6000
+    AFTER `move_speed_rate`;
+
 REPLACE INTO `solo_arena_stage` (
     `stage_id`, `name`, `arena_map_id`,
     `player_x`, `player_y`, `player_z`, `player_o`,
     `bot_x`, `bot_y`, `bot_z`, `bot_o`,
     `health_multiplier`, `damage_multiplier`,
     `attack_time_ms`, `spell_interval_ms`,
-    `move_speed_rate`, `enabled`
+    `move_speed_rate`, `preparation_ms`, `enabled`
 ) VALUES
-(1, '그림자 수련 1단계', 572, 1281.60, 1660.20, 39.96, 1.57,
-    1290.10, 1676.10, 39.96, 4.71, 1.00, 1.00, 1900, 4200, 1.00, 1),
-(2, '그림자 수련 2단계', 572, 1281.60, 1660.20, 39.96, 1.57,
-    1290.10, 1676.10, 39.96, 4.71, 1.35, 1.25, 1600, 3000, 1.10, 1),
-(3, '그림자 수련 3단계', 572, 1281.60, 1660.20, 39.96, 1.57,
-    1290.10, 1676.10, 39.96, 4.71, 1.75, 1.55, 1300, 2100, 1.20, 1);
+(1, '그림자 시련 1단계', 572, 1298.61, 1598.59, 31.62, 1.57,
+    1273.71, 1734.05, 31.61, 4.71, 1.00, 1.00, 1900, 4200, 1.00, 6000, 1),
+(2, '그림자 시련 2단계', 572, 1298.61, 1598.59, 31.62, 1.57,
+    1273.71, 1734.05, 31.61, 4.71, 1.35, 1.25, 1600, 3000, 1.10, 6000, 1),
+(3, '그림자 시련 3단계', 572, 1298.61, 1598.59, 31.62, 1.57,
+    1273.71, 1734.05, 31.61, 4.71, 1.75, 1.55, 1300, 2100, 1.20, 6000, 1);
 
 DELETE FROM `creature_template` WHERE `entry` IN (910000, 910001);
 INSERT INTO `creature_template` (
@@ -30,7 +34,7 @@ INSERT INTO `creature_template` (
     '', 0, 1, 1,
     1, 1, 1,
     0, 'npc_solo_arena_master', 12340),
-(910001, '그림자 전사', '도전자', 0,
+(910001, '그림자 전사', '도전자와 닮은 어둠', 0,
     80, 80, 2, 14, 0,
     1, 1.14286, 1, 1, 1,
     2000, 2000, 1, 7,

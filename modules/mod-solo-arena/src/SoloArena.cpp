@@ -40,8 +40,9 @@ namespace
     enum class SessionState : uint8
     {
         PendingSpawn = 0,
-        Active = 1,
-        PendingFinish = 2
+        WaitingForStart = 1,
+        Active = 2,
+        PendingFinish = 3
     };
 
     struct StageConfig
@@ -49,13 +50,13 @@ namespace
         uint8 StageId = 0;
         std::string Name;
         uint32 ArenaMapId = DEFAULT_ARENA_MAP_ID;
-        float PlayerX = 1281.60f;
-        float PlayerY = 1660.20f;
-        float PlayerZ = 39.96f;
+        float PlayerX = 1298.61f;
+        float PlayerY = 1598.59f;
+        float PlayerZ = 31.62f;
         float PlayerO = 1.57f;
-        float BotX = 1290.10f;
-        float BotY = 1676.10f;
-        float BotZ = 39.96f;
+        float BotX = 1273.71f;
+        float BotY = 1734.05f;
+        float BotZ = 31.61f;
         float BotO = 4.71f;
         float HealthMultiplier = 1.0f;
         float DamageMultiplier = 1.0f;
@@ -63,6 +64,7 @@ namespace
         uint32 SpellIntervalMs = 4000;
         float MoveSpeedRate = 1.0f;
         bool Enabled = true;
+        uint32 PreparationMs = 6000;
     };
 
     struct ArenaSession
@@ -105,6 +107,19 @@ namespace
         float PrimaryRange = 30.0f;
         float SecondaryRange = 20.0f;
     };
+
+    void StartShadowCombat(Player* player, Creature* bot)
+    {
+        if (!player || !bot)
+            return;
+
+        bot->SetReactState(REACT_AGGRESSIVE);
+        bot->SetInCombatWith(player);
+        player->SetInCombatWith(bot);
+
+        if (CreatureAI* ai = bot->AI())
+            ai->AttackStart(player);
+    }
 
     class SoloArenaConfig
     {
@@ -214,7 +229,7 @@ void SoloArenaMgr::LoadStages()
         "SELECT stage_id, name, arena_map_id, player_x, player_y, "
         "player_z, player_o, bot_x, bot_y, bot_z, bot_o, "
         "health_multiplier, damage_multiplier, attack_time_ms, "
-        "spell_interval_ms, move_speed_rate, enabled "
+        "spell_interval_ms, move_speed_rate, preparation_ms, enabled "
         "FROM solo_arena_stage ORDER BY stage_id");
 
     if (!result)
@@ -244,7 +259,8 @@ void SoloArenaMgr::LoadStages()
         stage.AttackTimeMs = fields[13].Get<uint32>();
         stage.SpellIntervalMs = fields[14].Get<uint32>();
         stage.MoveSpeedRate = fields[15].Get<float>();
-        stage.Enabled = fields[16].Get<uint8>() != 0;
+        stage.PreparationMs = fields[16].Get<uint32>();
+        stage.Enabled = fields[17].Get<uint8>() != 0;
 
         _stages[stage.StageId] = stage;
     } while (result->NextRow());
@@ -372,8 +388,8 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
 
     WorldPacket data;
     sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, arena, queueSlot,
-        STATUS_IN_PROGRESS, 0, arena->GetStartTime(), arena->GetArenaType(),
-        teamId);
+        STATUS_WAIT_JOIN, INVITE_ACCEPT_WAIT_TIME, 0,
+        arena->GetArenaType(), teamId);
     player->SendDirectMessage(&data);
 
     sLFGMgr->LeaveAllLfgQueues(player->GetGUID(), false);
@@ -431,6 +447,37 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.Result = ArenaResult::Abandoned;
                     session.State = SessionState::PendingFinish;
                     session.FinishDelayMs = 1;
+                }
+                break;
+            case SessionState::WaitingForStart:
+                if (player->GetMapId() != session.ArenaMapId)
+                {
+                    session.Result = ArenaResult::Abandoned;
+                    session.State = SessionState::PendingFinish;
+                    session.FinishDelayMs = 1;
+                    break;
+                }
+
+                if (session.BotGuid.IsEmpty())
+                {
+                    session.Result = ArenaResult::Abandoned;
+                    session.State = SessionState::PendingFinish;
+                    session.FinishDelayMs = 1;
+                    break;
+                }
+
+                if (Battleground* bg = player->GetBattleground())
+                {
+                    if (bg->GetStatus() == STATUS_IN_PROGRESS)
+                    {
+                        if (Creature* bot = ObjectAccessor::GetCreature(
+                                *player, session.BotGuid))
+                            StartShadowCombat(player, bot);
+
+                        session.State = SessionState::Active;
+                        SendSystem(player,
+                            "문이 열렸습니다. 그림자와의 결투가 시작됩니다.");
+                    }
                 }
                 break;
             case SessionState::Active:
@@ -574,7 +621,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 
     session.BotGuid = summon->GetGUID();
     session.ArenaInstanceId = player->GetInstanceId();
-    session.State = SessionState::Active;
+    session.State = SessionState::WaitingForStart;
 
     ShadowProfile profile;
     profile.PlayerGuid = player->GetGUID();
@@ -585,13 +632,11 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     profile.SpellIntervalMs = stage->SpellIntervalMs;
     _shadowProfiles[summon->GetGUID().GetCounter()] = profile;
 
-    if (CreatureAI* ai = summon->AI())
-        ai->AttackStart(player);
+    summon->ClearInCombat();
+    player->ClearInCombat();
 
-    summon->SetInCombatWith(player);
-    player->SetInCombatWith(summon);
-
-    SendSystem(player, "그림자가 모습을 드러냈습니다.");
+    SendSystem(player,
+        "Shadow spawned. Combat begins when the gates open.");
     Debug("Solo arena shadow spawned: player='{}' stage={} botGuid={}",
         player->GetName(), stage->StageId, summon->GetGUID().ToString());
     return true;
@@ -600,12 +645,15 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
     StageConfig const& stage)
 {
-    summon->SetName(Acore::StringFormat("{}의 그림자", player->GetName()));
-    summon->SetDisplayId(player->GetDisplayId());
-    summon->SetNativeDisplayId(player->GetDisplayId());
+    summon->SetName(Acore::StringFormat("{}'s Shadow", player->GetName()));
+    summon->SetDisplayId(player->GetNativeDisplayId(), 1.0f);
+    summon->SetNativeDisplayId(player->GetNativeDisplayId());
     summon->SetLevel(player->GetLevel());
+    summon->SetByteValue(UNIT_FIELD_BYTES_0, 0, player->getRace());
     summon->SetByteValue(UNIT_FIELD_BYTES_0, 1, player->getClass());
     summon->SetByteValue(UNIT_FIELD_BYTES_0, 2, player->getGender());
+    summon->SetByteValue(UNIT_FIELD_BYTES_2, 0, player->GetSheath());
+    summon->SetObjectScale(player->GetObjectScale());
 
     if (Item* mainHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
         EQUIPMENT_SLOT_MAINHAND))
@@ -652,8 +700,10 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
     summon->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, baseDamage * 1.2f);
     summon->UpdateDamagePhysical(BASE_ATTACK);
     summon->SetSpeed(MOVE_RUN, stage.MoveSpeedRate, true);
-    summon->SetReactState(REACT_AGGRESSIVE);
+    summon->SetReactState(REACT_PASSIVE);
     summon->SetFaction(14);
+    summon->SetWalk(false);
+    summon->StopMoving();
 }
 
 void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
