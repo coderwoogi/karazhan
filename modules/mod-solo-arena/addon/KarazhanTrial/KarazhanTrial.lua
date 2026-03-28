@@ -225,7 +225,7 @@ Trial.abandon:SetScript("OnClick", function()
 end)
 
 SendCommand = function(payload)
-  SendAddonMessage("TRIAL_CMD", payload, "WHISPER", UnitName("player"))
+  SendChatMessage("#TRIAL# " .. payload, "SAY")
 end
 
 local function GetStageDescription(stage)
@@ -379,8 +379,6 @@ Trial.start:SetScript("OnClick", function()
     return
   end
   SendCommand("START\t" .. tostring(stage.stageId))
-  Trial.state.inProgress = true
-  RefreshSelection()
 end)
 
 Trial:RegisterEvent("PLAYER_LOGIN")

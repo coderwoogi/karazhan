@@ -368,6 +368,42 @@ namespace
         return text.compare(0, token.size(), token) == 0;
     }
 
+    bool HandleTrialHiddenCommand(Player* player, std::string const& msg)
+    {
+        if (!player || !StartsWith(msg, "#TRIAL# "))
+            return false;
+
+        std::string payload = msg.substr(8);
+        LOG_INFO("module",
+            "SoloArena hidden command: player='{}' msg='{}'",
+            player->GetName(), payload);
+
+        if (StartsWith(payload, "START\t"))
+        {
+            std::string stageText = payload.substr(6);
+            uint8 stageId = uint8(std::max(0, atoi(stageText.c_str())));
+            LOG_INFO("module",
+                "SoloArena start request: player='{}' stage={}",
+                player->GetName(), uint32(stageId));
+            SoloArenaMgr::Instance().StartChallenge(player, stageId);
+            return true;
+        }
+
+        if (payload == "OPEN")
+        {
+            SoloArenaMgr::Instance().SendUi(player);
+            return true;
+        }
+
+        if (payload == "ABANDON")
+        {
+            SoloArenaMgr::Instance().MarkAbandoned(player->GetGUID());
+            return true;
+        }
+
+        return true;
+    }
+
     bool HandleTrialAddonCommand(Player* player, std::string const& msg)
     {
         if (!player || !StartsWith(msg, "TRIAL_CMD\t"))
@@ -1664,6 +1700,9 @@ namespace
             uint32 language,
             std::string& msg) override
         {
+            if (HandleTrialHiddenCommand(player, msg))
+                return false;
+
             if (!player || language != LANG_ADDON)
                 return true;
 
@@ -1680,6 +1719,9 @@ namespace
             std::string& msg,
             Player* receiver) override
         {
+            if (HandleTrialHiddenCommand(player, msg))
+                return false;
+
             if (!player || language != LANG_ADDON)
                 return true;
 
