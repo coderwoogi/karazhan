@@ -698,32 +698,40 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
     summon->SetByteValue(UNIT_FIELD_BYTES_2, 0, player->GetSheath());
     summon->SetObjectScale(player->GetObjectScale());
 
+    bool hasMainHand = false;
+    bool hasOffHandWeapon = false;
+
     if (Item* mainHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
         EQUIPMENT_SLOT_MAINHAND))
     {
-        summon->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0,
-            mainHand->GetEntry());
+        summon->SetVirtualItem(0, mainHand->GetEntry());
+        hasMainHand = true;
     }
     else
-        summon->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 0, 0);
+        summon->SetVirtualItem(0, 0);
 
     if (Item* offHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
         EQUIPMENT_SLOT_OFFHAND))
     {
-        summon->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 1,
-            offHand->GetEntry());
+        summon->SetVirtualItem(1, offHand->GetEntry());
+        if (offHand->GetTemplate() &&
+            offHand->GetTemplate()->Class == ITEM_CLASS_WEAPON)
+        {
+            hasOffHandWeapon = true;
+        }
     }
     else
-        summon->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 1, 0);
+        summon->SetVirtualItem(1, 0);
 
     if (Item* ranged = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
         EQUIPMENT_SLOT_RANGED))
     {
-        summon->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2,
-            ranged->GetEntry());
+        summon->SetVirtualItem(2, ranged->GetEntry());
     }
     else
-        summon->SetUInt32Value(UNIT_VIRTUAL_ITEM_SLOT_ID + 2, 0);
+        summon->SetVirtualItem(2, 0);
+
+    summon->SetCanDualWield(hasMainHand && hasOffHandWeapon);
 
     uint32 maxHealth = std::max<uint32>(5000u,
         static_cast<uint32>(player->GetMaxHealth() *
