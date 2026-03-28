@@ -33,138 +33,269 @@ local function SendCommand(command, value)
   SendAddonMessage(activePrefix, payload, "WHISPER", playerName)
 end
 
-local function CreateText(parent, template, justify)
+local function CreateLabel(parent, template, size, r, g, b, justify)
   local fs = parent:CreateFontString(nil, "OVERLAY", template)
+  fs:SetFont(STANDARD_TEXT_FONT, size, "")
+  fs:SetTextColor(r, g, b)
   fs:SetJustifyH(justify or "LEFT")
   fs:SetJustifyV("TOP")
   return fs
 end
 
-local frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
-frame:SetSize(760, 520)
-frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-frame:SetFrameStrata("DIALOG")
-frame:SetToplevel(true)
-frame:SetMovable(true)
-frame:EnableMouse(true)
-frame:RegisterForDrag("LeftButton")
-frame:SetScript("OnDragStart", frame.StartMoving)
-frame:SetScript("OnDragStop", frame.StopMovingOrSizing)
-frame:Hide()
-table.insert(UISpecialFrames, frame:GetName())
+local Frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
+Frame:SetSize(860, 540)
+Frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+Frame:SetClampedToScreen(true)
+Frame:EnableMouse(true)
+Frame:SetMovable(true)
+Frame:RegisterForDrag("LeftButton")
+Frame:SetScript("OnDragStart", Frame.StartMoving)
+Frame:SetScript("OnDragStop", Frame.StopMovingOrSizing)
+Frame:Hide()
+table.insert(UISpecialFrames, Frame:GetName())
 
-frame.state = {
-  title = "Hero Stone",
+Frame:SetBackdrop({
+  bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+  edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+  tile = true,
+  tileSize = 32,
+  edgeSize = 32,
+  insets = { left = 11, right = 12, top = 12, bottom = 11 },
+})
+Frame:SetBackdropColor(0.04, 0.04, 0.04, 0.96)
+
+Frame.state = {
+  title = "영웅석",
   subtitle = "",
   body = "",
   icon = "Interface\\Icons\\INV_Misc_Rune_01",
   npcDisplayId = 0,
-  section = "Options",
-  closeText = "Close",
-  refreshText = "Refresh",
+  section = "사용 가능한 기능",
+  closeText = "닫기",
+  refreshText = "새로고침",
   items = {},
 }
 
-frame.bg = frame:CreateTexture(nil, "BACKGROUND")
-frame.bg:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Background")
-frame.bg:SetPoint("TOPLEFT", 11, -12)
-frame.bg:SetPoint("BOTTOMRIGHT", -12, 11)
+local title = CreateLabel(
+  Frame,
+  "GameFontHighlightLarge",
+  20,
+  0.96,
+  0.84,
+  0.30,
+  "CENTER"
+)
+title:SetPoint("TOP", Frame, "TOP", 0, -18)
 
-for _, point in ipairs({
-  {"TOPLEFT", 0, 1, 0, 1},
-  {"TOPRIGHT", 1, 0, 0, 1},
-  {"BOTTOMLEFT", 0, 1, 1, 0},
-  {"BOTTOMRIGHT", 1, 0, 1, 0},
-}) do
-  local tex = frame:CreateTexture(nil, "BORDER")
-  tex:SetTexture("Interface\\DialogFrame\\UI-DialogBox-Border")
-  tex:SetPoint(point[1])
-  tex:SetSize(256, 256)
-  tex:SetTexCoord(point[2], point[3], point[4], point[5])
-end
+local subtitle = CreateLabel(
+  Frame,
+  "GameFontNormal",
+  12,
+  0.72,
+  0.72,
+  0.72,
+  "CENTER"
+)
+subtitle:SetPoint("TOP", title, "BOTTOM", 0, -4)
 
-frame.title = CreateText(frame, "GameFontHighlightLarge", "CENTER")
-frame.title:SetPoint("TOP", 0, -18)
+local close = CreateFrame("Button", nil, Frame, "UIPanelCloseButton")
+close:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -10, -10)
 
-frame.close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-frame.close:SetPoint("TOPRIGHT", -6, -6)
+local leftPane = CreateFrame("Frame", nil, Frame)
+leftPane:SetPoint("TOPLEFT", Frame, "TOPLEFT", 24, -54)
+leftPane:SetSize(268, 452)
 
-frame.headerIcon = CreateFrame("Frame", nil, frame)
-frame.headerIcon:SetSize(40, 40)
-frame.headerIcon:SetPoint("TOPLEFT", 22, -24)
-frame.headerIcon.bg = frame.headerIcon:CreateTexture(nil, "BACKGROUND")
-frame.headerIcon.bg:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-frame.headerIcon.bg:SetAllPoints()
-frame.headerIcon.icon = frame.headerIcon:CreateTexture(nil, "ARTWORK")
-frame.headerIcon.icon:SetPoint("TOPLEFT", 6, -6)
-frame.headerIcon.icon:SetPoint("BOTTOMRIGHT", -6, 6)
-frame.headerIcon.icon:SetTexture(frame.state.icon)
+local leftHeader = CreateLabel(
+  leftPane,
+  "GameFontHighlight",
+  14,
+  1.0,
+  0.84,
+  0.25
+)
+leftHeader:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 6, 0)
+leftHeader:SetText("기능 선택")
 
-frame.subtitle = CreateText(frame, "GameFontNormal")
-frame.subtitle:SetPoint("TOPLEFT", frame.headerIcon, "TOPRIGHT", 12, -2)
-frame.subtitle:SetPoint("RIGHT", frame, "RIGHT", -48, 0)
+local leftDivider = leftPane:CreateTexture(nil, "ARTWORK")
+leftDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
+leftDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
+leftDivider:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 0, -22)
+leftDivider:SetPoint("TOPRIGHT", leftPane, "TOPRIGHT", 0, -22)
+leftDivider:SetHeight(8)
 
-frame.body = CreateText(frame, "GameFontHighlight")
-frame.body:SetPoint("TOPLEFT", frame, "TOPLEFT", 24, -76)
-frame.body:SetWidth(712)
+local leftBg = leftPane:CreateTexture(nil, "BACKGROUND")
+leftBg:SetTexture("Interface\\Buttons\\WHITE8x8")
+leftBg:SetVertexColor(0.02, 0.02, 0.02, 0.55)
+leftBg:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 0, -30)
+leftBg:SetPoint("BOTTOMRIGHT", leftPane, "BOTTOMRIGHT", 0, 0)
 
-frame.section = CreateText(frame, "GameFontNormalLarge")
-frame.section:SetPoint("TOPLEFT", frame.body, "BOTTOMLEFT", 0, -18)
+local leftScroll = CreateFrame(
+  "ScrollFrame",
+  "HeroStoneUILeftScroll",
+  leftPane,
+  "UIPanelScrollFrameTemplate"
+)
+leftScroll:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 4, -34)
+leftScroll:SetPoint("BOTTOMRIGHT", leftPane, "BOTTOMRIGHT", -28, 4)
 
-frame.listInset = CreateFrame("Frame", nil, frame)
-frame.listInset:SetPoint("TOPLEFT", frame.section, "BOTTOMLEFT", -4, -10)
-frame.listInset:SetSize(720, 260)
+local leftContent = CreateFrame("Frame", nil, leftScroll)
+leftContent:SetSize(236, 1)
+leftScroll:SetScrollChild(leftContent)
 
-frame.listInset.bg = frame.listInset:CreateTexture(nil, "BACKGROUND")
-frame.listInset.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
-frame.listInset.bg:SetAllPoints()
-frame.listInset.bg:SetVertexColor(0, 0, 0, 0.35)
+local rightPane = CreateFrame("Frame", nil, Frame)
+rightPane:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -24, -54)
+rightPane:SetSize(534, 452)
 
-frame.listInset.border = CreateFrame("Frame", nil, frame.listInset)
-frame.listInset.border:SetAllPoints()
-frame.listInset.border:SetBackdrop({
+local rightBg = rightPane:CreateTexture(nil, "BACKGROUND")
+rightBg:SetTexture("Interface\\Buttons\\WHITE8x8")
+rightBg:SetVertexColor(0.08, 0.03, 0.03, 0.62)
+rightBg:SetAllPoints(rightPane)
+
+local rightBorder = CreateFrame("Frame", nil, rightPane)
+rightBorder:SetAllPoints(rightPane)
+rightBorder:SetBackdrop({
   edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-  edgeSize = 14,
+  edgeSize = 12,
+  insets = { left = 2, right = 2, top = 2, bottom = 2 },
 })
-frame.listInset.border:SetBackdropBorderColor(0.6, 0.6, 0.6, 0.8)
+rightBorder:SetBackdropBorderColor(0.45, 0.30, 0.10, 0.80)
 
-frame.optionButtons = {}
+local iconFrame = CreateFrame("Frame", nil, rightPane)
+iconFrame:SetSize(84, 84)
+iconFrame:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 18, -16)
+iconFrame:SetBackdrop({
+  bgFile = "Interface\\Buttons\\WHITE8x8",
+  edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+  edgeSize = 12,
+  insets = { left = 2, right = 2, top = 2, bottom = 2 },
+})
+iconFrame:SetBackdropColor(0.12, 0.08, 0.02, 0.95)
+iconFrame:SetBackdropBorderColor(0.88, 0.70, 0.22, 0.90)
 
-for index = 1, 8 do
-  local button = CreateFrame(
-    "Button",
-    "HeroStoneUIButton" .. index,
-    frame.listInset,
-    "UIPanelButtonTemplate"
-  )
-  button:SetSize(694, 28)
-  if index == 1 then
-    button:SetPoint("TOPLEFT", frame.listInset, "TOPLEFT", 14, -14)
-  else
-    button:SetPoint(
-      "TOPLEFT",
-      frame.optionButtons[index - 1],
-      "BOTTOMLEFT",
-      0,
-      -6
-    )
-  end
+local iconTexture = iconFrame:CreateTexture(nil, "ARTWORK")
+iconTexture:SetPoint("TOPLEFT", iconFrame, "TOPLEFT", 10, -10)
+iconTexture:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMRIGHT", -10, 10)
+iconTexture:SetTexture(Frame.state.icon)
 
-  button.iconHolder = CreateFrame("Frame", nil, button)
-  button.iconHolder:SetSize(24, 24)
-  button.iconHolder:SetPoint("LEFT", button, "LEFT", 4, 0)
-  button.iconHolder.bg = button.iconHolder:CreateTexture(nil, "BACKGROUND")
-  button.iconHolder.bg:SetTexture("Interface\\Buttons\\UI-Quickslot2")
-  button.iconHolder.bg:SetAllPoints()
-  button.icon = button.iconHolder:CreateTexture(nil, "ARTWORK")
-  button.icon:SetPoint("TOPLEFT", 4, -4)
-  button.icon:SetPoint("BOTTOMRIGHT", -4, 4)
+local rightTitle = CreateLabel(
+  rightPane,
+  "GameFontHighlightLarge",
+  22,
+  0.96,
+  0.92,
+  0.86
+)
+rightTitle:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 14, -2)
+rightTitle:SetWidth(400)
+
+local rightMeta = CreateLabel(
+  rightPane,
+  "GameFontNormal",
+  12,
+  0.86,
+  0.76,
+  0.34
+)
+rightMeta:SetPoint("TOPLEFT", rightTitle, "BOTTOMLEFT", 0, -6)
+rightMeta:SetWidth(400)
+
+local rightDivider = rightPane:CreateTexture(nil, "ARTWORK")
+rightDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
+rightDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
+rightDivider:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -108)
+rightDivider:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -108)
+rightDivider:SetHeight(8)
+
+local playerModel = CreateFrame("DressUpModel", nil, rightPane)
+playerModel:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -126)
+playerModel:SetPoint("BOTTOMRIGHT", rightPane, "BOTTOMRIGHT", -20, 126)
+playerModel:SetFacing(0.45)
+playerModel:SetModelScale(1.0)
+playerModel:SetUnit("player")
+
+local bodyText = CreateLabel(
+  rightPane,
+  "GameFontNormal",
+  13,
+  0.95,
+  0.82,
+  0.24
+)
+bodyText:SetPoint("TOPLEFT", playerModel, "BOTTOMLEFT", 0, -14)
+bodyText:SetPoint("TOPRIGHT", playerModel, "BOTTOMRIGHT", 0, -14)
+bodyText:SetJustifyH("LEFT")
+
+local refreshButton = CreateFrame(
+  "Button",
+  nil,
+  rightPane,
+  "UIPanelButtonTemplate"
+)
+refreshButton:SetSize(120, 28)
+refreshButton:SetPoint("BOTTOMRIGHT", rightPane, "BOTTOMRIGHT", -18, 16)
+refreshButton:SetScript("OnClick", function()
+  SendCommand("REFRESH", "")
+end)
+
+local closeButton = CreateFrame(
+  "Button",
+  nil,
+  rightPane,
+  "UIPanelButtonTemplate"
+)
+closeButton:SetSize(120, 28)
+closeButton:SetPoint("RIGHT", refreshButton, "LEFT", -10, 0)
+closeButton:SetScript("OnClick", function()
+  Frame:Hide()
+end)
+
+Frame.buttons = {}
+
+local function CreateListButton(index)
+  local button = CreateFrame("Button", nil, leftContent)
+  button:SetSize(236, 52)
+  button:SetPoint("TOPLEFT", leftContent, "TOPLEFT", 0, -((index - 1) * 56))
+  button:SetBackdrop({
+    bgFile = "Interface\\Buttons\\WHITE8x8",
+    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+    edgeSize = 10,
+    insets = { left = 2, right = 2, top = 2, bottom = 2 },
+  })
+  button:SetBackdropColor(0.05, 0.05, 0.05, 0.82)
+  button:SetBackdropBorderColor(0.18, 0.18, 0.18, 0.90)
+  button:Hide()
+
+  button.iconBg = button:CreateTexture(nil, "ARTWORK")
+  button.iconBg:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+  button.iconBg:SetSize(32, 32)
+  button.iconBg:SetPoint("LEFT", button, "LEFT", 10, 0)
+
+  button.icon = button:CreateTexture(nil, "OVERLAY")
+  button.icon:SetPoint("TOPLEFT", button.iconBg, "TOPLEFT", 4, -4)
+  button.icon:SetPoint("BOTTOMRIGHT", button.iconBg, "BOTTOMRIGHT", -4, 4)
   button.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 
-  button.text = CreateText(button, "GameFontNormal")
-  button.text:SetPoint("LEFT", button.iconHolder, "RIGHT", 8, 0)
-  button.text:SetPoint("RIGHT", button, "RIGHT", -10, 0)
-  button.text:SetJustifyV("MIDDLE")
+  button.name = CreateLabel(
+    button,
+    "GameFontHighlight",
+    14,
+    1.0,
+    0.84,
+    0.25
+  )
+  button.name:SetPoint("TOPLEFT", button.iconBg, "TOPRIGHT", 10, -2)
+  button.name:SetWidth(170)
+
+  button.meta = CreateLabel(
+    button,
+    "GameFontNormalSmall",
+    11,
+    0.72,
+    0.72,
+    0.72
+  )
+  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -5)
+  button.meta:SetWidth(170)
 
   button:SetScript("OnClick", function(self)
     if self.actionId then
@@ -172,28 +303,13 @@ for index = 1, 8 do
     end
   end)
 
-  button:Hide()
-  frame.optionButtons[index] = button
+  Frame.buttons[index] = button
+  return button
 end
 
-frame.closeButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-frame.closeButton:SetSize(130, 24)
-frame.closeButton:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -24, 24)
-frame.closeButton:SetScript("OnClick", function()
-  frame:Hide()
-end)
-
-frame.refreshButton = CreateFrame(
-  "Button",
-  nil,
-  frame,
-  "UIPanelButtonTemplate"
-)
-frame.refreshButton:SetSize(130, 24)
-frame.refreshButton:SetPoint("RIGHT", frame.closeButton, "LEFT", -10, 0)
-frame.refreshButton:SetScript("OnClick", function()
-  SendCommand("REFRESH", "")
-end)
+for i = 1, 10 do
+  CreateListButton(i)
+end
 
 local PortraitUpdater = CreateFrame("Frame")
 PortraitUpdater.queue = {}
@@ -231,59 +347,58 @@ local function SetSafePortraitTexture(textureObject, unit)
 end
 
 local function UpdateHeaderIcon()
-  if frame.state.icon == "PORTRAIT_NPC" then
-    if SetSafePortraitTexture(frame.headerIcon.icon, "npc") then
+  if Frame.state.icon == "PORTRAIT_NPC" then
+    if SetSafePortraitTexture(iconTexture, "npc") then
       return
     end
 
-    if SetSafePortraitTexture(frame.headerIcon.icon, "target") then
+    if SetSafePortraitTexture(iconTexture, "target") then
       return
     end
 
-    if frame.state.npcDisplayId and frame.state.npcDisplayId > 0
+    if Frame.state.npcDisplayId and Frame.state.npcDisplayId > 0
         and SetPortraitTextureFromCreatureDisplayID then
       SetPortraitTextureFromCreatureDisplayID(
-        frame.headerIcon.icon,
-        frame.state.npcDisplayId
+        iconTexture,
+        Frame.state.npcDisplayId
       )
       return
     end
   end
 
-  frame.headerIcon.icon:SetTexture(
-    frame.state.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
+  iconTexture:SetTexture(
+    Frame.state.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
   )
 end
 
 local function ResetState()
-  frame.state.title = "Hero Stone"
-  frame.state.subtitle = ""
-  frame.state.body = ""
-  frame.state.icon = "Interface\\Icons\\INV_Misc_Rune_01"
-  frame.state.npcDisplayId = 0
-  frame.state.section = "Options"
-  frame.state.closeText = "Close"
-  frame.state.refreshText = "Refresh"
-  frame.state.items = {}
+  Frame.state.title = "영웅석"
+  Frame.state.subtitle = ""
+  Frame.state.body = ""
+  Frame.state.icon = "Interface\\Icons\\INV_Misc_Rune_01"
+  Frame.state.npcDisplayId = 0
+  Frame.state.section = "사용 가능한 기능"
+  Frame.state.closeText = "닫기"
+  Frame.state.refreshText = "새로고침"
+  Frame.state.items = {}
 end
 
-local function Refresh()
-  UpdateHeaderIcon()
-  frame.title:SetText(frame.state.title or "Hero Stone")
-  frame.subtitle:SetText(frame.state.subtitle or "")
-  frame.body:SetText(frame.state.body or "")
-  frame.section:SetText(frame.state.section or "Options")
-  frame.closeButton:SetText(frame.state.closeText or "Close")
-  frame.refreshButton:SetText(frame.state.refreshText or "Refresh")
+local function RefreshList()
+  local count = #Frame.state.items
+  if count < 1 then
+    count = 1
+  end
+  leftContent:SetHeight((count * 56) - 4)
 
-  for index, button in ipairs(frame.optionButtons) do
-    local item = frame.state.items[index]
+  for index, button in ipairs(Frame.buttons) do
+    local item = Frame.state.items[index]
     if item then
       button.actionId = item.id
       button.icon:SetTexture(
         item.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
       )
-      button.text:SetText(item.label or "")
+      button.name:SetText(item.label or "")
+      button.meta:SetText(item.desc or "")
       button:Show()
     else
       button.actionId = nil
@@ -292,9 +407,22 @@ local function Refresh()
   end
 end
 
-frame:RegisterEvent("PLAYER_LOGIN")
-frame:RegisterEvent("CHAT_MSG_ADDON")
-frame:SetScript("OnEvent", function(self, event, prefix, message)
+local function Refresh()
+  UpdateHeaderIcon()
+  title:SetText(Frame.state.title or "영웅석")
+  subtitle:SetText(Frame.state.subtitle or "")
+  rightTitle:SetText(Frame.state.title or "영웅석")
+  rightMeta:SetText(Frame.state.section or "사용 가능한 기능")
+  bodyText:SetText(Frame.state.body or "")
+  closeButton:SetText(Frame.state.closeText or "닫기")
+  refreshButton:SetText(Frame.state.refreshText or "새로고침")
+  playerModel:SetUnit("player")
+  RefreshList()
+end
+
+Frame:RegisterEvent("PLAYER_LOGIN")
+Frame:RegisterEvent("CHAT_MSG_ADDON")
+Frame:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
       for knownPrefix in pairs(VALID_PREFIXES) do
@@ -320,35 +448,35 @@ frame:SetScript("OnEvent", function(self, event, prefix, message)
   end
 
   if kind == "HEADER" then
-    frame.state.title = parts[2] or frame.state.title
-    frame.state.subtitle = parts[3] or ""
-    frame.state.icon = parts[4] or frame.state.icon
-    frame.state.npcDisplayId = tonumber(parts[5]) or 0
+    Frame.state.title = parts[2] or Frame.state.title
+    Frame.state.subtitle = parts[3] or ""
+    Frame.state.icon = parts[4] or Frame.state.icon
+    Frame.state.npcDisplayId = tonumber(parts[5]) or 0
     Refresh()
     return
   end
 
   if kind == "BODY" then
-    frame.state.body = parts[2] or ""
+    Frame.state.body = parts[2] or ""
     Refresh()
     return
   end
 
   if kind == "SECTION" then
-    frame.state.section = parts[2] or frame.state.section
+    Frame.state.section = parts[2] or Frame.state.section
     Refresh()
     return
   end
 
   if kind == "CONTROL" then
-    frame.state.closeText = parts[2] or frame.state.closeText
-    frame.state.refreshText = parts[3] or frame.state.refreshText
+    Frame.state.closeText = parts[2] or Frame.state.closeText
+    Frame.state.refreshText = parts[3] or Frame.state.refreshText
     Refresh()
     return
   end
 
   if kind == "ITEM" then
-    table.insert(frame.state.items, {
+    table.insert(Frame.state.items, {
       id = parts[2] or "",
       label = parts[3] or "",
       desc = parts[4] or "",
@@ -360,12 +488,12 @@ frame:SetScript("OnEvent", function(self, event, prefix, message)
 
   if kind == "SHOW" then
     Refresh()
-    frame:Show()
+    Frame:Show()
     return
   end
 
   if kind == "CLOSE" then
-    frame:Hide()
+    Frame:Hide()
     return
   end
 end)
