@@ -97,9 +97,10 @@ Trial.statusTitle = CreateLabel(
   13,
   1.0,
   0.84,
-  0.25
+  0.25,
+  "CENTER"
 )
-Trial.statusTitle:SetPoint("TOPLEFT", Trial.statusBox, "TOPLEFT", 14, -12)
+Trial.statusTitle:SetPoint("TOP", Trial.statusBox, "TOP", 0, -12)
 Trial.statusTitle:SetText("시련 진행 정보")
 
 Trial.currentTimeText = CreateLabel(
@@ -108,9 +109,10 @@ Trial.currentTimeText = CreateLabel(
   12,
   0.92,
   0.92,
-  0.92
+  0.92,
+  "CENTER"
 )
-Trial.currentTimeText:SetPoint("TOPLEFT", Trial.statusTitle, "BOTTOMLEFT", 0, -10)
+Trial.currentTimeText:SetPoint("TOP", Trial.statusTitle, "BOTTOM", 0, -10)
 
 Trial.startTimeText = CreateLabel(
   Trial.statusBox,
@@ -118,9 +120,10 @@ Trial.startTimeText = CreateLabel(
   12,
   0.92,
   0.92,
-  0.92
+  0.92,
+  "CENTER"
 )
-Trial.startTimeText:SetPoint("TOPLEFT", Trial.currentTimeText, "BOTTOMLEFT", 0, -6)
+Trial.startTimeText:SetPoint("TOP", Trial.currentTimeText, "BOTTOM", 0, -6)
 
 Trial.endTimeText = CreateLabel(
   Trial.statusBox,
@@ -128,9 +131,10 @@ Trial.endTimeText = CreateLabel(
   12,
   0.92,
   0.92,
-  0.92
+  0.92,
+  "CENTER"
 )
-Trial.endTimeText:SetPoint("TOPLEFT", Trial.startTimeText, "BOTTOMLEFT", 0, -6)
+Trial.endTimeText:SetPoint("TOP", Trial.startTimeText, "BOTTOM", 0, -6)
 
 Trial.exitButton = CreateFrame("Button", "KarazhanTrialExitButton",
   Trial.statusBox, "UIPanelButtonTemplate")
@@ -329,8 +333,12 @@ end
 
 local function RefreshStatusTimes()
   Trial.currentTimeText:SetText("현재 시간: " .. date("%H:%M:%S"))
-  Trial.startTimeText:SetText("시작 시간: " .. FormatClock(Trial.state.startedAt))
-  Trial.endTimeText:SetText("종료 시간: " .. FormatClock(Trial.state.endedAt))
+  Trial.startTimeText:SetText(
+    "전투 시작 시간: " .. FormatClock(Trial.state.startedAt)
+  )
+  Trial.endTimeText:SetText(
+    "전투 종료 시간: " .. FormatClock(Trial.state.endedAt)
+  )
 end
 
 local function RefreshExitButton()
@@ -468,13 +476,17 @@ local function RefreshList()
 end
 
 local function ApplyOpen(parts)
-  local previousStartedAt = Trial.state.startedAt
   Trial.state = NewState()
   Trial.state.highestCleared = tonumber(parts[2]) or 0
   Trial.state.inProgress = tonumber(parts[4]) == 1
   Trial.state.pendingArena = Trial.state.inProgress
-  if Trial.state.inProgress then
-    Trial.state.startedAt = previousStartedAt or time()
+  Trial.state.startedAt = tonumber(parts[5]) or nil
+  Trial.state.endedAt = tonumber(parts[6]) or nil
+  if Trial.state.startedAt == 0 then
+    Trial.state.startedAt = nil
+  end
+  if Trial.state.endedAt == 0 then
+    Trial.state.endedAt = nil
   end
 
   local encoded = parts[3] or ""
@@ -505,7 +517,6 @@ Trial.start:SetScript("OnClick", function()
     return
   end
   Trial.state.pendingArena = true
-  Trial.state.startedAt = time()
   Trial.state.endedAt = nil
   SendCommand("START\t" .. tostring(stage.stageId))
   Trial:Hide()
@@ -558,6 +569,20 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   local parts = Split(message, "\t")
   if parts[1] == "OPEN" then
     ApplyOpen(parts)
+  elseif parts[1] == "TIME" then
+    Trial.state.startedAt = tonumber(parts[2]) or nil
+    Trial.state.endedAt = tonumber(parts[3]) or nil
+    Trial.state.inProgress = tonumber(parts[4]) == 1
+    if Trial.state.startedAt == 0 then
+      Trial.state.startedAt = nil
+    end
+    if Trial.state.endedAt == 0 then
+      Trial.state.endedAt = nil
+    end
+    if Trial.state.inProgress then
+      Trial.state.pendingArena = false
+    end
+    RefreshExitButton()
   end
 end)
 

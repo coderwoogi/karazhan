@@ -97,6 +97,8 @@ namespace
         float ReturnZ = 0.0f;
         float ReturnO = 0.0f;
         uint64 StartedAt = 0;
+        uint64 CombatStartedAt = 0;
+        uint64 EndedAt = 0;
         uint32 SpawnDelayMs = 1000;
         uint32 FinishDelayMs = 3000;
         ArenaResult Result = ArenaResult::None;
@@ -361,6 +363,19 @@ namespace
         data << fullMessage;
         data << uint8(0);
         player->GetSession()->SendPacket(&data);
+    }
+
+    void SendTrialTimePayload(Player* player, ArenaSession const& session)
+    {
+        if (!player)
+            return;
+
+        std::ostringstream payload;
+        payload << "TIME\t";
+        payload << uint64(session.CombatStartedAt) << "\t";
+        payload << uint64(session.EndedAt) << "\t";
+        payload << (session.State == SessionState::Active ? 1 : 0);
+        SendAddonPayload(player, "TRIAL_UI", payload.str());
     }
 
     bool StartsWith(std::string const& text, std::string const& token)
@@ -633,7 +648,16 @@ void SoloArenaMgr::SendUi(Player* player)
     payload << "OPEN\t";
     payload << uint32(highestStage) << "\t";
     payload << entries.str() << "\t";
-    payload << (HasSession(player->GetGUID()) ? 1 : 0);
+    payload << (HasSession(player->GetGUID()) ? 1 : 0) << "\t";
+    if (ArenaSession const* session = GetSession(player->GetGUID()))
+    {
+        payload << uint64(session->CombatStartedAt) << "\t";
+        payload << uint64(session->EndedAt);
+    }
+    else
+    {
+        payload << uint64(0) << "\t" << uint64(0);
+    }
     SendAddonPayload(player, "TRIAL_UI", payload.str());
 }
 
@@ -697,6 +721,9 @@ void SoloArenaMgr::Update(uint32 diff)
                             StartShadowCombat(player, bot);
 
                         session.State = SessionState::Active;
+                        session.CombatStartedAt = std::time(nullptr);
+                        session.EndedAt = 0;
+                        SendTrialTimePayload(player, session);
                         SendSystem(player,
                             "문이 열렸습니다. 그림자와의 결투가 시작됩니다.");
                     }
@@ -761,7 +788,11 @@ void SoloArenaMgr::MarkVictory(ObjectGuid const& playerGuid)
 
     itr->second.Result = ArenaResult::Victory;
     itr->second.State = SessionState::PendingFinish;
+    itr->second.EndedAt = std::time(nullptr);
     itr->second.FinishDelayMs = 3000;
+
+    if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
+        SendTrialTimePayload(player, itr->second);
 }
 
 void SoloArenaMgr::MarkFailure(ObjectGuid const& playerGuid)
@@ -772,7 +803,11 @@ void SoloArenaMgr::MarkFailure(ObjectGuid const& playerGuid)
 
     itr->second.Result = ArenaResult::Failure;
     itr->second.State = SessionState::PendingFinish;
+    itr->second.EndedAt = std::time(nullptr);
     itr->second.FinishDelayMs = 3000;
+
+    if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
+        SendTrialTimePayload(player, itr->second);
 }
 
 void SoloArenaMgr::MarkAbandoned(ObjectGuid const& playerGuid)
@@ -783,7 +818,11 @@ void SoloArenaMgr::MarkAbandoned(ObjectGuid const& playerGuid)
 
     itr->second.Result = ArenaResult::Abandoned;
     itr->second.State = SessionState::PendingFinish;
+    itr->second.EndedAt = std::time(nullptr);
     itr->second.FinishDelayMs = 1;
+
+    if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
+        SendTrialTimePayload(player, itr->second);
 }
 
 ShadowProfile const* SoloArenaMgr::GetShadowProfile(
