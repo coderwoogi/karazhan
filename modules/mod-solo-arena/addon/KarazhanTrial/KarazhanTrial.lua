@@ -51,6 +51,8 @@ local function NewState()
     selected = 1,
     inProgress = false,
     pendingArena = false,
+    startedAt = nil,
+    endedAt = nil,
   }
 end
 
@@ -72,9 +74,64 @@ close:SetPoint("TOPRIGHT", Trial, "TOPRIGHT", -10, -10)
 Trial.exitButton = CreateFrame("Button", "KarazhanTrialExitButton", UIParent,
   "UIPanelButtonTemplate")
 Trial.exitButton:SetSize(120, 28)
-Trial.exitButton:SetPoint("TOP", UIParent, "TOP", 0, -120)
+Trial.exitButton:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 18)
 Trial.exitButton:SetText("시련 종료")
 Trial.exitButton:Hide()
+
+Trial.statusBox = CreateFrame("Frame", nil, UIParent)
+Trial.statusBox:SetSize(240, 112)
+Trial.statusBox:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 54)
+Trial.statusBox:SetBackdrop({
+  bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+  edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+  tile = true,
+  tileSize = 32,
+  edgeSize = 16,
+  insets = { left = 5, right = 5, top = 5, bottom = 5 },
+})
+Trial.statusBox:SetBackdropColor(0.04, 0.04, 0.04, 0.94)
+Trial.statusBox:Hide()
+
+Trial.statusTitle = CreateLabel(
+  Trial.statusBox,
+  "GameFontHighlight",
+  13,
+  1.0,
+  0.84,
+  0.25
+)
+Trial.statusTitle:SetPoint("TOPLEFT", Trial.statusBox, "TOPLEFT", 14, -12)
+Trial.statusTitle:SetText("시련 진행 정보")
+
+Trial.currentTimeText = CreateLabel(
+  Trial.statusBox,
+  "GameFontNormal",
+  12,
+  0.92,
+  0.92,
+  0.92
+)
+Trial.currentTimeText:SetPoint("TOPLEFT", Trial.statusTitle, "BOTTOMLEFT", 0, -10)
+
+Trial.startTimeText = CreateLabel(
+  Trial.statusBox,
+  "GameFontNormal",
+  12,
+  0.92,
+  0.92,
+  0.92
+)
+Trial.startTimeText:SetPoint("TOPLEFT", Trial.currentTimeText, "BOTTOMLEFT", 0, -6)
+
+Trial.endTimeText = CreateLabel(
+  Trial.statusBox,
+  "GameFontNormal",
+  12,
+  0.92,
+  0.92,
+  0.92
+)
+Trial.endTimeText:SetPoint("TOPLEFT", Trial.startTimeText, "BOTTOMLEFT", 0, -6)
 
 Trial.leftPane = CreateFrame("Frame", nil, Trial)
 Trial.leftPane:SetPoint("TOPLEFT", Trial, "TOPLEFT", 24, -54)
@@ -232,6 +289,8 @@ Trial.abandon:SetScript("OnClick", function()
   SendCommand("ABANDON")
   Trial.state.inProgress = false
   Trial.state.pendingArena = false
+  Trial.state.endedAt = time()
+  Trial.statusBox:Hide()
   Trial.exitButton:Hide()
   Trial:Hide()
 end)
@@ -240,6 +299,8 @@ Trial.exitButton:SetScript("OnClick", function()
   SendCommand("ABANDON")
   Trial.state.inProgress = false
   Trial.state.pendingArena = false
+  Trial.state.endedAt = time()
+  Trial.statusBox:Hide()
   Trial.exitButton:Hide()
 end)
 
@@ -252,12 +313,29 @@ local function IsInArenaInstance()
   return instanceType == ARENA_INSTANCE_TYPE
 end
 
+local function FormatClock(value)
+  if not value then
+    return "진행 중"
+  end
+
+  return date("%H:%M:%S", value)
+end
+
+local function RefreshStatusTimes()
+  Trial.currentTimeText:SetText("현재 시간: " .. date("%H:%M:%S"))
+  Trial.startTimeText:SetText("시작 시간: " .. FormatClock(Trial.state.startedAt))
+  Trial.endTimeText:SetText("종료 시간: " .. FormatClock(Trial.state.endedAt))
+end
+
 local function RefreshExitButton()
   if (Trial.state.inProgress or Trial.state.pendingArena)
     and IsInArenaInstance()
     and not Trial:IsShown() then
+    RefreshStatusTimes()
+    Trial.statusBox:Show()
     Trial.exitButton:Show()
   else
+    Trial.statusBox:Hide()
     Trial.exitButton:Hide()
   end
 end
@@ -384,10 +462,14 @@ local function RefreshList()
 end
 
 local function ApplyOpen(parts)
+  local previousStartedAt = Trial.state.startedAt
   Trial.state = NewState()
   Trial.state.highestCleared = tonumber(parts[2]) or 0
   Trial.state.inProgress = tonumber(parts[4]) == 1
   Trial.state.pendingArena = Trial.state.inProgress
+  if Trial.state.inProgress then
+    Trial.state.startedAt = previousStartedAt or time()
+  end
 
   local encoded = parts[3] or ""
   if encoded ~= "" then
@@ -417,6 +499,8 @@ Trial.start:SetScript("OnClick", function()
     return
   end
   Trial.state.pendingArena = true
+  Trial.state.startedAt = time()
+  Trial.state.endedAt = nil
   SendCommand("START\t" .. tostring(stage.stageId))
   Trial:Hide()
   RefreshExitButton()
@@ -426,6 +510,7 @@ Trial:RegisterEvent("PLAYER_LOGIN")
 Trial:RegisterEvent("CHAT_MSG_ADDON")
 Trial:RegisterEvent("PLAYER_ENTERING_WORLD")
 Trial:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+Trial:RegisterEvent("PLAYER_LEAVING_WORLD")
 Trial:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
@@ -446,9 +531,17 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
       Trial.state.pendingArena = false
       if not Trial:IsShown() then
         Trial.state.inProgress = false
+        if Trial.state.startedAt and not Trial.state.endedAt then
+          Trial.state.endedAt = time()
+        end
       end
     end
     RefreshExitButton()
+    return
+  end
+
+  if event == "PLAYER_LEAVING_WORLD" then
+    RefreshStatusTimes()
     return
   end
 
@@ -459,5 +552,17 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   local parts = Split(message, "\t")
   if parts[1] == "OPEN" then
     ApplyOpen(parts)
+  end
+end)
+
+Trial:SetScript("OnUpdate", function(_, elapsed)
+  Trial._clockElapsed = (Trial._clockElapsed or 0) + elapsed
+  if Trial._clockElapsed < 1 then
+    return
+  end
+
+  Trial._clockElapsed = 0
+  if Trial.statusBox:IsShown() then
+    RefreshStatusTimes()
   end
 end)
