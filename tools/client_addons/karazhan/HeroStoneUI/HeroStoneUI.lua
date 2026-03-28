@@ -61,15 +61,14 @@ Frame:SetBackdrop({
 Frame:SetBackdropColor(0.04, 0.04, 0.04, 0.96)
 
 Frame.state = {
-  title = "Hero Stone",
+  title = "영웅석",
   subtitle = "",
   body = "",
   icon = "Interface\\Icons\\INV_Misc_Rune_01",
-  section = "Available Features",
-  closeText = "Close",
-  refreshText = "Refresh",
+  section = "사용 가능한 기능",
+  closeText = "닫기",
+  refreshText = "새로고침",
   items = {},
-  isSubscriber = false,
   remainDays = 0,
 }
 
@@ -111,7 +110,7 @@ local leftHeader = CreateLabel(
   0.25
 )
 leftHeader:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 6, 0)
-leftHeader:SetText("Feature List")
+leftHeader:SetText("기능 선택")
 
 local leftDivider = leftPane:CreateTexture(nil, "ARTWORK")
 leftDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -205,7 +204,7 @@ local gaugeLabel = CreateLabel(
   0.25
 )
 gaugeLabel:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -94)
-gaugeLabel:SetText("Subscription")
+gaugeLabel:SetText("구독 상태")
 
 local gaugeBg = CreateFrame("Frame", nil, rightPane)
 gaugeBg:SetSize(304, 18)
@@ -265,6 +264,9 @@ local bodyText = CreateLabel(
 bodyText:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -182)
 bodyText:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -182)
 bodyText:SetJustifyH("LEFT")
+if bodyText.SetWordWrap then
+  bodyText:SetWordWrap(true)
+end
 
 local closeButton = CreateFrame(
   "Button",
@@ -294,8 +296,8 @@ Frame.buttons = {}
 
 local function CreateListButton(index)
   local button = CreateFrame("Button", nil, leftContent)
-  button:SetSize(188, 48)
-  button:SetPoint("TOPLEFT", leftContent, "TOPLEFT", 0, -((index - 1) * 52))
+  button:SetSize(188, 60)
+  button:SetPoint("TOPLEFT", leftContent, "TOPLEFT", 0, -((index - 1) * 64))
   button:SetBackdrop({
     bgFile = "Interface\\Buttons\\WHITE8x8",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -326,6 +328,10 @@ local function CreateListButton(index)
   )
   button.name:SetPoint("TOPLEFT", button.iconBg, "TOPRIGHT", 10, -2)
   button.name:SetWidth(134)
+  button.name:SetHeight(28)
+  if button.name.SetWordWrap then
+    button.name:SetWordWrap(true)
+  end
 
   button.meta = CreateLabel(
     button,
@@ -335,8 +341,12 @@ local function CreateListButton(index)
     0.72,
     0.72
   )
-  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -4)
+  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -2)
   button.meta:SetWidth(134)
+  button.meta:SetHeight(24)
+  if button.meta.SetWordWrap then
+    button.meta:SetWordWrap(true)
+  end
 
   button:SetScript("OnClick", function(self)
     if self.actionId then
@@ -355,43 +365,35 @@ end
 local function ParseSubscription()
   local remainDays = tonumber(string.match(Frame.state.subtitle or "", "(%d+)"))
     or 0
-  local isSubscriber = remainDays > 0
   Frame.state.remainDays = remainDays
-  Frame.state.isSubscriber = isSubscriber and remainDays > 0
 end
 
 local function UpdateGauge()
-  local value = 0
-  local maxDays = 30
-
-  if Frame.state.isSubscriber then
-    value = math.min(Frame.state.remainDays, maxDays)
-    gaugeFill:SetVertexColor(0.92, 0.70, 0.18, 0.95)
-    gaugeText:SetText(string.format("%d days remaining", Frame.state.remainDays))
-  else
-    value = 0
-    gaugeFill:SetVertexColor(0.45, 0.12, 0.12, 0.95)
-    gaugeText:SetText("No subscription")
-  end
-
+  local value = math.min(Frame.state.remainDays or 0, 30)
   local totalWidth = 300
-  local width = math.max(1, math.floor((value / maxDays) * totalWidth))
-  if value <= 0 then
+  local width = math.max(1, math.floor((value / 30) * totalWidth))
+
+  if Frame.state.remainDays > 0 then
+    gaugeFill:SetVertexColor(0.92, 0.70, 0.18, 0.95)
+    gaugeText:SetText(string.format("남은 기간 %d일", Frame.state.remainDays))
+  else
+    gaugeFill:SetVertexColor(0.45, 0.12, 0.12, 0.95)
+    gaugeText:SetText("구독 없음")
     width = 1
   end
+
   gaugeFill:SetWidth(width)
 end
 
 local function ResetState()
-  Frame.state.title = "Hero Stone"
+  Frame.state.title = "영웅석"
   Frame.state.subtitle = ""
   Frame.state.body = ""
   Frame.state.icon = "Interface\\Icons\\INV_Misc_Rune_01"
-  Frame.state.section = "Available Features"
-  Frame.state.closeText = "Close"
-  Frame.state.refreshText = "Refresh"
+  Frame.state.section = "사용 가능한 기능"
+  Frame.state.closeText = "닫기"
+  Frame.state.refreshText = "새로고침"
   Frame.state.items = {}
-  Frame.state.isSubscriber = false
   Frame.state.remainDays = 0
 end
 
@@ -400,7 +402,7 @@ local function RefreshList()
   if count < 1 then
     count = 1
   end
-  leftContent:SetHeight((count * 52) - 4)
+  leftContent:SetHeight((count * 64) - 4)
 
   for index, button in ipairs(Frame.buttons) do
     local item = Frame.state.items[index]
@@ -424,14 +426,14 @@ local function Refresh()
   iconTexture:SetTexture(
     Frame.state.icon or "Interface\\Icons\\INV_Misc_QuestionMark"
   )
-  title:SetText(Frame.state.title or "Hero Stone")
+  title:SetText(Frame.state.title or "영웅석")
   subtitle:SetText(Frame.state.subtitle or "")
-  infoTitle:SetText(Frame.state.title or "Hero Stone")
+  infoTitle:SetText(Frame.state.title or "영웅석")
   infoSubtitle:SetText(Frame.state.subtitle or "")
-  sectionTitle:SetText(Frame.state.section or "Available Features")
+  sectionTitle:SetText(Frame.state.section or "사용 가능한 기능")
   bodyText:SetText(Frame.state.body or "")
-  closeButton:SetText(Frame.state.closeText or "Close")
-  refreshButton:SetText(Frame.state.refreshText or "Refresh")
+  closeButton:SetText(Frame.state.closeText or "닫기")
+  refreshButton:SetText(Frame.state.refreshText or "새로고침")
   UpdateGauge()
   RefreshList()
 end

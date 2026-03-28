@@ -61,13 +61,12 @@ Frame:SetBackdrop({
 Frame:SetBackdropColor(0.04, 0.04, 0.04, 0.96)
 
 Frame.state = {
-  title = "Teleport Master",
+  title = "이동술사",
   subtitle = "The Karazhan",
   body = "",
-  npcDisplayId = 0,
-  section = "Available Destinations",
-  closeText = "Close",
-  refreshText = "Refresh",
+  section = "이동 가능한 지역",
+  closeText = "닫기",
+  refreshText = "새로고침",
   items = {},
 }
 
@@ -109,7 +108,7 @@ local leftHeader = CreateLabel(
   0.25
 )
 leftHeader:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 6, 0)
-leftHeader:SetText("Destination List")
+leftHeader:SetText("목적지 선택")
 
 local leftDivider = leftPane:CreateTexture(nil, "ARTWORK")
 leftDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -155,22 +154,22 @@ rightBorder:SetBackdrop({
 })
 rightBorder:SetBackdropBorderColor(0.45, 0.30, 0.10, 0.80)
 
-local iconFrame = CreateFrame("Frame", nil, rightPane)
-iconFrame:SetSize(52, 52)
-iconFrame:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 18, -16)
-iconFrame:SetBackdrop({
+local portraitFrame = CreateFrame("Frame", nil, rightPane)
+portraitFrame:SetSize(86, 86)
+portraitFrame:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 18, -16)
+portraitFrame:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
   edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
   edgeSize = 12,
   insets = { left = 2, right = 2, top = 2, bottom = 2 },
 })
-iconFrame:SetBackdropColor(0.12, 0.08, 0.02, 0.95)
-iconFrame:SetBackdropBorderColor(0.88, 0.70, 0.22, 0.90)
+portraitFrame:SetBackdropColor(0.12, 0.08, 0.02, 0.95)
+portraitFrame:SetBackdropBorderColor(0.88, 0.70, 0.22, 0.90)
 
-local iconTexture = iconFrame:CreateTexture(nil, "ARTWORK")
-iconTexture:SetPoint("TOPLEFT", iconFrame, "TOPLEFT", 8, -8)
-iconTexture:SetPoint("BOTTOMRIGHT", iconFrame, "BOTTOMRIGHT", -8, 8)
-iconTexture:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
+local portraitTexture = portraitFrame:CreateTexture(nil, "ARTWORK")
+portraitTexture:SetPoint("TOPLEFT", portraitFrame, "TOPLEFT", 8, -8)
+portraitTexture:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", -8, 8)
+portraitTexture:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
 
 local rightTitle = CreateLabel(
   rightPane,
@@ -180,8 +179,8 @@ local rightTitle = CreateLabel(
   0.92,
   0.86
 )
-rightTitle:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 14, -2)
-rightTitle:SetWidth(420)
+rightTitle:SetPoint("TOPLEFT", portraitFrame, "TOPRIGHT", 14, -2)
+rightTitle:SetWidth(396)
 
 local rightMeta = CreateLabel(
   rightPane,
@@ -192,27 +191,25 @@ local rightMeta = CreateLabel(
   0.34
 )
 rightMeta:SetPoint("TOPLEFT", rightTitle, "BOTTOMLEFT", 0, -6)
-rightMeta:SetWidth(420)
+rightMeta:SetWidth(396)
 
 local rightDivider = rightPane:CreateTexture(nil, "ARTWORK")
 rightDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
 rightDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
-rightDivider:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -84)
-rightDivider:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -84)
+rightDivider:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -110)
+rightDivider:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -110)
 rightDivider:SetHeight(8)
 
-local npcModel = CreateFrame("PlayerModel", nil, rightPane)
-npcModel:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -104)
-npcModel:SetSize(494, 238)
-npcModel:SetCamDistanceScale(1)
-npcModel:SetPosition(0, 0, 0)
-
-local modelBg = rightPane:CreateTexture(nil, "BORDER")
-modelBg:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-General-TopLeft")
-modelBg:SetTexCoord(0.12, 0.88, 0.08, 0.92)
-modelBg:SetVertexColor(0.65, 0.20, 0.14, 0.22)
-modelBg:SetPoint("TOPLEFT", npcModel, "TOPLEFT", 0, 0)
-modelBg:SetPoint("BOTTOMRIGHT", npcModel, "BOTTOMRIGHT", 0, 0)
+local previewTitle = CreateLabel(
+  rightPane,
+  "GameFontHighlight",
+  13,
+  1.0,
+  0.84,
+  0.25
+)
+previewTitle:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -126)
+previewTitle:SetText("현재 선택 정보")
 
 local bodyText = CreateLabel(
   rightPane,
@@ -222,9 +219,12 @@ local bodyText = CreateLabel(
   0.82,
   0.24
 )
-bodyText:SetPoint("TOPLEFT", npcModel, "BOTTOMLEFT", 0, -16)
-bodyText:SetPoint("TOPRIGHT", npcModel, "BOTTOMRIGHT", 0, -16)
+bodyText:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -150)
+bodyText:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -20, -150)
 bodyText:SetJustifyH("LEFT")
+if bodyText.SetWordWrap then
+  bodyText:SetWordWrap(true)
+end
 
 local closeButton = CreateFrame(
   "Button",
@@ -312,34 +312,27 @@ for i = 1, 12 do
   CreateListButton(i)
 end
 
-local function UpdateNpcModel()
+local function UpdateNpcPortrait()
   if UnitExists("npc") then
-    npcModel:SetUnit("npc")
+    SetPortraitTexture(portraitTexture, "npc")
     return
   end
 
   if UnitExists("target") then
-    npcModel:SetUnit("target")
+    SetPortraitTexture(portraitTexture, "target")
     return
   end
 
-  if Frame.state.npcDisplayId and Frame.state.npcDisplayId > 0
-      and npcModel.SetDisplayInfo then
-    npcModel:SetDisplayInfo(Frame.state.npcDisplayId)
-    return
-  end
-
-  npcModel:ClearModel()
+  portraitTexture:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
 end
 
 local function ResetState()
-  Frame.state.title = "Teleport Master"
+  Frame.state.title = "이동술사"
   Frame.state.subtitle = "The Karazhan"
   Frame.state.body = ""
-  Frame.state.npcDisplayId = 0
-  Frame.state.section = "Available Destinations"
-  Frame.state.closeText = "Close"
-  Frame.state.refreshText = "Refresh"
+  Frame.state.section = "이동 가능한 지역"
+  Frame.state.closeText = "닫기"
+  Frame.state.refreshText = "새로고침"
   Frame.state.items = {}
 end
 
@@ -368,14 +361,14 @@ local function RefreshList()
 end
 
 local function Refresh()
-  title:SetText(Frame.state.title or "Teleport Master")
+  title:SetText(Frame.state.title or "이동술사")
   subtitle:SetText(Frame.state.subtitle or "")
-  rightTitle:SetText(Frame.state.title or "Teleport Master")
-  rightMeta:SetText(Frame.state.section or "Available Destinations")
+  rightTitle:SetText(Frame.state.title or "이동술사")
+  rightMeta:SetText(Frame.state.section or "이동 가능한 지역")
   bodyText:SetText(Frame.state.body or "")
-  closeButton:SetText(Frame.state.closeText or "Close")
-  refreshButton:SetText(Frame.state.refreshText or "Refresh")
-  UpdateNpcModel()
+  closeButton:SetText(Frame.state.closeText or "닫기")
+  refreshButton:SetText(Frame.state.refreshText or "새로고침")
+  UpdateNpcPortrait()
   RefreshList()
 end
 
@@ -405,7 +398,6 @@ Frame:SetScript("OnEvent", function(self, event, prefix, message)
   if kind == "HEADER" then
     Frame.state.title = parts[2] or Frame.state.title
     Frame.state.subtitle = parts[3] or ""
-    Frame.state.npcDisplayId = tonumber(parts[5]) or 0
     Refresh()
     return
   end
