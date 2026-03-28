@@ -1,0 +1,8 @@
+## Interface: 30300
+## Title: karazhan
+## Notes: Karazhan integrated addon pack
+## Author: coderwoogi
+## Version: 1.0.0
+
+KarazhanBonusMission\KarazhanBonusMission.lua
+KarazhanTrial\KarazhanTrial.lua
