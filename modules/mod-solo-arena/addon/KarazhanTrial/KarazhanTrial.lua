@@ -71,16 +71,15 @@ subtitle:SetText("단계를 선택하고 당신의 그림자와 결투를 시작
 local close = CreateFrame("Button", nil, Trial, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", Trial, "TOPRIGHT", -10, -10)
 
-Trial.exitButton = CreateFrame("Button", "KarazhanTrialExitButton", UIParent,
-  "UIPanelButtonTemplate")
-Trial.exitButton:SetSize(120, 28)
-Trial.exitButton:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 18)
-Trial.exitButton:SetText("시련 종료")
-Trial.exitButton:Hide()
-
 Trial.statusBox = CreateFrame("Frame", nil, UIParent)
-Trial.statusBox:SetSize(240, 112)
+Trial.statusBox:SetSize(260, 152)
 Trial.statusBox:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 54)
+Trial.statusBox:SetClampedToScreen(true)
+Trial.statusBox:EnableMouse(true)
+Trial.statusBox:SetMovable(true)
+Trial.statusBox:RegisterForDrag("LeftButton")
+Trial.statusBox:SetScript("OnDragStart", Trial.statusBox.StartMoving)
+Trial.statusBox:SetScript("OnDragStop", Trial.statusBox.StopMovingOrSizing)
 Trial.statusBox:SetBackdrop({
   bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
   edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
@@ -132,6 +131,13 @@ Trial.endTimeText = CreateLabel(
   0.92
 )
 Trial.endTimeText:SetPoint("TOPLEFT", Trial.startTimeText, "BOTTOMLEFT", 0, -6)
+
+Trial.exitButton = CreateFrame("Button", "KarazhanTrialExitButton",
+  Trial.statusBox, "UIPanelButtonTemplate")
+Trial.exitButton:SetSize(140, 28)
+Trial.exitButton:SetPoint("BOTTOM", Trial.statusBox, "BOTTOM", 0, 14)
+Trial.exitButton:SetText("시련 종료")
+Trial.exitButton:Show()
 
 Trial.leftPane = CreateFrame("Frame", nil, Trial)
 Trial.leftPane:SetPoint("TOPLEFT", Trial, "TOPLEFT", 24, -54)
