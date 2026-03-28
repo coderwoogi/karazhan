@@ -1,3 +1,4 @@
+#include "ArenaScript.h"
 #include "Battleground.h"
 #include "BattlegroundMgr.h"
 #include "Chat.h"
@@ -18,12 +19,13 @@
 #include <algorithm>
 #include <ctime>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace
 {
-    constexpr uint32 DEFAULT_ARENA_MAP_ID = 617;
-    constexpr BattlegroundTypeId DEFAULT_ARENA_BG_TYPE = BATTLEGROUND_DS;
+    constexpr uint32 DEFAULT_ARENA_MAP_ID = 572;
+    constexpr BattlegroundTypeId DEFAULT_ARENA_BG_TYPE = BATTLEGROUND_RL;
     constexpr uint32 ACTION_STAGE_BASE = 100;
     constexpr uint32 ACTION_ABANDON = 500;
 
@@ -47,14 +49,14 @@ namespace
         uint8 StageId = 0;
         std::string Name;
         uint32 ArenaMapId = DEFAULT_ARENA_MAP_ID;
-        float PlayerX = 1290.44f;
-        float PlayerY = 744.96f;
-        float PlayerZ = 3.16f;
-        float PlayerO = 1.60f;
-        float BotX = 1292.60f;
-        float BotY = 837.07f;
-        float BotZ = 3.16f;
-        float BotO = 4.70f;
+        float PlayerX = 1281.60f;
+        float PlayerY = 1660.20f;
+        float PlayerZ = 39.96f;
+        float PlayerO = 1.57f;
+        float BotX = 1290.10f;
+        float BotY = 1676.10f;
+        float BotZ = 39.96f;
+        float BotO = 4.71f;
         float HealthMultiplier = 1.0f;
         float DamageMultiplier = 1.0f;
         uint32 AttackTimeMs = 2000;
@@ -159,6 +161,7 @@ namespace
             ObjectGuid const& creatureGuid) const;
         void UnregisterShadow(ObjectGuid const& creatureGuid);
         bool IsManagedShadow(Creature const* creature) const;
+        bool IsManagedArenaInstance(uint32 instanceId) const;
 
     private:
         bool SpawnShadow(Player* player, ArenaSession& session);
@@ -194,6 +197,7 @@ namespace
         std::unordered_map<uint8, StageConfig> _stages;
         std::unordered_map<uint64, ArenaSession> _sessions;
         std::unordered_map<uint64, ShadowProfile> _shadowProfiles;
+        std::unordered_set<uint32> _managedArenaInstances;
     };
 
     SpellPackage GetSpellPackage(uint8 playerClass);
@@ -359,6 +363,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     session.StartedAt = std::time(nullptr);
 
     _sessions[player->GetGUID().GetCounter()] = session;
+    _managedArenaInstances.insert(session.ArenaInstanceId);
 
     TeamId teamId = Player::TeamIdForRace(player->getRace());
     uint32 queueSlot = 0;
@@ -380,6 +385,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         stage->PlayerZ, stage->PlayerO, TELE_TO_GM_MODE))
     {
         _sessions.erase(player->GetGUID().GetCounter());
+        _managedArenaInstances.erase(session.ArenaInstanceId);
         player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
             PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
         SendSystem(player, "투기장으로 이동하지 못했습니다.");
@@ -387,7 +393,9 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     }
 
     SendSystem(player, Acore::StringFormat(
-        "{} 시작. 달라란 투기장으로 이동합니다.", stage->Name));
+        "{} 시작. 언더시티 투기장으로 이동합니다.", stage->Name));
+    Debug("Solo arena started: player='{}' stage={} map={} instance={}",
+        player->GetName(), stageId, stage->ArenaMapId, session.ArenaInstanceId);
     return true;
 }
 
@@ -533,6 +541,12 @@ bool SoloArenaMgr::IsManagedShadow(Creature const* creature) const
         _shadowProfiles.end();
 }
 
+bool SoloArenaMgr::IsManagedArenaInstance(uint32 instanceId) const
+{
+    return _managedArenaInstances.find(instanceId) !=
+        _managedArenaInstances.end();
+}
+
 bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 {
     StageConfig const* stage = GetStage(session.StageId);
@@ -545,7 +559,16 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         TEMPSUMMON_MANUAL_DESPAWN, 0);
 
     if (!summon)
+    {
+        LOG_ERROR("module",
+            "SoloArena shadow spawn failed: player='{}' stage={} map={} "
+            "instance={} entry={} pos=({}, {}, {}, {})",
+            player->GetName(), stage->StageId, player->GetMapId(),
+            player->GetInstanceId(),
+            SoloArenaConfig::Instance().GetShadowEntry(),
+            stage->BotX, stage->BotY, stage->BotZ, stage->BotO);
         return false;
+    }
 
     ConfigureShadow(summon, player, *stage);
 
@@ -569,6 +592,8 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     player->SetInCombatWith(summon);
 
     SendSystem(player, "그림자가 모습을 드러냈습니다.");
+    Debug("Solo arena shadow spawned: player='{}' stage={} botGuid={}",
+        player->GetName(), stage->StageId, summon->GetGUID().ToString());
     return true;
 }
 
@@ -647,6 +672,8 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
         if (Battleground* arena = sBattlegroundMgr->GetBattleground(
                 session.ArenaInstanceId, DEFAULT_ARENA_BG_TYPE))
             arena->RemovePlayerAtLeave(player);
+
+    _managedArenaInstances.erase(session.ArenaInstanceId);
 
     player->TeleportTo(session.ReturnMapId, session.ReturnX, session.ReturnY,
         session.ReturnZ, session.ReturnO);
@@ -1102,12 +1129,33 @@ namespace
             SoloArenaMgr::Instance().MarkFailure(killed->GetGUID());
         }
     };
+
+    class SoloArenaArenaScript : public ArenaScript
+    {
+    public:
+        SoloArenaArenaScript() : ArenaScript("SoloArenaArenaScript")
+        {
+        }
+
+        bool OnBeforeArenaCheckWinConditions(Battleground* const bg) override
+        {
+            if (!bg)
+                return true;
+
+            if (!SoloArenaMgr::Instance().IsManagedArenaInstance(
+                    bg->GetInstanceID()))
+                return true;
+
+            return false;
+        }
+    };
 }
 
 void AddSoloArenaScripts()
 {
     new SoloArenaWorldScript();
     new SoloArenaPlayerScript();
+    new SoloArenaArenaScript();
     new npc_solo_arena_master();
     new npc_solo_arena_shadow();
 }

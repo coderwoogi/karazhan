@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS `solo_arena_stage` (
     `stage_id` TINYINT UNSIGNED NOT NULL,
     `name` VARCHAR(80) NOT NULL,
-    `arena_map_id` SMALLINT UNSIGNED NOT NULL DEFAULT 617,
+    `arena_map_id` SMALLINT UNSIGNED NOT NULL DEFAULT 572,
     `player_x` FLOAT NOT NULL,
     `player_y` FLOAT NOT NULL,
     `player_z` FLOAT NOT NULL,
@@ -28,12 +28,12 @@ INSERT INTO `solo_arena_stage` (
     `attack_time_ms`, `spell_interval_ms`,
     `move_speed_rate`, `enabled`
 ) VALUES
-(1, '그림자 시련 1단계', 617, 1290.44, 744.96, 3.16, 1.60,
-    1292.60, 837.07, 3.16, 4.70, 1.00, 1.00, 1900, 4200, 1.00, 1),
-(2, '그림자 시련 2단계', 617, 1290.44, 744.96, 3.16, 1.60,
-    1292.60, 837.07, 3.16, 4.70, 1.35, 1.25, 1600, 3000, 1.10, 1),
-(3, '그림자 시련 3단계', 617, 1290.44, 744.96, 3.16, 1.60,
-    1292.60, 837.07, 3.16, 4.70, 1.75, 1.55, 1300, 2100, 1.20, 1);
+(1, '그림자 수련 1단계', 572, 1281.60, 1660.20, 39.96, 1.57,
+    1290.10, 1676.10, 39.96, 4.71, 1.00, 1.00, 1900, 4200, 1.00, 1),
+(2, '그림자 수련 2단계', 572, 1281.60, 1660.20, 39.96, 1.57,
+    1290.10, 1676.10, 39.96, 4.71, 1.35, 1.25, 1600, 3000, 1.10, 1),
+(3, '그림자 수련 3단계', 572, 1281.60, 1660.20, 39.96, 1.57,
+    1290.10, 1676.10, 39.96, 4.71, 1.75, 1.55, 1300, 2100, 1.20, 1);
 
 DELETE FROM `creature_template` WHERE `entry` IN (910000, 910001);
 INSERT INTO `creature_template` (
@@ -45,7 +45,7 @@ INSERT INTO `creature_template` (
     `ArmorModifier`, `ExperienceModifier`, `RegenHealth`,
     `flags_extra`, `ScriptName`, `VerifiedBuild`
 ) VALUES
-(910000, '투기장 감독관', '솔로 시련', 0,
+(910000, '투기장 감독관', '솔로 아레나', 0,
     80, 80, 2, 35, 1,
     1, 1.14286, 1, 0, 1,
     2000, 2000, 1, 7,
