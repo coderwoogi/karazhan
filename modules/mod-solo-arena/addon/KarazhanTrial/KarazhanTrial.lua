@@ -1,5 +1,9 @@
 local addonName = ...
 local ARENA_INSTANCE_TYPE = "arena"
+local SESSION_PENDING_SPAWN = 0
+local SESSION_WAITING_FOR_START = 1
+local SESSION_ACTIVE = 2
+local SESSION_PENDING_FINISH = 3
 
 StaticPopupDialogs["KARAZHAN_TRIAL_ABANDON_CONFIRM"] = {
   text = "시련 종료시 어떠한 보상을 받을 수 없고, 미션 또한 실패로 간주합니다.\n그래도 종료 하시겠습니까?",
@@ -72,8 +76,11 @@ local function NewState()
     selected = 1,
     inProgress = false,
     pendingArena = false,
+    preparationEndsAt = nil,
     startedAt = nil,
+    combatEndsAt = nil,
     endedAt = nil,
+    sessionState = SESSION_PENDING_SPAWN,
   }
 end
 
@@ -341,13 +348,32 @@ local function FormatClock(value)
   return date("%H:%M:%S", value)
 end
 
+local function FormatRemaining(targetTime)
+  if not targetTime or targetTime <= 0 then
+    return "-"
+  end
+
+  local remain = math.max(0, targetTime - time())
+  return string.format("%d초", remain)
+end
+
 local function RefreshStatusTimes()
-  Trial.currentTimeText:SetText("현재 시간: " .. date("%H:%M:%S"))
+  if Trial.state.sessionState == SESSION_ACTIVE and Trial.state.combatEndsAt then
+    Trial.currentTimeText:SetText(
+      "전투 종료까지: " .. FormatRemaining(Trial.state.combatEndsAt)
+    )
+  else
+    Trial.currentTimeText:SetText(
+      "전투 시작까지: " .. FormatRemaining(Trial.state.preparationEndsAt)
+    )
+  end
   Trial.startTimeText:SetText(
     "전투 시작 시간: " .. FormatClock(Trial.state.startedAt)
   )
   Trial.endTimeText:SetText(
-    "전투 종료 시간: " .. FormatClock(Trial.state.endedAt)
+    "전투 종료 시간: " ..
+      (Trial.state.endedAt and FormatClock(Trial.state.endedAt)
+        or FormatClock(Trial.state.combatEndsAt))
   )
 end
 
@@ -490,10 +516,19 @@ local function ApplyOpen(parts)
   Trial.state.highestCleared = tonumber(parts[2]) or 0
   Trial.state.inProgress = tonumber(parts[4]) == 1
   Trial.state.pendingArena = Trial.state.inProgress
-  Trial.state.startedAt = tonumber(parts[5]) or nil
-  Trial.state.endedAt = tonumber(parts[6]) or nil
+  Trial.state.preparationEndsAt = tonumber(parts[5]) or nil
+  Trial.state.startedAt = tonumber(parts[6]) or nil
+  Trial.state.combatEndsAt = tonumber(parts[7]) or nil
+  Trial.state.endedAt = tonumber(parts[8]) or nil
+  Trial.state.sessionState = tonumber(parts[9]) or SESSION_PENDING_SPAWN
+  if Trial.state.preparationEndsAt == 0 then
+    Trial.state.preparationEndsAt = nil
+  end
   if Trial.state.startedAt == 0 then
     Trial.state.startedAt = nil
+  end
+  if Trial.state.combatEndsAt == 0 then
+    Trial.state.combatEndsAt = nil
   end
   if Trial.state.endedAt == 0 then
     Trial.state.endedAt = nil
@@ -580,16 +615,26 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   if parts[1] == "OPEN" then
     ApplyOpen(parts)
   elseif parts[1] == "TIME" then
-    Trial.state.startedAt = tonumber(parts[2]) or nil
-    Trial.state.endedAt = tonumber(parts[3]) or nil
-    Trial.state.inProgress = tonumber(parts[4]) == 1
+    Trial.state.preparationEndsAt = tonumber(parts[2]) or nil
+    Trial.state.startedAt = tonumber(parts[3]) or nil
+    Trial.state.combatEndsAt = tonumber(parts[4]) or nil
+    Trial.state.endedAt = tonumber(parts[5]) or nil
+    Trial.state.sessionState = tonumber(parts[6]) or SESSION_PENDING_SPAWN
+    if Trial.state.preparationEndsAt == 0 then
+      Trial.state.preparationEndsAt = nil
+    end
     if Trial.state.startedAt == 0 then
       Trial.state.startedAt = nil
+    end
+    if Trial.state.combatEndsAt == 0 then
+      Trial.state.combatEndsAt = nil
     end
     if Trial.state.endedAt == 0 then
       Trial.state.endedAt = nil
     end
-    if Trial.state.inProgress then
+    Trial.state.inProgress = Trial.state.sessionState == SESSION_ACTIVE
+      or Trial.state.sessionState == SESSION_WAITING_FOR_START
+    if Trial.state.sessionState == SESSION_ACTIVE then
       Trial.state.pendingArena = false
     end
     RefreshExitButton()

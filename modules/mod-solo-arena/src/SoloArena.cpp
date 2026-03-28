@@ -30,6 +30,7 @@ namespace
     constexpr BattlegroundTypeId DEFAULT_ARENA_BG_TYPE = BATTLEGROUND_RL;
     constexpr uint32 ACTION_STAGE_BASE = 100;
     constexpr uint32 ACTION_ABANDON = 500;
+    constexpr uint32 DEFAULT_COMBAT_LIMIT_MS = 180000;
 
     enum class ArenaResult : uint8
     {
@@ -97,7 +98,9 @@ namespace
         float ReturnZ = 0.0f;
         float ReturnO = 0.0f;
         uint64 StartedAt = 0;
+        uint64 PreparationEndsAt = 0;
         uint64 CombatStartedAt = 0;
+        uint64 CombatEndsAt = 0;
         uint64 EndedAt = 0;
         uint32 SpawnDelayMs = 1000;
         uint32 FinishDelayMs = 3000;
@@ -372,9 +375,11 @@ namespace
 
         std::ostringstream payload;
         payload << "TIME\t";
+        payload << uint64(session.PreparationEndsAt) << "\t";
         payload << uint64(session.CombatStartedAt) << "\t";
+        payload << uint64(session.CombatEndsAt) << "\t";
         payload << uint64(session.EndedAt) << "\t";
-        payload << (session.State == SessionState::Active ? 1 : 0);
+        payload << uint32(session.State);
         SendAddonPayload(player, "TRIAL_UI", payload.str());
     }
 
@@ -575,9 +580,12 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     session.ReturnZ = player->GetPositionZ();
     session.ReturnO = player->GetOrientation();
     session.StartedAt = std::time(nullptr);
+    session.PreparationEndsAt = session.StartedAt +
+        (stage->PreparationMs / 1000);
 
     _sessions[player->GetGUID().GetCounter()] = session;
     _managedArenaInstances.insert(session.ArenaInstanceId);
+    SendTrialTimePayload(player, _sessions[player->GetGUID().GetCounter()]);
 
     TeamId teamId = Player::TeamIdForRace(player->getRace());
     uint32 queueSlot = 0;
@@ -651,12 +659,17 @@ void SoloArenaMgr::SendUi(Player* player)
     payload << (HasSession(player->GetGUID()) ? 1 : 0) << "\t";
     if (ArenaSession const* session = GetSession(player->GetGUID()))
     {
+        payload << uint64(session->PreparationEndsAt) << "\t";
         payload << uint64(session->CombatStartedAt) << "\t";
-        payload << uint64(session->EndedAt);
+        payload << uint64(session->CombatEndsAt) << "\t";
+        payload << uint64(session->EndedAt) << "\t";
+        payload << uint32(session->State);
     }
     else
     {
-        payload << uint64(0) << "\t" << uint64(0);
+        payload << uint64(0) << "\t" << uint64(0) << "\t"
+                << uint64(0) << "\t" << uint64(0) << "\t"
+                << uint32(SessionState::PendingSpawn);
     }
     SendAddonPayload(player, "TRIAL_UI", payload.str());
 }
@@ -722,6 +735,8 @@ void SoloArenaMgr::Update(uint32 diff)
 
                         session.State = SessionState::Active;
                         session.CombatStartedAt = std::time(nullptr);
+                        session.CombatEndsAt = session.CombatStartedAt +
+                            (DEFAULT_COMBAT_LIMIT_MS / 1000);
                         session.EndedAt = 0;
                         SendTrialTimePayload(player, session);
                         SendSystem(player,
@@ -735,6 +750,17 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.Result = ArenaResult::Abandoned;
                     session.State = SessionState::PendingFinish;
                     session.FinishDelayMs = 1;
+                    break;
+                }
+
+                if (session.CombatEndsAt != 0 &&
+                    std::time(nullptr) >= time_t(session.CombatEndsAt))
+                {
+                    session.Result = ArenaResult::Failure;
+                    session.State = SessionState::PendingFinish;
+                    session.EndedAt = std::time(nullptr);
+                    session.FinishDelayMs = 1;
+                    SendTrialTimePayload(player, session);
                     break;
                 }
 
