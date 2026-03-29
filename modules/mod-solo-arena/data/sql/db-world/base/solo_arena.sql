@@ -21,6 +21,20 @@ CREATE TABLE `solo_arena_stage` (
     PRIMARY KEY (`stage_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+DROP TABLE IF EXISTS `solo_arena_stage_reward`;
+CREATE TABLE `solo_arena_stage_reward` (
+    `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `stage_id` TINYINT UNSIGNED NOT NULL,
+    `item_entry` INT UNSIGNED NOT NULL,
+    `item_count` INT UNSIGNED NOT NULL DEFAULT 1,
+    `chance` FLOAT NOT NULL DEFAULT 100,
+    `sort_order` INT UNSIGNED NOT NULL DEFAULT 0,
+    `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
+    `comment` VARCHAR(255) NOT NULL DEFAULT '',
+    PRIMARY KEY (`id`),
+    KEY `idx_solo_arena_stage_reward_stage` (`stage_id`, `enabled`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 DELETE FROM `solo_arena_stage`;
 INSERT INTO `solo_arena_stage` (
     `stage_id`, `name`, `arena_map_id`,
@@ -36,6 +50,8 @@ INSERT INTO `solo_arena_stage` (
     1273.71, 1734.05, 31.61, 4.71, 1.35, 1.25, 1600, 3000, 1.10, 6000, 1),
 (3, '그림자 시련 3단계', 572, 1298.61, 1598.59, 31.62, 1.57,
     1273.71, 1734.05, 31.61, 4.71, 1.75, 1.55, 1300, 2100, 1.20, 6000, 1);
+
+DELETE FROM `solo_arena_stage_reward`;
 
 DELETE FROM `creature_template`
 WHERE `entry` IN (190021, 190022)

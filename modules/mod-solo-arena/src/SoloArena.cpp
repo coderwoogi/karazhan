@@ -18,6 +18,7 @@
 #include "WorldSession.h"
 
 #include <algorithm>
+#include <atomic>
 #include <cstdlib>
 #include <ctime>
 #include <unordered_map>
@@ -87,6 +88,7 @@ namespace
 
     struct ArenaSession
     {
+        uint64 RunUid = 0;
         ObjectGuid PlayerGuid = ObjectGuid::Empty;
         ObjectGuid BotGuid = ObjectGuid::Empty;
         uint8 StageId = 0;
@@ -102,6 +104,9 @@ namespace
         uint64 CombatStartedAt = 0;
         uint64 CombatEndsAt = 0;
         uint64 EndedAt = 0;
+        uint64 CompletedAt = 0;
+        uint64 FailedAt = 0;
+        uint64 AbandonedAt = 0;
         uint32 SpawnDelayMs = 1000;
         uint32 FinishDelayMs = 3000;
         ArenaResult Result = ArenaResult::None;
@@ -297,7 +302,13 @@ namespace
         uint8 GetHighestStageCleared(Player* player) const;
         bool IsStageUnlocked(Player* player, uint8 stageId) const;
         void SaveProgress(Player* player, uint8 stageId);
+        void GrantStageRewards(Player* player, ArenaSession const& session);
         void LogRun(Player* player, ArenaSession const& session);
+        void LogEvent(Player* player, ArenaSession const& session,
+            std::string const& eventType, std::string const& note = "");
+        void LogReward(Player* player, ArenaSession const& session,
+            uint32 itemEntry, uint32 itemCount, float chance,
+            std::string const& status);
         std::string GetStageName(uint8 stageId) const;
         void LoadDefaultStages();
 
@@ -324,6 +335,13 @@ namespace
         std::unordered_map<uint64, ShadowProfile> _shadowProfiles;
         std::unordered_set<uint32> _managedArenaInstances;
     };
+
+    uint64 GenerateRunUid()
+    {
+        static std::atomic<uint64> seed { 1 };
+        uint64 now = uint64(std::time(nullptr));
+        return (now << 20) | (seed.fetch_add(1) & 0xFFFFF);
+    }
 
     SpellPackage GetSpellPackage(uint8 playerClass, uint32 activeSpec);
     uint32 ComputeShadowSpellDamage(Creature* me,
@@ -386,6 +404,12 @@ namespace
     bool StartsWith(std::string const& text, std::string const& token)
     {
         return text.compare(0, token.size(), token) == 0;
+    }
+
+    std::string EscapeCharacterDb(std::string text)
+    {
+        CharacterDatabase.EscapeString(text);
+        return text;
     }
 
     bool HandleTrialAddonCommand(Player* player, std::string const& msg)
@@ -570,6 +594,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     arena->StartBattleground();
 
     ArenaSession session;
+    session.RunUid = GenerateRunUid();
     session.PlayerGuid = player->GetGUID();
     session.StageId = stageId;
     session.ArenaMapId = stage->ArenaMapId;
@@ -585,6 +610,8 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
 
     _sessions[player->GetGUID().GetCounter()] = session;
     _managedArenaInstances.insert(session.ArenaInstanceId);
+    LogEvent(player, _sessions[player->GetGUID().GetCounter()],
+        "RUN_CREATED");
 
     TeamId teamId = Player::TeamIdForRace(player->getRace());
     uint32 queueSlot = 0;
@@ -629,6 +656,8 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
 
     SendSystem(player, Acore::StringFormat(
         "{} 시작. 언더시티 투기장으로 이동합니다.", stage->Name));
+    LogEvent(player, _sessions[player->GetGUID().GetCounter()],
+        "PLAYER_TELEPORTED");
     Debug("Solo arena started: player='{}' stage={} map={} instance={}",
         player->GetName(), stageId, stage->ArenaMapId, session.ArenaInstanceId);
     return true;
@@ -718,7 +747,10 @@ void SoloArenaMgr::Update(uint32 diff)
                 {
                     session.Result = ArenaResult::Abandoned;
                     session.State = SessionState::PendingFinish;
+                    session.AbandonedAt = std::time(nullptr);
+                    session.EndedAt = session.AbandonedAt;
                     session.FinishDelayMs = 1;
+                    LogEvent(player, session, "SHADOW_SPAWN_FAILED");
                 }
                 break;
             case SessionState::WaitingForStart:
@@ -726,7 +758,10 @@ void SoloArenaMgr::Update(uint32 diff)
                 {
                     session.Result = ArenaResult::Abandoned;
                     session.State = SessionState::PendingFinish;
+                    session.AbandonedAt = std::time(nullptr);
+                    session.EndedAt = session.AbandonedAt;
                     session.FinishDelayMs = 1;
+                    LogEvent(player, session, "LEFT_ARENA_BEFORE_START");
                     break;
                 }
 
@@ -734,7 +769,10 @@ void SoloArenaMgr::Update(uint32 diff)
                 {
                     session.Result = ArenaResult::Abandoned;
                     session.State = SessionState::PendingFinish;
+                    session.AbandonedAt = std::time(nullptr);
+                    session.EndedAt = session.AbandonedAt;
                     session.FinishDelayMs = 1;
+                    LogEvent(player, session, "BOT_MISSING_BEFORE_START");
                     break;
                 }
 
@@ -751,6 +789,7 @@ void SoloArenaMgr::Update(uint32 diff)
                         session.CombatEndsAt = session.CombatStartedAt +
                             (DEFAULT_COMBAT_LIMIT_MS / 1000);
                         session.EndedAt = 0;
+                        LogEvent(player, session, "COMBAT_STARTED");
                         SendTrialTimePayload(player, session);
                         SendSystem(player,
                             "문이 열렸습니다. 그림자와의 결투가 시작됩니다.");
@@ -762,7 +801,10 @@ void SoloArenaMgr::Update(uint32 diff)
                 {
                     session.Result = ArenaResult::Abandoned;
                     session.State = SessionState::PendingFinish;
+                    session.AbandonedAt = std::time(nullptr);
+                    session.EndedAt = session.AbandonedAt;
                     session.FinishDelayMs = 1;
+                    LogEvent(player, session, "LEFT_ARENA");
                     break;
                 }
 
@@ -771,8 +813,10 @@ void SoloArenaMgr::Update(uint32 diff)
                 {
                     session.Result = ArenaResult::Failure;
                     session.State = SessionState::PendingFinish;
+                    session.FailedAt = std::time(nullptr);
                     session.EndedAt = std::time(nullptr);
                     session.FinishDelayMs = 1;
+                    LogEvent(player, session, "COMBAT_TIMEOUT");
                     SendTrialTimePayload(player, session);
                     break;
                 }
@@ -828,10 +872,15 @@ void SoloArenaMgr::MarkVictory(ObjectGuid const& playerGuid)
     itr->second.Result = ArenaResult::Victory;
     itr->second.State = SessionState::PendingFinish;
     itr->second.EndedAt = std::time(nullptr);
+    itr->second.CompletedAt = itr->second.EndedAt;
+    itr->second.CombatEndsAt = itr->second.EndedAt;
     itr->second.FinishDelayMs = 3000;
 
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
+    {
+        LogEvent(player, itr->second, "VICTORY");
         SendTrialTimePayload(player, itr->second);
+    }
 }
 
 void SoloArenaMgr::MarkFailure(ObjectGuid const& playerGuid)
@@ -843,10 +892,15 @@ void SoloArenaMgr::MarkFailure(ObjectGuid const& playerGuid)
     itr->second.Result = ArenaResult::Failure;
     itr->second.State = SessionState::PendingFinish;
     itr->second.EndedAt = std::time(nullptr);
+    itr->second.FailedAt = itr->second.EndedAt;
+    itr->second.CombatEndsAt = itr->second.EndedAt;
     itr->second.FinishDelayMs = 3000;
 
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
+    {
+        LogEvent(player, itr->second, "FAILURE");
         SendTrialTimePayload(player, itr->second);
+    }
 }
 
 void SoloArenaMgr::MarkAbandoned(ObjectGuid const& playerGuid)
@@ -858,10 +912,16 @@ void SoloArenaMgr::MarkAbandoned(ObjectGuid const& playerGuid)
     itr->second.Result = ArenaResult::Abandoned;
     itr->second.State = SessionState::PendingFinish;
     itr->second.EndedAt = std::time(nullptr);
+    itr->second.AbandonedAt = itr->second.EndedAt;
+    if (itr->second.CombatStartedAt != 0)
+        itr->second.CombatEndsAt = itr->second.EndedAt;
     itr->second.FinishDelayMs = 1;
 
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
+    {
+        LogEvent(player, itr->second, "ABANDONED");
         SendTrialTimePayload(player, itr->second);
+    }
 }
 
 ShadowProfile const* SoloArenaMgr::GetShadowProfile(
@@ -946,6 +1006,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         "Shadow spawned. Combat begins when the gates open.");
     Debug("Solo arena shadow spawned: player='{}' stage={} botGuid={}",
         player->GetName(), stage->StageId, summon->GetGUID().ToString());
+    LogEvent(player, session, "SHADOW_SPAWNED");
     return true;
 }
 
@@ -1046,6 +1107,7 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
     {
         case ArenaResult::Victory:
             SaveProgress(player, session.StageId);
+            GrantStageRewards(player, session);
             SendSystem(player, Acore::StringFormat(
                 "{} 클리어. 다음 단계가 열렸습니다.",
                 GetStageName(session.StageId)));
@@ -1063,6 +1125,7 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
     }
 
     LogRun(player, session);
+    LogEvent(player, session, "RUN_FINISHED");
 }
 
 void SoloArenaMgr::CleanupBot(ArenaSession const& session)
@@ -1117,20 +1180,128 @@ void SoloArenaMgr::SaveProgress(Player* player, uint8 stageId)
         player->GetGUID().GetCounter(), stageId, std::time(nullptr));
 }
 
+void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session)
+{
+    if (!player)
+        return;
+
+    QueryResult result = WorldDatabase.Query(
+        "SELECT item_entry, item_count, chance "
+        "FROM solo_arena_stage_reward "
+        "WHERE stage_id = {} AND enabled = 1 "
+        "ORDER BY sort_order, id",
+        session.StageId);
+
+    if (!result)
+        return;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 itemEntry = fields[0].Get<uint32>();
+        uint32 itemCount = std::max<uint32>(1, fields[1].Get<uint32>());
+        float chance = fields[2].Get<float>();
+        float roll = float(std::rand() % 10000) / 100.0f;
+
+        if (chance > 0.0f && roll > chance)
+        {
+            LogReward(player, session, itemEntry, itemCount, chance, "SKIPPED");
+            continue;
+        }
+
+        if (player->AddItem(itemEntry, itemCount))
+        {
+            LogReward(player, session, itemEntry, itemCount, chance, "GRANTED");
+            continue;
+        }
+
+        LogReward(player, session, itemEntry, itemCount, chance, "FAILED");
+    } while (result->NextRow());
+}
+
 void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
 {
     CharacterDatabase.Execute(
         "INSERT INTO solo_arena_run_log "
-        "(guid, stage_id, result, started_at, ended_at, "
-        "arena_map_id, arena_instance_id) "
-        "VALUES ({}, {}, {}, {}, {}, {}, {})",
+        "(run_uid, guid, account_id, player_name, stage_id, stage_name, "
+        "result, result_label, session_state, started_at, "
+        "preparation_ends_at, combat_started_at, combat_ended_at, "
+        "ended_at, completed_at, failed_at, abandoned_at, duration_sec, "
+        "arena_map_id, arena_instance_id, return_map_id) "
+        "VALUES ({}, {}, {}, '{}', {}, '{}', {}, '{}', {}, {}, {}, {}, "
+        "{}, {}, {}, {}, {}, {}, {}, {}, {})",
+        session.RunUid,
         player->GetGUID().GetCounter(),
+        player->GetSession() ? player->GetSession()->GetAccountId() : 0,
+        EscapeCharacterDb(player->GetName()),
         session.StageId,
+        EscapeCharacterDb(GetStageName(session.StageId)),
         static_cast<uint8>(session.Result),
+        EscapeCharacterDb(
+            session.Result == ArenaResult::Victory ? "SUCCESS" :
+            session.Result == ArenaResult::Failure ? "FAILURE" :
+            session.Result == ArenaResult::Abandoned ? "ABANDONED" : "NONE"),
+        static_cast<uint8>(session.State),
         session.StartedAt,
-        std::time(nullptr),
+        session.PreparationEndsAt,
+        session.CombatStartedAt,
+        session.CombatEndsAt,
+        session.EndedAt,
+        session.CompletedAt,
+        session.FailedAt,
+        session.AbandonedAt,
+        session.EndedAt > session.StartedAt ?
+            uint32(session.EndedAt - session.StartedAt) : 0,
         session.ArenaMapId,
-        session.ArenaInstanceId);
+        session.ArenaInstanceId,
+        session.ReturnMapId);
+}
+
+void SoloArenaMgr::LogEvent(Player* player, ArenaSession const& session,
+    std::string const& eventType, std::string const& note)
+{
+    if (!player)
+        return;
+
+    CharacterDatabase.Execute(
+        "INSERT INTO solo_arena_event_log "
+        "(run_uid, guid, account_id, player_name, stage_id, event_type, "
+        "event_at, map_id, arena_instance_id, note) "
+        "VALUES ({}, {}, {}, '{}', {}, '{}', {}, {}, {}, '{}')",
+        session.RunUid,
+        player->GetGUID().GetCounter(),
+        player->GetSession() ? player->GetSession()->GetAccountId() : 0,
+        EscapeCharacterDb(player->GetName()),
+        session.StageId,
+        EscapeCharacterDb(eventType),
+        uint64(std::time(nullptr)),
+        player->GetMapId(),
+        session.ArenaInstanceId,
+        EscapeCharacterDb(note));
+}
+
+void SoloArenaMgr::LogReward(Player* player, ArenaSession const& session,
+    uint32 itemEntry, uint32 itemCount, float chance,
+    std::string const& status)
+{
+    if (!player)
+        return;
+
+    CharacterDatabase.Execute(
+        "INSERT INTO solo_arena_reward_log "
+        "(run_uid, guid, account_id, player_name, stage_id, "
+        "item_entry, item_count, chance, grant_status, granted_at) "
+        "VALUES ({}, {}, {}, '{}', {}, {}, {}, {}, '{}', {})",
+        session.RunUid,
+        player->GetGUID().GetCounter(),
+        player->GetSession() ? player->GetSession()->GetAccountId() : 0,
+        EscapeCharacterDb(player->GetName()),
+        session.StageId,
+        itemEntry,
+        itemCount,
+        chance,
+        EscapeCharacterDb(status),
+        uint64(std::time(nullptr)));
 }
 
 std::string SoloArenaMgr::GetStageName(uint8 stageId) const
