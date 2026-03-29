@@ -433,19 +433,42 @@ local function GetStageReward(stage)
   if not stage then
     return {
       icon = "Interface\\Icons\\INV_Misc_QuestionMark",
-      text = "No reward selected.",
+      text = "설정된 보상이 없습니다.",
     }
   end
 
-  local icons = {
-    [1] = "Interface\\Icons\\INV_Misc_Coin_01",
-    [2] = "Interface\\Icons\\INV_Chest_Cloth_17",
-    [3] = "Interface\\Icons\\INV_Misc_Trophy_04",
-  }
+  local rewards = stage.rewards or {}
+  if #rewards == 0 then
+    return {
+      icon = "Interface\\Icons\\INV_Misc_QuestionMark",
+      text = "설정된 보상이 없습니다.",
+    }
+  end
+
+  local firstReward = rewards[1]
+  local icon = GetItemIcon(firstReward.itemEntry)
+    or "Interface\\Icons\\INV_Misc_QuestionMark"
+  local lines = {}
+
+  for _, reward in ipairs(rewards) do
+    local itemName = GetItemInfo(reward.itemEntry)
+      or ("아이템 " .. tostring(reward.itemEntry))
+    local chanceText = ""
+    if reward.chance and reward.chance > 0 and reward.chance < 100 then
+      chanceText = string.format(" (%.1f%%)", reward.chance)
+    end
+
+    table.insert(lines, string.format(
+      "%s x%d%s",
+      itemName,
+      reward.itemCount or 1,
+      chanceText
+    ))
+  end
 
   return {
-    icon = icons[stage.stageId] or "Interface\\Icons\\INV_Misc_QuestionMark",
-    text = string.format("Stage %d placeholder reward", stage.stageId),
+    icon = icon,
+    text = table.concat(lines, "\n"),
   }
 end
 
@@ -457,7 +480,7 @@ local function RefreshSelection()
     Trial.stageMeta:SetText("이전 단계를 먼저 클리어해야 다음 시련이 나타납니다.")
     Trial.stageDesc:SetText("")
     Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-    Trial.rewardText:SetText("No reward selected.")
+    Trial.rewardText:SetText("설정된 보상이 없습니다.")
     Trial.start:Disable()
     Trial.abandon:Hide()
     return
@@ -596,7 +619,27 @@ local function ApplyOpen(parts)
         damage = tonumber(fields[4]) or 1,
         spellInterval = tonumber(fields[5]) or 0,
         moveSpeed = tonumber(fields[6]) or 1,
+        rewards = {},
       })
+
+      local rewardField = fields[7] or ""
+      if rewardField ~= "" and rewardField ~= "0^0^0" then
+        local rewardEntries = Split(rewardField, ",")
+        local stageRewards = Trial.state.stages[#Trial.state.stages].rewards
+        for _, rewardEntry in ipairs(rewardEntries) do
+          local rewardParts = Split(rewardEntry, "^")
+          local itemEntry = tonumber(rewardParts[1]) or 0
+          local itemCount = tonumber(rewardParts[2]) or 1
+          local chance = tonumber(rewardParts[3]) or 100
+          if itemEntry > 0 then
+            table.insert(stageRewards, {
+              itemEntry = itemEntry,
+              itemCount = itemCount,
+              chance = chance,
+            })
+          end
+        end
+      end
     end
   end
 

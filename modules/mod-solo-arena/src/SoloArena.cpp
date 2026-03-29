@@ -7,6 +7,7 @@
 #include "Duration.h"
 #include "LFGMgr.h"
 #include "ObjectAccessor.h"
+#include "ObjectMgr.h"
 #include "Player.h"
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
@@ -310,6 +311,7 @@ namespace
             uint32 itemEntry, uint32 itemCount, float chance,
             std::string const& status);
         std::string GetStageName(uint8 stageId) const;
+        std::string BuildStageRewardPayload(uint8 stageId) const;
         void LoadDefaultStages();
 
         template <typename... Args>
@@ -691,7 +693,8 @@ void SoloArenaMgr::SendUi(Player* player)
         entries << stage.HealthMultiplier << "~";
         entries << stage.DamageMultiplier << "~";
         entries << stage.SpellIntervalMs << "~";
-        entries << stage.MoveSpeedRate;
+        entries << stage.MoveSpeedRate << "~";
+        entries << BuildStageRewardPayload(stage.StageId);
     }
 
     std::ostringstream payload;
@@ -1311,6 +1314,38 @@ std::string SoloArenaMgr::GetStageName(uint8 stageId) const
         return stage->Name;
 
     return Acore::StringFormat("시련 {}단계", stageId);
+}
+
+std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
+{
+    QueryResult result = WorldDatabase.Query(
+        "SELECT item_entry, item_count, chance "
+        "FROM solo_arena_stage_reward "
+        "WHERE stage_id = {} AND enabled = 1 "
+        "ORDER BY sort_order, id",
+        stageId);
+
+    if (!result)
+        return "0^0^0";
+
+    std::ostringstream rewards;
+    bool first = true;
+
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 itemEntry = fields[0].Get<uint32>();
+        uint32 itemCount = std::max<uint32>(1, fields[1].Get<uint32>());
+        float chance = fields[2].Get<float>();
+
+        if (!first)
+            rewards << ",";
+
+        first = false;
+        rewards << itemEntry << "^" << itemCount << "^" << chance;
+    } while (result->NextRow());
+
+    return rewards.str();
 }
 
 void SoloArenaMgr::LoadDefaultStages()
