@@ -12,6 +12,10 @@ PREPARE stmt FROM @sql;
 EXECUTE stmt;
 DEALLOCATE PREPARE stmt;
 
+UPDATE `solo_arena_run_log`
+SET `run_uid` = `id`
+WHERE `run_uid` = 0;
+
 SET @col_exists := (
     SELECT COUNT(*)
     FROM INFORMATION_SCHEMA.COLUMNS
