@@ -37,6 +37,8 @@ Trial:SetScript("OnDragStart", Trial.StartMoving)
 Trial:SetScript("OnDragStop", Trial.StopMovingOrSizing)
 Trial:Hide()
 
+tinsert(UISpecialFrames, "KarazhanTrialFrame")
+
 Trial:SetBackdrop({
   bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
   edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
