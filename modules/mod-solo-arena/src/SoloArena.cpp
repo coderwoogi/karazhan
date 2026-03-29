@@ -1968,6 +1968,8 @@ namespace
 
             events.Update(diff);
 
+            MaintainCombatSpacing();
+
             if (me->HasUnitState(UNIT_STATE_CASTING))
                 return;
 
@@ -2010,7 +2012,8 @@ namespace
                 }
             }
 
-            DoMeleeAttackIfReady();
+            if (IsMeleeProfile())
+                DoMeleeAttackIfReady();
         }
 
     private:
@@ -2052,15 +2055,110 @@ namespace
                 return;
             }
 
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!spellInfo)
+                return;
+
+            uint32 castTime = spellInfo->CalcCastTime(me);
+            if (castTime > 0)
+            {
+                me->StopMoving();
+                me->SetFacingToObject(victim);
+                me->CastSpell(victim, spellId, false);
+                return;
+            }
+
             me->CastSpell(victim, spellId, true);
 
-            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
+            if (IsInstantDamageProfile())
             {
                 uint32 damage = ComputeShadowSpellDamage(me, _profile,
                     damageFactor);
                 Unit::DealDamage(me, victim, damage, nullptr, DIRECT_DAMAGE,
                     schoolMask, spellInfo, false);
             }
+        }
+
+        void MaintainCombatSpacing()
+        {
+            Unit* victim = me->GetVictim();
+            if (!victim || !victim->IsAlive())
+                return;
+
+            float distance = me->GetDistance(victim);
+            if (IsMeleeProfile())
+            {
+                if (!me->IsWithinMeleeRange(victim))
+                    me->GetMotionMaster()->MoveChase(victim);
+                return;
+            }
+
+            float desiredRange = GetDesiredCombatRange();
+            if (distance < (desiredRange * 0.55f))
+            {
+                me->GetMotionMaster()->MoveFleeing(victim);
+                return;
+            }
+
+            if (distance > (desiredRange + 4.0f))
+                me->GetMotionMaster()->MoveChase(victim);
+        }
+
+        bool IsMeleeProfile() const
+        {
+            switch (_profile.PlayerClass)
+            {
+                case CLASS_WARRIOR:
+                case CLASS_ROGUE:
+                    return true;
+                case CLASS_DEATH_KNIGHT:
+                    return _profile.ActiveSpec !=
+                        TALENT_TREE_DEATH_KNIGHT_UNHOLY;
+                case CLASS_DRUID:
+                    return _profile.ActiveSpec ==
+                        TALENT_TREE_DRUID_FERAL_COMBAT;
+                case CLASS_PALADIN:
+                    return _profile.ActiveSpec != TALENT_TREE_PALADIN_HOLY;
+                case CLASS_SHAMAN:
+                    return _profile.ActiveSpec ==
+                        TALENT_TREE_SHAMAN_ENHANCEMENT;
+                default:
+                    return false;
+            }
+        }
+
+        bool IsInstantDamageProfile() const
+        {
+            if (IsMeleeProfile())
+                return true;
+
+            switch (_profile.PlayerClass)
+            {
+                case CLASS_HUNTER:
+                case CLASS_PRIEST:
+                case CLASS_MAGE:
+                case CLASS_WARLOCK:
+                    return false;
+                case CLASS_SHAMAN:
+                    return _profile.ActiveSpec ==
+                        TALENT_TREE_SHAMAN_ENHANCEMENT;
+                case CLASS_DRUID:
+                    return _profile.ActiveSpec ==
+                        TALENT_TREE_DRUID_FERAL_COMBAT;
+                default:
+                    return true;
+            }
+        }
+
+        float GetDesiredCombatRange() const
+        {
+            float range = std::max(_package.PrimaryRange,
+                std::max(_package.SecondaryRange, _package.TertiaryRange));
+
+            if (IsMeleeProfile())
+                return 4.5f;
+
+            return std::max(18.0f, range - 2.0f);
         }
 
         ShadowProfile _profile;
