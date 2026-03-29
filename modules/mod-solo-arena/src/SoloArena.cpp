@@ -384,6 +384,7 @@ namespace
         StageConfig const* GetStage(uint8 stageId) const;
         bool HasSession(ObjectGuid const& playerGuid) const;
         ArenaSession const* GetSession(ObjectGuid const& playerGuid) const;
+        bool IsCombatActive(ObjectGuid const& playerGuid) const;
         bool StartChallenge(Player* player, uint8 stageId);
         void SendUi(Player* player);
         void Update(uint32 diff);
@@ -785,6 +786,15 @@ ArenaSession const* SoloArenaMgr::GetSession(ObjectGuid const& playerGuid) const
         return nullptr;
 
     return &itr->second;
+}
+
+bool SoloArenaMgr::IsCombatActive(ObjectGuid const& playerGuid) const
+{
+    ArenaSession const* session = GetSession(playerGuid);
+    if (!session)
+        return false;
+
+    return session->State == SessionState::Active;
 }
 
 bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
@@ -1351,6 +1361,7 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
     summon->SetFaction(14);
     summon->SetWalk(false);
     summon->StopMoving();
+    summon->SetHomePosition(stage.BotX, stage.BotY, stage.BotZ, stage.BotO);
 }
 
 void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
@@ -2241,6 +2252,9 @@ namespace
             _initialized = false;
             _petInterceptMs = 0;
             _petInterceptCooldownMs = 0;
+            me->SetReactState(REACT_PASSIVE);
+            me->AttackStop();
+            me->ClearInCombat();
         }
 
         void JustEngagedWith(Unit* /*who*/) override
@@ -2277,6 +2291,16 @@ namespace
         {
             InitializeProfile();
 
+            if (!SoloArenaMgr::Instance().IsCombatActive(
+                    _profile.PlayerGuid))
+            {
+                me->SetReactState(REACT_PASSIVE);
+                me->AttackStop();
+                me->GetMotionMaster()->Clear();
+                me->GetMotionMaster()->MoveTargetedHome();
+                return;
+            }
+
             if (Unit* target = GetShadowTarget())
             {
                 me->SetReactState(REACT_AGGRESSIVE);
@@ -2292,6 +2316,10 @@ namespace
 
         void UpdateAI(uint32 diff) override
         {
+            InitializeProfile();
+            if (!_initialized)
+                return;
+
             if (_petInterceptMs > diff)
                 _petInterceptMs -= diff;
             else
@@ -2302,16 +2330,24 @@ namespace
             else
                 _petInterceptCooldownMs = 0;
 
+            if (!SoloArenaMgr::Instance().IsCombatActive(_profile.PlayerGuid))
+            {
+                me->SetReactState(REACT_PASSIVE);
+                me->AttackStop();
+                if (!me->IsInEvadeMode())
+                {
+                    me->GetMotionMaster()->Clear();
+                    me->GetMotionMaster()->MoveTargetedHome();
+                }
+                return;
+            }
+
             if (!UpdateVictim())
             {
                 if (Unit* target = GetShadowTarget())
                     AttackStart(target);
                 return;
             }
-
-            InitializeProfile();
-            if (!_initialized)
-                return;
 
             if (Unit* preferredTarget = GetShadowTarget())
                 if (me->GetVictim() != preferredTarget)
