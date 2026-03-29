@@ -325,6 +325,20 @@ Trial.rewardIcon = Trial.rewardIconBg:CreateTexture(nil, "ARTWORK")
 Trial.rewardIcon:SetPoint("TOPLEFT", Trial.rewardIconBg, "TOPLEFT", 4, -4)
 Trial.rewardIcon:SetPoint("BOTTOMRIGHT", Trial.rewardIconBg, "BOTTOMRIGHT", -4, 4)
 Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+Trial.rewardIconBg:EnableMouse(true)
+Trial.rewardIconBg.itemEntry = nil
+Trial.rewardIconBg:SetScript("OnEnter", function(self)
+  if not self.itemEntry or self.itemEntry <= 0 then
+    return
+  end
+
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  GameTooltip:SetHyperlink("item:" .. tostring(self.itemEntry))
+  GameTooltip:Show()
+end)
+Trial.rewardIconBg:SetScript("OnLeave", function()
+  GameTooltip:Hide()
+end)
 
 Trial.rewardText = CreateLabel(
   Trial.infoPane,
@@ -434,6 +448,7 @@ local function GetStageReward(stage)
     return {
       icon = "Interface\\Icons\\INV_Misc_QuestionMark",
       text = "설정된 보상이 없습니다.",
+      itemEntry = nil,
     }
   end
 
@@ -442,6 +457,7 @@ local function GetStageReward(stage)
     return {
       icon = "Interface\\Icons\\INV_Misc_QuestionMark",
       text = "설정된 보상이 없습니다.",
+      itemEntry = nil,
     }
   end
 
@@ -469,6 +485,7 @@ local function GetStageReward(stage)
   return {
     icon = icon,
     text = table.concat(lines, "\n"),
+    itemEntry = firstReward.itemEntry,
   }
 end
 
@@ -481,6 +498,7 @@ local function RefreshSelection()
     Trial.stageDesc:SetText("")
     Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
     Trial.rewardText:SetText("설정된 보상이 없습니다.")
+    Trial.rewardIconBg.itemEntry = nil
     Trial.start:Disable()
     Trial.abandon:Hide()
     return
@@ -495,6 +513,7 @@ local function RefreshSelection()
   local reward = GetStageReward(stage)
   Trial.rewardIcon:SetTexture(reward.icon)
   Trial.rewardText:SetText(reward.text)
+  Trial.rewardIconBg.itemEntry = reward.itemEntry
   if Trial.state.inProgress then
     Trial.start:Disable()
     Trial.abandon:Show()
