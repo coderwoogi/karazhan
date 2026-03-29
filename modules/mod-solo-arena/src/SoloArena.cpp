@@ -157,6 +157,18 @@ namespace
         float DefensiveHealthPct = 0.45f;
     };
 
+    Unit* SelectShadowPetTarget(Player* player)
+    {
+        if (!player)
+            return nullptr;
+
+        if (Pet* pet = player->GetPet())
+            if (pet->IsAlive())
+                return pet;
+
+        return player;
+    }
+
     void ApplyShadowCloneVisual(Player* player, Creature* summon)
     {
         if (!player || !summon)
@@ -490,6 +502,24 @@ namespace
         }
     }
 
+    std::string GetTrialClassDisplayName(uint8 classId)
+    {
+        switch (classId)
+        {
+            case CLASS_WARRIOR: return "전사";
+            case CLASS_PALADIN: return "성기사";
+            case CLASS_HUNTER: return "사냥꾼";
+            case CLASS_ROGUE: return "도적";
+            case CLASS_PRIEST: return "사제";
+            case CLASS_DEATH_KNIGHT: return "죽음의 기사";
+            case CLASS_SHAMAN: return "주술사";
+            case CLASS_MAGE: return "마법사";
+            case CLASS_WARLOCK: return "흑마법사";
+            case CLASS_DRUID: return "드루이드";
+            default: return "모험가";
+        }
+    }
+
     std::string EscapeJson(std::string text)
     {
         std::string out;
@@ -563,32 +593,32 @@ namespace
     std::string BuildTrialTauntFallback(Player* player,
         uint8 playerClass, std::string const& eventType)
     {
-        std::string classLabel = GetTrialClassLabel(playerClass);
-        std::string playerName = player ? player->GetName() : "challenger";
+        std::string classLabel = GetTrialClassDisplayName(playerClass);
+        std::string playerName = player ? player->GetName() : "도전자";
 
         if (eventType == "spawn")
             return Acore::StringFormat(
-                "{} {}, your shadow is waiting for you.",
+                "{}, {}의 그림자가 너를 기다리고 있다.",
                 playerName, classLabel);
         if (eventType == "combat_start")
             return Acore::StringFormat(
-                "Fight like a true {}. It begins now.",
+                "{}답게 끝까지 버텨 봐라. 지금부터 시작이다.",
                 classLabel);
         if (eventType == "victory")
             return Acore::StringFormat(
-                "{} {}, this round belongs to you.",
-                playerName, classLabel);
+                "{}, 이번 승부는 네가 가져갔다.",
+                playerName);
         if (eventType == "failure")
             return Acore::StringFormat(
-                "Your {} instincts were sharp, but I was sharper today.",
+                "{}의 힘이 이 정도라면 아직 내 그림자를 넘기 어렵다.",
                 classLabel);
         if (eventType == "abandoned")
             return Acore::StringFormat(
-                "{} {}, you stepped back. Next time, see it through.",
-                playerName, classLabel);
+                "{}, 이번엔 물러섰군. 다음에는 끝까지 버텨 봐라.",
+                playerName);
 
         return Acore::StringFormat(
-            "{} {}, your shadow is always waiting.",
+            "{}, {}의 그림자는 언제든 너를 기다린다.",
             playerName, classLabel);
     }
 
@@ -1221,7 +1251,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     }
 
     SendSystem(player,
-        "Shadow spawned. Combat begins when the gates open.");
+        "그림자가 모습을 드러냈습니다. 문이 열리면 전투가 시작됩니다.");
     Debug("Solo arena shadow spawned: player='{}' stage={} botGuid={}",
         player->GetName(), stage->StageId, summon->GetGUID().ToString());
     LogEvent(player, session, "SHADOW_SPAWNED");
@@ -1338,7 +1368,7 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
                 GetStageName(session.StageId)));
             break;
         case ArenaResult::Abandoned:
-            SendSystem(player, "솔로 아레나 시련이 종료되었습니다.");
+            SendSystem(player, "시련을 종료했습니다.");
             break;
         default:
             break;
@@ -1427,6 +1457,22 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
     Pet* playerPet = player->GetPet();
     if (!playerPet || !playerPet->IsAlive())
     {
+        if (startCombat && !session.PetGuid.IsEmpty())
+            if (Creature* shadowPet = ObjectAccessor::GetCreature(*player,
+                    session.PetGuid))
+            {
+                Unit* desiredTarget = player;
+                shadowPet->SetReactState(REACT_AGGRESSIVE);
+                shadowPet->SetHomePosition(shadowPet->GetPositionX(),
+                    shadowPet->GetPositionY(), shadowPet->GetPositionZ(),
+                    shadowPet->GetOrientation());
+                shadowPet->SetInCombatWith(desiredTarget);
+                desiredTarget->SetInCombatWith(shadowPet);
+                shadowPet->Attack(desiredTarget, true);
+                shadowPet->GetMotionMaster()->Clear();
+                shadowPet->GetMotionMaster()->MoveChase(desiredTarget, 1.5f);
+            }
+
         return true;
     }
 
@@ -1445,16 +1491,33 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
             CopyShadowPetStats(shadowPet, playerPet);
             if (startCombat)
             {
-                if (shadowPet->GetDistance(player) > 35.0f ||
-                    !shadowPet->IsWithinLOSInMap(player))
+                Unit* desiredTarget = SelectShadowPetTarget(player);
+                if (!desiredTarget)
+                    desiredTarget = player;
+
+                if (shadowPet->GetDistance(desiredTarget) > 35.0f ||
+                    !shadowPet->IsWithinLOSInMap(desiredTarget))
                 {
-                    float angle = player->GetOrientation() + float(M_PI) * 0.35f;
-                    float x = player->GetPositionX() + std::cos(angle) * 4.0f;
-                    float y = player->GetPositionY() + std::sin(angle) * 4.0f;
-                    shadowPet->NearTeleportTo(x, y, player->GetPositionZ(),
-                        shadowPet->GetAngle(player));
+                    float angle = desiredTarget->GetOrientation() +
+                        float(M_PI) * 0.35f;
+                    float x = desiredTarget->GetPositionX() +
+                        std::cos(angle) * 3.0f;
+                    float y = desiredTarget->GetPositionY() +
+                        std::sin(angle) * 3.0f;
+                    shadowPet->NearTeleportTo(x, y,
+                        desiredTarget->GetPositionZ(),
+                        shadowPet->GetAngle(desiredTarget));
                 }
-                StartShadowCombat(player, shadowPet);
+
+                shadowPet->SetReactState(REACT_AGGRESSIVE);
+                shadowPet->SetHomePosition(shadowPet->GetPositionX(),
+                    shadowPet->GetPositionY(), shadowPet->GetPositionZ(),
+                    shadowPet->GetOrientation());
+                shadowPet->SetInCombatWith(desiredTarget);
+                desiredTarget->SetInCombatWith(shadowPet);
+                shadowPet->Attack(desiredTarget, true);
+                shadowPet->GetMotionMaster()->Clear();
+                shadowPet->GetMotionMaster()->MoveChase(desiredTarget, 1.5f);
             }
         }
 
@@ -1498,6 +1561,9 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
     shadowPet->SetFaction(14);
     shadowPet->SetWalk(false);
     shadowPet->SetReactState(startCombat ? REACT_AGGRESSIVE : REACT_PASSIVE);
+    shadowPet->SetHomePosition(shadowPet->GetPositionX(),
+        shadowPet->GetPositionY(), shadowPet->GetPositionZ(),
+        shadowPet->GetOrientation());
     CopyShadowPetStats(shadowPet, playerPet);
     shadowPet->StopMoving();
 
@@ -1506,7 +1572,17 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
     session.PetDisplayId = petDisplayId;
 
     if (startCombat)
-        StartShadowCombat(player, shadowPet);
+    {
+        Unit* desiredTarget = SelectShadowPetTarget(player);
+        if (!desiredTarget)
+            desiredTarget = player;
+
+        shadowPet->SetInCombatWith(desiredTarget);
+        desiredTarget->SetInCombatWith(shadowPet);
+        shadowPet->Attack(desiredTarget, true);
+        shadowPet->GetMotionMaster()->Clear();
+        shadowPet->GetMotionMaster()->MoveChase(desiredTarget, 1.5f);
+    }
 
     LogEvent(player, session, "SHADOW_PET_SUMMONED",
         Acore::StringFormat("entry={}", petEntry));
@@ -2133,6 +2209,8 @@ namespace
         {
             events.Reset();
             _initialized = false;
+            _petInterceptMs = 0;
+            _petInterceptCooldownMs = 0;
         }
 
         void JustEngagedWith(Unit* /*who*/) override
@@ -2169,7 +2247,7 @@ namespace
         {
             InitializeProfile();
 
-            if (Player* target = GetShadowTarget())
+            if (Unit* target = GetShadowTarget())
             {
                 me->SetReactState(REACT_AGGRESSIVE);
                 me->Attack(target, true);
@@ -2184,9 +2262,19 @@ namespace
 
         void UpdateAI(uint32 diff) override
         {
+            if (_petInterceptMs > diff)
+                _petInterceptMs -= diff;
+            else
+                _petInterceptMs = 0;
+
+            if (_petInterceptCooldownMs > diff)
+                _petInterceptCooldownMs -= diff;
+            else
+                _petInterceptCooldownMs = 0;
+
             if (!UpdateVictim())
             {
-                if (Player* target = GetShadowTarget())
+                if (Unit* target = GetShadowTarget())
                     AttackStart(target);
                 return;
             }
@@ -2194,6 +2282,10 @@ namespace
             InitializeProfile();
             if (!_initialized)
                 return;
+
+            if (Unit* preferredTarget = GetShadowTarget())
+                if (me->GetVictim() != preferredTarget)
+                    AttackStart(preferredTarget);
 
             events.Update(diff);
 
@@ -2328,6 +2420,13 @@ namespace
             if (!victim || !victim->IsAlive())
                 return;
 
+            if (victim->ToPet())
+            {
+                if (!me->IsWithinMeleeRange(victim))
+                    me->GetMotionMaster()->MoveChase(victim, 1.5f);
+                return;
+            }
+
             float distance = me->GetDistance(victim);
             if (IsMeleeProfile())
             {
@@ -2347,7 +2446,7 @@ namespace
                 me->GetMotionMaster()->MoveChase(victim, desiredRange);
         }
 
-        Player* GetShadowTarget() const
+        Unit* GetShadowTarget()
         {
             ShadowProfile const* profile =
                 SoloArenaMgr::Instance().GetShadowProfile(me->GetGUID());
@@ -2358,6 +2457,19 @@ namespace
                 profile->PlayerGuid);
             if (!player || !player->IsAlive())
                 return nullptr;
+
+            if (Pet* pet = player->GetPet())
+            {
+                if (pet->IsAlive() && me->GetDistance(pet) <= 4.0f &&
+                    _petInterceptMs == 0 && _petInterceptCooldownMs == 0)
+                {
+                    _petInterceptMs = 2200;
+                    _petInterceptCooldownMs = 5500;
+                }
+
+                if (pet->IsAlive() && _petInterceptMs > 0)
+                    return pet;
+            }
 
             return player;
         }
@@ -2439,6 +2551,8 @@ namespace
         ShadowProfile _profile;
         SpellPackage _package;
         bool _initialized = false;
+        uint32 _petInterceptMs = 0;
+        uint32 _petInterceptCooldownMs = 0;
     };
 
     class npc_solo_arena_shadow : public CreatureScript
@@ -2646,7 +2760,7 @@ namespace
 
             if (player->GetSession())
                 ChatHandler(player->GetSession()).PSendSysMessage("{}",
-                    "You cannot switch dual spec during the trial.");
+                    "시련 안에서는 이중특성을 변경할 수 없습니다.");
             return false;
         }
     };
