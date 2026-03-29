@@ -258,13 +258,28 @@ Trial.stageDivider:SetPoint("TOPLEFT", Trial.rightPane, "TOPLEFT", 16, -84)
 Trial.stageDivider:SetPoint("TOPRIGHT", Trial.rightPane, "TOPRIGHT", -16, -84)
 Trial.stageDivider:SetHeight(8)
 
+Trial.contentPane = CreateFrame("Frame", nil, Trial.rightPane)
+Trial.contentPane:SetPoint("TOPLEFT", Trial.rightPane, "TOPLEFT", 20, -104)
+Trial.contentPane:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -20, 60)
+
+Trial.modelPane = CreateFrame("Frame", nil, Trial.contentPane)
+Trial.modelPane:SetPoint("TOPLEFT", Trial.contentPane, "TOPLEFT", 0, 0)
+Trial.modelPane:SetPoint("BOTTOMLEFT", Trial.contentPane, "BOTTOMLEFT", 0, 0)
+Trial.modelPane:SetWidth(245)
+
+Trial.infoPane = CreateFrame("Frame", nil, Trial.contentPane)
+Trial.infoPane:SetPoint("TOPLEFT", Trial.modelPane, "TOPRIGHT", 16, 0)
+Trial.infoPane:SetPoint("BOTTOMRIGHT", Trial.contentPane, "BOTTOMRIGHT", 0, 0)
+
 Trial.model = CreateFrame("DressUpModel", nil, Trial.rightPane)
-Trial.model:SetPoint("TOPLEFT", Trial.rightPane, "TOPLEFT", 20, -104)
-Trial.model:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -20, 126)
+Trial.model:SetParent(Trial.modelPane)
+Trial.model:ClearAllPoints()
+Trial.model:SetPoint("TOPLEFT", Trial.modelPane, "TOPLEFT", 0, 0)
+Trial.model:SetPoint("BOTTOMRIGHT", Trial.modelPane, "BOTTOMRIGHT", 0, 0)
 Trial.model:SetFacing(0.45)
 Trial.model:SetModelScale(1.0)
 
-Trial.modelBg = Trial.rightPane:CreateTexture(nil, "BORDER")
+Trial.modelBg = Trial.modelPane:CreateTexture(nil, "BORDER")
 Trial.modelBg:SetTexture("Interface\\PaperDollInfoFrame\\UI-Character-General-TopLeft")
 Trial.modelBg:SetTexCoord(0.12, 0.88, 0.08, 0.92)
 Trial.modelBg:SetVertexColor(0.65, 0.20, 0.14, 0.22)
@@ -272,19 +287,19 @@ Trial.modelBg:SetPoint("TOPLEFT", Trial.model, "TOPLEFT", 0, 0)
 Trial.modelBg:SetPoint("BOTTOMRIGHT", Trial.model, "BOTTOMRIGHT", 0, 0)
 
 Trial.stageDesc = CreateLabel(
-  Trial.rightPane,
+  Trial.infoPane,
   "GameFontNormal",
   13,
   0.95,
   0.82,
   0.24
 )
-Trial.stageDesc:SetPoint("TOPLEFT", Trial.model, "BOTTOMLEFT", 0, -14)
-Trial.stageDesc:SetPoint("TOPRIGHT", Trial.model, "BOTTOMRIGHT", 0, -14)
+Trial.stageDesc:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -4)
+Trial.stageDesc:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -4)
 Trial.stageDesc:SetJustifyH("LEFT")
 
 Trial.rewardTitle = CreateLabel(
-  Trial.rightPane,
+  Trial.infoPane,
   "GameFontHighlight",
   13,
   1.0,
@@ -292,9 +307,9 @@ Trial.rewardTitle = CreateLabel(
   0.25
 )
 Trial.rewardTitle:SetPoint("TOPLEFT", Trial.stageDesc, "BOTTOMLEFT", 0, -12)
-Trial.rewardTitle:SetText("Reward")
+Trial.rewardTitle:SetText("보상")
 
-Trial.rewardIconBg = CreateFrame("Frame", nil, Trial.rightPane)
+Trial.rewardIconBg = CreateFrame("Frame", nil, Trial.infoPane)
 Trial.rewardIconBg:SetSize(40, 40)
 Trial.rewardIconBg:SetPoint("TOPLEFT", Trial.rewardTitle, "BOTTOMLEFT", 0, -8)
 Trial.rewardIconBg:SetBackdrop({
@@ -312,7 +327,7 @@ Trial.rewardIcon:SetPoint("BOTTOMRIGHT", Trial.rewardIconBg, "BOTTOMRIGHT", -4, 
 Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
 
 Trial.rewardText = CreateLabel(
-  Trial.rightPane,
+  Trial.infoPane,
   "GameFontNormal",
   12,
   0.95,
@@ -320,7 +335,7 @@ Trial.rewardText = CreateLabel(
   0.24
 )
 Trial.rewardText:SetPoint("TOPLEFT", Trial.rewardIconBg, "TOPRIGHT", 12, -2)
-Trial.rewardText:SetPoint("TOPRIGHT", Trial.rightPane, "TOPRIGHT", -20, -408)
+Trial.rewardText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -58)
 Trial.rewardText:SetJustifyH("LEFT")
 
 Trial.start = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
