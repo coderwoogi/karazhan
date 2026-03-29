@@ -7,6 +7,7 @@
 #include "DatabaseEnv.h"
 #include "Duration.h"
 #include "LFGMgr.h"
+#include "MapMgr.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "Player.h"
@@ -167,6 +168,19 @@ namespace
                 return pet;
 
         return player;
+    }
+
+    float ResolveArenaGroundZ(Map* map, float x, float y, float fallbackZ)
+    {
+        if (!map)
+            return fallbackZ;
+
+        float probeZ = fallbackZ + 5.0f;
+        float groundZ = map->GetHeight(x, y, probeZ, true, 50.0f);
+        if (!std::isfinite(groundZ) || groundZ <= INVALID_HEIGHT)
+            return fallbackZ;
+
+        return groundZ + 0.15f;
     }
 
     void ApplyShadowCloneVisual(Player* player, Creature* summon)
@@ -879,8 +893,13 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         SendTrialTimePayload(player, activeSession);
     }
 
+    float playerZ = stage->PlayerZ;
+    if (Map* map = sMapMgr->CreateBaseMap(stage->ArenaMapId))
+        playerZ = ResolveArenaGroundZ(map, stage->PlayerX, stage->PlayerY,
+            stage->PlayerZ);
+
     if (!player->TeleportTo(stage->ArenaMapId, stage->PlayerX, stage->PlayerY,
-        stage->PlayerZ, stage->PlayerO, TELE_TO_GM_MODE))
+        playerZ, stage->PlayerO, TELE_TO_GM_MODE))
     {
         _sessions.erase(player->GetGUID().GetCounter());
         _managedArenaInstances.erase(session.ArenaInstanceId);
@@ -1207,9 +1226,13 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     if (!stage)
         return false;
 
+    float botZ = stage->BotZ;
+    if (Map* map = player->GetMap())
+        botZ = ResolveArenaGroundZ(map, stage->BotX, stage->BotY, stage->BotZ);
+
     TempSummon* summon = player->SummonCreature(
         SoloArenaConfig::Instance().GetShadowEntry(),
-        stage->BotX, stage->BotY, stage->BotZ, stage->BotO,
+        stage->BotX, stage->BotY, botZ, stage->BotO,
         TEMPSUMMON_MANUAL_DESPAWN, 0);
 
     if (!summon)
@@ -1220,7 +1243,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
             player->GetName(), stage->StageId, player->GetMapId(),
             player->GetInstanceId(),
             SoloArenaConfig::Instance().GetShadowEntry(),
-            stage->BotX, stage->BotY, stage->BotZ, stage->BotO);
+            stage->BotX, stage->BotY, botZ, stage->BotO);
         return false;
     }
 
@@ -1504,8 +1527,10 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
                         std::cos(angle) * 3.0f;
                     float y = desiredTarget->GetPositionY() +
                         std::sin(angle) * 3.0f;
-                    shadowPet->NearTeleportTo(x, y,
-                        desiredTarget->GetPositionZ(),
+                    float z = desiredTarget->GetPositionZ();
+                    if (Map* map = shadowPet->GetMap())
+                        z = ResolveArenaGroundZ(map, x, y, z);
+                    shadowPet->NearTeleportTo(x, y, z,
                         shadowPet->GetAngle(desiredTarget));
                 }
 
@@ -1541,9 +1566,14 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
             CleanupPet(session);
     }
 
+    float petZ = stage->BotZ;
+    if (Map* map = player->GetMap())
+        petZ = ResolveArenaGroundZ(map, stage->BotX + 2.0f, stage->BotY,
+            stage->BotZ);
+
     TempSummon* shadowPet = player->SummonCreature(
         petEntry,
-        stage->BotX + 2.0f, stage->BotY, stage->BotZ, stage->BotO,
+        stage->BotX + 2.0f, stage->BotY, petZ, stage->BotO,
         TEMPSUMMON_MANUAL_DESPAWN, 0);
     if (!shadowPet)
     {
@@ -2485,6 +2515,8 @@ namespace
             float x = victim->GetPositionX() + std::cos(angle) * range;
             float y = victim->GetPositionY() + std::sin(angle) * range;
             float z = victim->GetPositionZ();
+            if (Map* map = me->GetMap())
+                z = ResolveArenaGroundZ(map, x, y, z);
 
             me->NearTeleportTo(x, y, z, me->GetAngle(victim));
             me->GetMotionMaster()->MoveChase(victim,
