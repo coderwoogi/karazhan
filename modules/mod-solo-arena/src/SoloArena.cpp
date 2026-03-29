@@ -1,4 +1,5 @@
 #include "ArenaScript.h"
+#include "AllSpellScript.h"
 #include "Battleground.h"
 #include "BattlegroundMgr.h"
 #include "Chat.h"
@@ -9,9 +10,11 @@
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "Player.h"
+#include "Pet.h"
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "ScriptedGossip.h"
+#include "Spell.h"
 #include "SpellMgr.h"
 #include "StringFormat.h"
 #include "TemporarySummon.h"
@@ -92,6 +95,7 @@ namespace
         uint64 RunUid = 0;
         ObjectGuid PlayerGuid = ObjectGuid::Empty;
         ObjectGuid BotGuid = ObjectGuid::Empty;
+        ObjectGuid PetGuid = ObjectGuid::Empty;
         uint8 StageId = 0;
         uint32 ArenaMapId = DEFAULT_ARENA_MAP_ID;
         uint32 ArenaInstanceId = 0;
@@ -110,6 +114,8 @@ namespace
         uint64 AbandonedAt = 0;
         uint32 SpawnDelayMs = 1000;
         uint32 FinishDelayMs = 3000;
+        uint32 PetEntry = 0;
+        uint32 PetDisplayId = 0;
         ArenaResult Result = ArenaResult::None;
         SessionState State = SessionState::PendingSpawn;
     };
@@ -296,9 +302,12 @@ namespace
 
     private:
         bool SpawnShadow(Player* player, ArenaSession& session);
+        bool SyncShadowPet(Player* player, ArenaSession& session,
+            bool startCombat);
         void ConfigureShadow(Creature* summon, Player* player,
             StageConfig const& stage);
         void FinishSession(Player* player, ArenaSession& session);
+        void CleanupPet(ArenaSession& session);
         void CleanupBot(ArenaSession const& session);
         uint8 GetHighestStageCleared(Player* player) const;
         bool IsStageUnlocked(Player* player, uint8 stageId) const;
@@ -728,6 +737,7 @@ void SoloArenaMgr::Update(uint32 diff)
         Player* player = ObjectAccessor::FindConnectedPlayer(session.PlayerGuid);
         if (!player)
         {
+            CleanupPet(session);
             CleanupBot(session);
             toErase.push_back(playerKey);
             continue;
@@ -757,6 +767,8 @@ void SoloArenaMgr::Update(uint32 diff)
                 }
                 break;
             case SessionState::WaitingForStart:
+                SyncShadowPet(player, session, false);
+
                 if (player->GetMapId() != session.ArenaMapId)
                 {
                     session.Result = ArenaResult::Abandoned;
@@ -787,6 +799,7 @@ void SoloArenaMgr::Update(uint32 diff)
                                 *player, session.BotGuid))
                             StartShadowCombat(player, bot);
 
+                        SyncShadowPet(player, session, true);
                         session.State = SessionState::Active;
                         session.CombatStartedAt = std::time(nullptr);
                         session.CombatEndsAt = session.CombatStartedAt +
@@ -800,6 +813,8 @@ void SoloArenaMgr::Update(uint32 diff)
                 }
                 break;
             case SessionState::Active:
+                SyncShadowPet(player, session, true);
+
                 if (player->GetMapId() != session.ArenaMapId)
                 {
                     session.Result = ArenaResult::Abandoned;
@@ -997,6 +1012,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 
     summon->ClearInCombat();
     player->ClearInCombat();
+    SyncShadowPet(player, session, false);
 
     if (WorldSession* playerSession = player->GetSession())
     {
@@ -1086,6 +1102,7 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
 
 void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
 {
+    CleanupPet(session);
     CleanupBot(session);
 
     if (session.Result == ArenaResult::Failure && !player->IsAlive())
@@ -1129,6 +1146,104 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
 
     LogRun(player, session);
     LogEvent(player, session, "RUN_FINISHED");
+}
+
+bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
+    bool startCombat)
+{
+    if (!player)
+        return false;
+
+    StageConfig const* stage = GetStage(session.StageId);
+    if (!stage)
+        return false;
+
+    Pet* playerPet = player->GetPet();
+    if (!playerPet || !playerPet->IsAlive())
+    {
+        if (!session.PetGuid.IsEmpty())
+        {
+            CleanupPet(session);
+            LogEvent(player, session, "SHADOW_PET_DESPAWNED");
+        }
+
+        return true;
+    }
+
+    uint32 petEntry = playerPet->GetEntry();
+    uint32 petDisplayId = playerPet->GetDisplayId();
+    if (!petEntry || !petDisplayId)
+        return true;
+
+    if (!session.PetGuid.IsEmpty() &&
+        session.PetEntry == petEntry &&
+        session.PetDisplayId == petDisplayId)
+    {
+        if (startCombat)
+            if (Creature* shadowPet = ObjectAccessor::GetCreature(*player,
+                    session.PetGuid))
+                StartShadowCombat(player, shadowPet);
+
+        return true;
+    }
+
+    CleanupPet(session);
+
+    TempSummon* shadowPet = player->SummonCreature(
+        petEntry,
+        stage->BotX + 2.0f, stage->BotY, stage->BotZ, stage->BotO,
+        TEMPSUMMON_MANUAL_DESPAWN, 0);
+    if (!shadowPet)
+    {
+        Debug("Solo arena pet sync failed: player='{}' petEntry={}",
+            player->GetName(), petEntry);
+        LogEvent(player, session, "SHADOW_PET_SYNC_FAILED",
+            Acore::StringFormat("entry={}", petEntry));
+        return false;
+    }
+
+    shadowPet->SetName(playerPet->GetName());
+    shadowPet->SetDisplayId(petDisplayId);
+    shadowPet->SetNativeDisplayId(petDisplayId);
+    shadowPet->SetObjectScale(playerPet->GetObjectScale());
+    shadowPet->SetLevel(playerPet->GetLevel());
+    shadowPet->SetFaction(14);
+    shadowPet->SetWalk(false);
+    shadowPet->SetReactState(startCombat ? REACT_AGGRESSIVE : REACT_PASSIVE);
+    shadowPet->SetAttackTime(BASE_ATTACK, stage->AttackTimeMs);
+
+    uint32 maxHealth = std::max<uint32>(1000u,
+        static_cast<uint32>(playerPet->GetMaxHealth() *
+            stage->HealthMultiplier));
+    shadowPet->SetMaxHealth(maxHealth);
+    shadowPet->SetHealth(maxHealth);
+    shadowPet->StopMoving();
+
+    session.PetGuid = shadowPet->GetGUID();
+    session.PetEntry = petEntry;
+    session.PetDisplayId = petDisplayId;
+
+    if (startCombat)
+        StartShadowCombat(player, shadowPet);
+
+    LogEvent(player, session, "SHADOW_PET_SUMMONED",
+        Acore::StringFormat("entry={}", petEntry));
+    return true;
+}
+
+void SoloArenaMgr::CleanupPet(ArenaSession& session)
+{
+    if (session.PetGuid.IsEmpty())
+        return;
+
+    if (Player* player = ObjectAccessor::FindPlayer(session.PlayerGuid))
+        if (Creature* pet = ObjectAccessor::GetCreature(*player,
+                session.PetGuid))
+            pet->DespawnOrUnsummon(Milliseconds(1));
+
+    session.PetGuid = ObjectGuid::Empty;
+    session.PetEntry = 0;
+    session.PetDisplayId = 0;
 }
 
 void SoloArenaMgr::CleanupBot(ArenaSession const& session)
@@ -2057,6 +2172,37 @@ namespace
             return false;
         }
     };
+
+    class SoloArenaAllSpellScript : public AllSpellScript
+    {
+    public:
+        SoloArenaAllSpellScript() :
+            AllSpellScript("SoloArenaAllSpellScript",
+                { ALLSPELLHOOK_CAN_SELECT_SPEC_TALENT })
+        {
+        }
+
+        bool CanSelectSpecTalent(Spell* spell) override
+        {
+            if (!spell)
+                return true;
+
+            Player* player = spell->GetCaster() ?
+                spell->GetCaster()->ToPlayer() : nullptr;
+            if (!player)
+                return true;
+
+            if (!SoloArenaMgr::Instance().HasSession(player->GetGUID()) &&
+                !SoloArenaMgr::Instance().IsManagedArenaInstance(
+                    player->GetInstanceId()))
+                return true;
+
+            if (player->GetSession())
+                ChatHandler(player->GetSession()).PSendSysMessage("{}",
+                    "You cannot switch dual spec during the trial.");
+            return false;
+        }
+    };
 }
 
 void AddSoloArenaScripts()
@@ -2065,6 +2211,7 @@ void AddSoloArenaScripts()
     new SoloArenaPlayerScript();
     new SoloArenaArenaScript();
     new SoloArenaServerScript();
+    new SoloArenaAllSpellScript();
     new npc_solo_arena_master();
     new npc_solo_arena_shadow();
 }
