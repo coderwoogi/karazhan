@@ -1530,8 +1530,8 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
                     float z = desiredTarget->GetPositionZ();
                     if (Map* map = shadowPet->GetMap())
                         z = ResolveArenaGroundZ(map, x, y, z);
-                    shadowPet->NearTeleportTo(x, y, z,
-                        shadowPet->GetAngle(desiredTarget));
+                    shadowPet->GetMotionMaster()->Clear();
+                    shadowPet->GetMotionMaster()->MovePoint(1, x, y, z);
                 }
 
                 shadowPet->SetReactState(REACT_AGGRESSIVE);
@@ -2518,9 +2518,8 @@ namespace
             if (Map* map = me->GetMap())
                 z = ResolveArenaGroundZ(map, x, y, z);
 
-            me->NearTeleportTo(x, y, z, me->GetAngle(victim));
-            me->GetMotionMaster()->MoveChase(victim,
-                IsMeleeProfile() ? 1.5f : GetDesiredCombatRange());
+            me->GetMotionMaster()->Clear();
+            me->GetMotionMaster()->MovePoint(2, x, y, z);
         }
 
         bool IsMeleeProfile() const
