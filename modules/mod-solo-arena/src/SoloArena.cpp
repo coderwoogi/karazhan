@@ -21,6 +21,8 @@
 #include "WorldPacket.h"
 #include "WorldSession.h"
 
+#include "../../mod-instance-bonus-mission/src/thirdparty/httplib.h"
+
 #include <algorithm>
 #include <atomic>
 #include <cstdlib>
@@ -378,6 +380,10 @@ namespace
         void FinishSession(Player* player, ArenaSession& session);
         void CleanupPet(ArenaSession& session);
         void CleanupBot(ArenaSession const& session);
+        std::string RequestTrialTaunt(Player* player,
+            ArenaSession const& session, std::string const& eventType) const;
+        void SpeakTrialTaunt(Player* player, ArenaSession const& session,
+            std::string const& eventType) const;
         uint8 GetHighestStageCleared(Player* player) const;
         bool IsStageUnlocked(Player* player, uint8 stageId) const;
         void SaveProgress(Player* player, uint8 stageId);
@@ -464,6 +470,126 @@ namespace
         data << fullMessage;
         data << uint8(0);
         player->GetSession()->SendPacket(&data);
+    }
+
+    std::string GetTrialClassLabel(uint8 classId)
+    {
+        switch (classId)
+        {
+            case CLASS_WARRIOR: return "warrior";
+            case CLASS_PALADIN: return "paladin";
+            case CLASS_HUNTER: return "hunter";
+            case CLASS_ROGUE: return "rogue";
+            case CLASS_PRIEST: return "priest";
+            case CLASS_DEATH_KNIGHT: return "death knight";
+            case CLASS_SHAMAN: return "shaman";
+            case CLASS_MAGE: return "mage";
+            case CLASS_WARLOCK: return "warlock";
+            case CLASS_DRUID: return "druid";
+            default: return "adventurer";
+        }
+    }
+
+    std::string EscapeJson(std::string text)
+    {
+        std::string out;
+        out.reserve(text.size() + 8);
+        for (char ch : text)
+        {
+            switch (ch)
+            {
+                case '\\': out += "\\\\"; break;
+                case '"': out += "\\\""; break;
+                case '\n': out += "\\n"; break;
+                case '\r': out += "\\r"; break;
+                case '\t': out += "\\t"; break;
+                default: out += ch; break;
+            }
+        }
+        return out;
+    }
+
+    std::string ExtractJsonStringField(std::string const& body,
+        std::string const& field)
+    {
+        std::string key = "\"" + field + "\"";
+        std::size_t keyPos = body.find(key);
+        if (keyPos == std::string::npos)
+            return "";
+
+        std::size_t colonPos = body.find(':', keyPos + key.size());
+        if (colonPos == std::string::npos)
+            return "";
+
+        std::size_t quotePos = body.find('"', colonPos + 1);
+        if (quotePos == std::string::npos)
+            return "";
+
+        std::string value;
+        bool escaped = false;
+        for (std::size_t i = quotePos + 1; i < body.size(); ++i)
+        {
+            char ch = body[i];
+            if (escaped)
+            {
+                switch (ch)
+                {
+                    case 'n': value += '\n'; break;
+                    case 'r': value += '\r'; break;
+                    case 't': value += '\t'; break;
+                    case '\\': value += '\\'; break;
+                    case '"': value += '"'; break;
+                    default: value += ch; break;
+                }
+                escaped = false;
+                continue;
+            }
+
+            if (ch == '\\')
+            {
+                escaped = true;
+                continue;
+            }
+
+            if (ch == '"')
+                return value;
+
+            value += ch;
+        }
+
+        return "";
+    }
+
+    std::string BuildTrialTauntFallback(Player* player,
+        uint8 playerClass, std::string const& eventType)
+    {
+        std::string classLabel = GetTrialClassLabel(playerClass);
+        std::string playerName = player ? player->GetName() : "challenger";
+
+        if (eventType == "spawn")
+            return Acore::StringFormat(
+                "{} {}, your shadow is waiting for you.",
+                playerName, classLabel);
+        if (eventType == "combat_start")
+            return Acore::StringFormat(
+                "Fight like a true {}. It begins now.",
+                classLabel);
+        if (eventType == "victory")
+            return Acore::StringFormat(
+                "{} {}, this round belongs to you.",
+                playerName, classLabel);
+        if (eventType == "failure")
+            return Acore::StringFormat(
+                "Your {} instincts were sharp, but I was sharper today.",
+                classLabel);
+        if (eventType == "abandoned")
+            return Acore::StringFormat(
+                "{} {}, you stepped back. Next time, see it through.",
+                playerName, classLabel);
+
+        return Acore::StringFormat(
+            "{} {}, your shadow is always waiting.",
+            playerName, classLabel);
     }
 
     void SendTrialTimePayload(Player* player, ArenaSession const& session)
@@ -876,6 +1002,7 @@ void SoloArenaMgr::Update(uint32 diff)
                         session.EndedAt = 0;
                         LogEvent(player, session, "COMBAT_STARTED");
                         SendTrialTimePayload(player, session);
+                        SpeakTrialTaunt(player, session, "combat_start");
                         SendSystem(player,
                             "문이 열렸습니다. 그림자와의 결투가 시작됩니다.");
                     }
@@ -967,6 +1094,7 @@ void SoloArenaMgr::MarkVictory(ObjectGuid const& playerGuid)
     {
         LogEvent(player, itr->second, "VICTORY");
         SendTrialTimePayload(player, itr->second);
+        SpeakTrialTaunt(player, itr->second, "victory");
     }
 }
 
@@ -987,6 +1115,7 @@ void SoloArenaMgr::MarkFailure(ObjectGuid const& playerGuid)
     {
         LogEvent(player, itr->second, "FAILURE");
         SendTrialTimePayload(player, itr->second);
+        SpeakTrialTaunt(player, itr->second, "failure");
     }
 }
 
@@ -1008,6 +1137,7 @@ void SoloArenaMgr::MarkAbandoned(ObjectGuid const& playerGuid)
     {
         LogEvent(player, itr->second, "ABANDONED");
         SendTrialTimePayload(player, itr->second);
+        SpeakTrialTaunt(player, itr->second, "abandoned");
     }
 }
 
@@ -1095,6 +1225,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     Debug("Solo arena shadow spawned: player='{}' stage={} botGuid={}",
         player->GetName(), stage->StageId, summon->GetGUID().ToString());
     LogEvent(player, session, "SHADOW_SPAWNED");
+    SpeakTrialTaunt(player, session, "spawn");
     return true;
 }
 
@@ -1215,6 +1346,63 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
 
     LogRun(player, session);
     LogEvent(player, session, "RUN_FINISHED");
+}
+
+std::string SoloArenaMgr::RequestTrialTaunt(Player* player,
+    ArenaSession const& session, std::string const& eventType) const
+{
+    if (!player)
+        return "";
+
+    Pet* pet = player->GetPet();
+    std::string petName = pet ? pet->GetName() : "";
+    std::string payload = Acore::StringFormat(
+        "{{\"player_name\":\"{}\",\"player_class\":\"{}\","
+        "\"stage_id\":{},\"event_type\":\"{}\",\"has_pet\":{},"
+        "\"pet_name\":\"{}\"}}",
+        EscapeJson(player->GetName()),
+        EscapeJson(GetTrialClassLabel(player->getClass())),
+        uint32(session.StageId),
+        EscapeJson(eventType),
+        pet ? "true" : "false",
+        EscapeJson(petName));
+
+    httplib::Client client("127.0.0.1", 8000);
+    client.set_connection_timeout(0, 300000);
+    client.set_read_timeout(0, 500000);
+    client.set_write_timeout(0, 300000);
+
+    if (auto response = client.Post("/solo-arena/taunt", payload,
+            "application/json"))
+    {
+        if (response->status == 200)
+        {
+            std::string line = ExtractJsonStringField(response->body, "line");
+            if (!line.empty())
+                return line;
+        }
+    }
+
+    return BuildTrialTauntFallback(player, player->getClass(), eventType);
+}
+
+void SoloArenaMgr::SpeakTrialTaunt(Player* player, ArenaSession const& session,
+    std::string const& eventType) const
+{
+    std::string line = RequestTrialTaunt(player, session, eventType);
+    if (line.empty())
+        return;
+
+    if (!session.BotGuid.IsEmpty() && player)
+        if (Creature* bot = ObjectAccessor::GetCreature(*player,
+                session.BotGuid))
+            if (bot->IsAlive())
+            {
+                bot->Say(line, LANG_UNIVERSAL, player);
+                return;
+            }
+
+    SendSystem(player, line);
 }
 
 bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
@@ -2387,3 +2575,4 @@ void AddSoloArenaScripts()
     new npc_solo_arena_master();
     new npc_solo_arena_shadow();
 }
+
