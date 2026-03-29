@@ -565,6 +565,10 @@ local function CreateStageButton(index)
   button.meta = CreateLabel(button, "GameFontNormalSmall", 11, 0.72, 0.72, 0.72)
   button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -5)
   button.meta:SetWidth(190)
+  button.cleared = CreateLabel(button, "GameFontHighlightSmall", 11, 0.35, 1.0, 0.35)
+  button.cleared:SetPoint("TOPRIGHT", button, "TOPRIGHT", -10, -8)
+  button.cleared:SetText("성공")
+  button.cleared:Hide()
 
   button:SetScript("OnClick", function(self)
     SelectStage(self.index)
@@ -589,6 +593,15 @@ local function RefreshList()
       button:Show()
     else
       button:Hide()
+    end
+  end
+
+  for i, button in ipairs(Trial.buttons) do
+    local stage = Trial.state.stages[i]
+    if stage and stage.stageId <= Trial.state.highestCleared then
+      button.cleared:Show()
+    else
+      button.cleared:Hide()
     end
   end
 
