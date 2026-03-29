@@ -1396,11 +1396,20 @@ void SoloArenaMgr::SpeakTrialTaunt(Player* player, ArenaSession const& session,
     if (!session.BotGuid.IsEmpty() && player)
         if (Creature* bot = ObjectAccessor::GetCreature(*player,
                 session.BotGuid))
-            if (bot->IsAlive())
-            {
-                bot->Say(line, LANG_UNIVERSAL, player);
-                return;
-            }
+        {
+            bot->SetFacingToObject(player);
+            bot->Yell(line, LANG_UNIVERSAL);
+            return;
+        }
+
+    if (!session.PetGuid.IsEmpty() && player)
+        if (Creature* pet = ObjectAccessor::GetCreature(*player,
+                session.PetGuid))
+        {
+            pet->SetFacingToObject(player);
+            pet->Yell(line, LANG_UNIVERSAL);
+            return;
+        }
 
     SendSystem(player, line);
 }
@@ -1435,7 +1444,18 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
         {
             CopyShadowPetStats(shadowPet, playerPet);
             if (startCombat)
+            {
+                if (shadowPet->GetDistance(player) > 35.0f ||
+                    !shadowPet->IsWithinLOSInMap(player))
+                {
+                    float angle = player->GetOrientation() + float(M_PI) * 0.35f;
+                    float x = player->GetPositionX() + std::cos(angle) * 4.0f;
+                    float y = player->GetPositionY() + std::sin(angle) * 4.0f;
+                    shadowPet->NearTeleportTo(x, y, player->GetPositionZ(),
+                        shadowPet->GetAngle(player));
+                }
                 StartShadowCombat(player, shadowPet);
+            }
         }
 
         return true;
@@ -2145,10 +2165,31 @@ namespace
             SoloArenaMgr::Instance().UnregisterShadow(me->GetGUID());
         }
 
+        void EnterEvadeMode(EvadeReason why = EVADE_REASON_OTHER) override
+        {
+            InitializeProfile();
+
+            if (Player* target = GetShadowTarget())
+            {
+                me->SetReactState(REACT_AGGRESSIVE);
+                me->Attack(target, true);
+                me->GetMotionMaster()->Clear();
+                me->GetMotionMaster()->MoveChase(target,
+                    IsMeleeProfile() ? 1.5f : GetDesiredCombatRange());
+                return;
+            }
+
+            ScriptedAI::EnterEvadeMode(why);
+        }
+
         void UpdateAI(uint32 diff) override
         {
             if (!UpdateVictim())
+            {
+                if (Player* target = GetShadowTarget())
+                    AttackStart(target);
                 return;
+            }
 
             InitializeProfile();
             if (!_initialized)
@@ -2239,7 +2280,14 @@ namespace
 
             if (me->GetDistance(victim) > range)
             {
-                me->GetMotionMaster()->MoveChase(victim);
+                me->GetMotionMaster()->MoveChase(victim,
+                    IsMeleeProfile() ? 1.5f : GetDesiredCombatRange());
+                return;
+            }
+
+            if (!me->IsWithinLOSInMap(victim))
+            {
+                RepositionForCombat(victim, range);
                 return;
             }
 
@@ -2252,11 +2300,18 @@ namespace
             {
                 me->StopMoving();
                 me->SetFacingToObject(victim);
-                me->CastSpell(victim, spellId, false);
+                SpellCastResult result = me->CastSpell(victim, spellId, false);
+                if (result != SPELL_FAILED_SUCCESS)
+                    RepositionForCombat(victim, range);
                 return;
             }
 
-            me->CastSpell(victim, spellId, true);
+            SpellCastResult result = me->CastSpell(victim, spellId, false);
+            if (result != SPELL_FAILED_SUCCESS)
+            {
+                RepositionForCombat(victim, range);
+                return;
+            }
 
             if (IsInstantDamageProfile())
             {
@@ -2277,19 +2332,51 @@ namespace
             if (IsMeleeProfile())
             {
                 if (!me->IsWithinMeleeRange(victim))
-                    me->GetMotionMaster()->MoveChase(victim);
+                    me->GetMotionMaster()->MoveChase(victim, 1.5f);
                 return;
             }
 
             float desiredRange = GetDesiredCombatRange();
             if (distance < (desiredRange * 0.55f))
             {
-                me->GetMotionMaster()->MoveFleeing(victim);
+                RepositionForCombat(victim, desiredRange);
                 return;
             }
 
             if (distance > (desiredRange + 4.0f))
-                me->GetMotionMaster()->MoveChase(victim);
+                me->GetMotionMaster()->MoveChase(victim, desiredRange);
+        }
+
+        Player* GetShadowTarget() const
+        {
+            ShadowProfile const* profile =
+                SoloArenaMgr::Instance().GetShadowProfile(me->GetGUID());
+            if (!profile)
+                return nullptr;
+
+            Player* player = ObjectAccessor::FindConnectedPlayer(
+                profile->PlayerGuid);
+            if (!player || !player->IsAlive())
+                return nullptr;
+
+            return player;
+        }
+
+        void RepositionForCombat(Unit* victim, float preferredRange)
+        {
+            if (!victim)
+                return;
+
+            float range = IsMeleeProfile() ? 2.5f :
+                std::max(12.0f, preferredRange - 2.0f);
+            float angle = victim->GetAbsoluteAngle(me) + float(M_PI) * 0.5f;
+            float x = victim->GetPositionX() + std::cos(angle) * range;
+            float y = victim->GetPositionY() + std::sin(angle) * range;
+            float z = victim->GetPositionZ();
+
+            me->NearTeleportTo(x, y, z, me->GetAngle(victim));
+            me->GetMotionMaster()->MoveChase(victim,
+                IsMeleeProfile() ? 1.5f : GetDesiredCombatRange());
         }
 
         bool IsMeleeProfile() const
@@ -2575,4 +2662,3 @@ void AddSoloArenaScripts()
     new npc_solo_arena_master();
     new npc_solo_arena_shadow();
 }
-
