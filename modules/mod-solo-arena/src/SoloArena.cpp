@@ -242,6 +242,75 @@ namespace
             ai->AttackStart(player);
     }
 
+    void CopyShadowPetStats(Creature* shadowPet, Pet* playerPet)
+    {
+        if (!shadowPet || !playerPet)
+            return;
+
+        shadowPet->SetLevel(playerPet->GetLevel());
+        shadowPet->SetObjectScale(playerPet->GetObjectScale());
+        shadowPet->SetDisplayId(playerPet->GetDisplayId());
+        shadowPet->SetNativeDisplayId(playerPet->GetDisplayId());
+        shadowPet->setPowerType(playerPet->getPowerType());
+
+        shadowPet->SetMaxHealth(playerPet->GetMaxHealth());
+        shadowPet->SetHealth(std::min(playerPet->GetHealth(),
+            playerPet->GetMaxHealth()));
+
+        for (uint8 stat = STAT_STRENGTH; stat < MAX_STATS; ++stat)
+        {
+            float statValue = playerPet->GetStat(Stats(stat));
+            shadowPet->SetCreateStat(Stats(stat), statValue);
+            shadowPet->SetStat(Stats(stat), int32(statValue));
+        }
+
+        shadowPet->SetArmor(playerPet->GetArmor());
+        for (uint8 school = SPELL_SCHOOL_NORMAL;
+            school < MAX_SPELL_SCHOOL; ++school)
+            shadowPet->SetResistance(SpellSchools(school),
+                playerPet->GetResistance(SpellSchools(school)));
+
+        Powers const trackedPowers[] =
+        {
+            POWER_MANA,
+            POWER_RAGE,
+            POWER_FOCUS,
+            POWER_ENERGY,
+            POWER_HAPPINESS
+        };
+
+        for (Powers power : trackedPowers)
+        {
+            uint32 maxPower = playerPet->GetMaxPower(power);
+            shadowPet->SetMaxPower(power, maxPower);
+            shadowPet->SetPower(power,
+                std::min(playerPet->GetPower(power), maxPower));
+        }
+
+        shadowPet->SetAttackTime(BASE_ATTACK,
+            playerPet->GetAttackTime(BASE_ATTACK));
+        shadowPet->SetAttackTime(OFF_ATTACK,
+            playerPet->GetAttackTime(OFF_ATTACK));
+        shadowPet->SetAttackTime(RANGED_ATTACK,
+            playerPet->GetAttackTime(RANGED_ATTACK));
+
+        shadowPet->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE,
+            playerPet->GetWeaponDamageRange(BASE_ATTACK, MINDAMAGE));
+        shadowPet->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE,
+            playerPet->GetWeaponDamageRange(BASE_ATTACK, MAXDAMAGE));
+        shadowPet->SetBaseWeaponDamage(OFF_ATTACK, MINDAMAGE,
+            playerPet->GetWeaponDamageRange(OFF_ATTACK, MINDAMAGE));
+        shadowPet->SetBaseWeaponDamage(OFF_ATTACK, MAXDAMAGE,
+            playerPet->GetWeaponDamageRange(OFF_ATTACK, MAXDAMAGE));
+        shadowPet->SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE,
+            playerPet->GetWeaponDamageRange(RANGED_ATTACK, MINDAMAGE));
+        shadowPet->SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE,
+            playerPet->GetWeaponDamageRange(RANGED_ATTACK, MAXDAMAGE));
+        shadowPet->UpdateDamagePhysical(BASE_ATTACK);
+        shadowPet->UpdateDamagePhysical(OFF_ATTACK);
+        shadowPet->UpdateDamagePhysical(RANGED_ATTACK);
+    }
+
     class SoloArenaConfig
     {
     public:
@@ -1161,12 +1230,6 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
     Pet* playerPet = player->GetPet();
     if (!playerPet || !playerPet->IsAlive())
     {
-        if (!session.PetGuid.IsEmpty())
-        {
-            CleanupPet(session);
-            LogEvent(player, session, "SHADOW_PET_DESPAWNED");
-        }
-
         return true;
     }
 
@@ -1179,15 +1242,33 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
         session.PetEntry == petEntry &&
         session.PetDisplayId == petDisplayId)
     {
-        if (startCombat)
-            if (Creature* shadowPet = ObjectAccessor::GetCreature(*player,
-                    session.PetGuid))
+        if (Creature* shadowPet = ObjectAccessor::GetCreature(*player,
+                session.PetGuid))
+        {
+            CopyShadowPetStats(shadowPet, playerPet);
+            if (startCombat)
                 StartShadowCombat(player, shadowPet);
+        }
 
         return true;
     }
 
-    CleanupPet(session);
+    if (!session.PetGuid.IsEmpty())
+    {
+        if (Creature* shadowPet = ObjectAccessor::GetCreature(*player,
+                session.PetGuid))
+        {
+            if (!shadowPet->IsAlive())
+            {
+                CleanupPet(session);
+                LogEvent(player, session, "SHADOW_PET_DESPAWNED");
+            }
+            else
+                CleanupPet(session);
+        }
+        else
+            CleanupPet(session);
+    }
 
     TempSummon* shadowPet = player->SummonCreature(
         petEntry,
@@ -1206,17 +1287,10 @@ bool SoloArenaMgr::SyncShadowPet(Player* player, ArenaSession& session,
     shadowPet->SetDisplayId(petDisplayId);
     shadowPet->SetNativeDisplayId(petDisplayId);
     shadowPet->SetObjectScale(playerPet->GetObjectScale());
-    shadowPet->SetLevel(playerPet->GetLevel());
     shadowPet->SetFaction(14);
     shadowPet->SetWalk(false);
     shadowPet->SetReactState(startCombat ? REACT_AGGRESSIVE : REACT_PASSIVE);
-    shadowPet->SetAttackTime(BASE_ATTACK, stage->AttackTimeMs);
-
-    uint32 maxHealth = std::max<uint32>(1000u,
-        static_cast<uint32>(playerPet->GetMaxHealth() *
-            stage->HealthMultiplier));
-    shadowPet->SetMaxHealth(maxHealth);
-    shadowPet->SetHealth(maxHealth);
+    CopyShadowPetStats(shadowPet, playerPet);
     shadowPet->StopMoving();
 
     session.PetGuid = shadowPet->GetGUID();
