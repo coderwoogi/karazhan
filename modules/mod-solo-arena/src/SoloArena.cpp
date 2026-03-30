@@ -70,7 +70,11 @@ namespace
         EVENT_PRIMARY = 1,
         EVENT_SECONDARY = 2,
         EVENT_TERTIARY = 3,
-        EVENT_DEFENSIVE = 4
+        EVENT_DEFENSIVE = 4,
+        EVENT_BURST = 5,
+        EVENT_UTILITY = 6,
+        EVENT_CC = 7,
+        EVENT_AOE = 8
     };
 
     struct StageConfig
@@ -181,6 +185,28 @@ namespace
         uint32 TertiaryCooldownMs = 7000;
         uint32 DefensiveCooldownMs = 12000;
         float DefensiveHealthPct = 0.45f;
+    };
+
+    struct TacticalSpell
+    {
+        uint32 SpellId = 0;
+        SpellSchoolMask School = SPELL_SCHOOL_MASK_NORMAL;
+        float DamageFactor = 1.0f;
+        float Range = 20.0f;
+        uint32 CooldownMs = 8000;
+        bool SelfCast = false;
+        float SelfHealthPct = 1.0f;
+        float TargetHealthPct = 1.0f;
+        bool RequiresCastingTarget = false;
+        bool RequiresNearbySecondary = false;
+    };
+
+    struct TacticalPackage
+    {
+        TacticalSpell Burst;
+        TacticalSpell Utility;
+        TacticalSpell CrowdControl;
+        TacticalSpell Area;
     };
 
     Unit* SelectShadowPetTarget(Player* player)
@@ -575,6 +601,7 @@ namespace
     }
 
     SpellPackage GetSpellPackage(uint8 playerClass, uint32 activeSpec);
+    TacticalPackage GetTacticalPackage(uint8 playerClass, uint32 activeSpec);
     uint32 ComputeShadowSpellDamage(Creature* me,
         ShadowProfile const& profile,
         float factor);
@@ -2465,6 +2492,158 @@ namespace
         }
     }
 
+    TacticalPackage GetTacticalPackage(uint8 playerClass, uint32 activeSpec)
+    {
+        TacticalPackage package;
+
+        switch (playerClass)
+        {
+            case CLASS_WARRIOR:
+                package.Burst = { 12292, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 24000, true, 1.0f, 1.0f, false, false };
+                package.Utility = { 6552, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    5.0f, 12000, false, 1.0f, 1.0f, true, false };
+                package.CrowdControl = { 5246, SPELL_SCHOOL_MASK_NORMAL,
+                    0.0f, 8.0f, 18000, false, 1.0f, 1.0f, false, false };
+                package.Area = { 1680, SPELL_SCHOOL_MASK_NORMAL, 1.05f,
+                    8.0f, 9000, true, 1.0f, 1.0f, false, true };
+                return package;
+            case CLASS_PALADIN:
+                package.Burst = { 31884, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                    0.0f, 30000, true, 1.0f, 1.0f, false, false };
+                package.Utility = { 20066, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                    20.0f, 16000, false, 1.0f, 1.0f, false, false };
+                package.CrowdControl = { 10308, SPELL_SCHOOL_MASK_HOLY,
+                    0.0f, 10.0f, 18000, false, 1.0f, 1.0f, false, false };
+                package.Area = { 48819, SPELL_SCHOOL_MASK_HOLY, 0.95f,
+                    8.0f, 10000, true, 1.0f, 1.0f, false, true };
+                return package;
+            case CLASS_HUNTER:
+                package.Burst = { 3045, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 26000, true, 1.0f, 1.0f, false, false };
+                package.Utility = { 34490, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    30.0f, 14000, false, 1.0f, 1.0f, true, false };
+                package.CrowdControl = { 19503, SPELL_SCHOOL_MASK_NORMAL,
+                    0.0f, 30.0f, 18000, false, 1.0f, 1.0f, false, false };
+                package.Area = { 58434, SPELL_SCHOOL_MASK_NORMAL, 1.00f,
+                    35.0f, 12000, false, 1.0f, 1.0f, false, true };
+                return package;
+            case CLASS_ROGUE:
+                package.Burst = { 13750, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 25000, true, 1.0f, 1.0f, false, false };
+                package.Utility = { 1766, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    5.0f, 10000, false, 1.0f, 1.0f, true, false };
+                package.CrowdControl = { 2094, SPELL_SCHOOL_MASK_NORMAL,
+                    0.0f, 10.0f, 18000, false, 1.0f, 1.0f, false, false };
+                package.Area = { 51723, SPELL_SCHOOL_MASK_NORMAL, 1.00f,
+                    8.0f, 11000, true, 1.0f, 1.0f, false, true };
+                return package;
+            case CLASS_PRIEST:
+                package.Utility = { 15487, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                    30.0f, 14000, false, 1.0f, 1.0f, true, false };
+                package.CrowdControl = { 10890, SPELL_SCHOOL_MASK_SHADOW,
+                    0.0f, 8.0f, 18000, true, 1.0f, 1.0f, false, true };
+                if (activeSpec == TALENT_TREE_PRIEST_SHADOW)
+                {
+                    package.Burst = { 34433, SPELL_SCHOOL_MASK_SHADOW,
+                        0.0f, 30.0f, 24000, false, 1.0f, 0.60f, false,
+                        false };
+                    package.Area = { 53022, SPELL_SCHOOL_MASK_SHADOW, 0.95f,
+                        30.0f, 12000, false, 1.0f, 1.0f, false, true };
+                }
+                else
+                {
+                    package.Burst = { 10060, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                        0.0f, 26000, true, 1.0f, 1.0f, false, false };
+                    package.Area = { 48078, SPELL_SCHOOL_MASK_HOLY, 0.85f,
+                        10.0f, 11000, true, 1.0f, 1.0f, false, true };
+                }
+                return package;
+            case CLASS_DEATH_KNIGHT:
+                package.Burst = { 55268, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 26000, true, 0.80f, 1.0f, false, false };
+                package.Utility = { 47528, SPELL_SCHOOL_MASK_FROST, 0.0f,
+                    5.0f, 12000, false, 1.0f, 1.0f, true, false };
+                package.CrowdControl = { 47476, SPELL_SCHOOL_MASK_SHADOW,
+                    0.0f, 20.0f, 16000, false, 1.0f, 1.0f, true, false };
+                package.Area = { 49938, SPELL_SCHOOL_MASK_SHADOW, 1.00f,
+                    20.0f, 12000, false, 1.0f, 1.0f, false, true };
+                return package;
+            case CLASS_SHAMAN:
+                package.Burst = { 2825, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                    0.0f, 28000, true, 1.0f, 1.0f, false, false };
+                package.Utility = { 57994, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                    25.0f, 10000, false, 1.0f, 1.0f, true, false };
+                package.CrowdControl = { 51514, SPELL_SCHOOL_MASK_NATURE,
+                    0.0f, 30.0f, 18000, false, 1.0f, 1.0f, false, false };
+                package.Area = { 49271, SPELL_SCHOOL_MASK_NATURE, 1.00f,
+                    30.0f, 11000, false, 1.0f, 1.0f, false, true };
+                return package;
+            case CLASS_MAGE:
+                if (activeSpec == TALENT_TREE_MAGE_FIRE)
+                    package.Burst = { 11129, SPELL_SCHOOL_MASK_FIRE, 0.0f,
+                        0.0f, 26000, true, 1.0f, 1.0f, false, false };
+                else if (activeSpec == TALENT_TREE_MAGE_ARCANE)
+                    package.Burst = { 12042, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
+                        0.0f, 26000, true, 1.0f, 1.0f, false, false };
+                else
+                    package.Burst = { 12472, SPELL_SCHOOL_MASK_FROST, 0.0f,
+                        0.0f, 26000, true, 1.0f, 1.0f, false, false };
+                package.Utility = { 2139, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
+                    30.0f, 12000, false, 1.0f, 1.0f, true, false };
+                package.CrowdControl = { 42917, SPELL_SCHOOL_MASK_FROST,
+                    0.0f, 10.0f, 18000, false, 1.0f, 1.0f, false, false };
+                package.Area = { 42926, SPELL_SCHOOL_MASK_FIRE, 1.05f,
+                    30.0f, 12000, false, 1.0f, 1.0f, false, true };
+                return package;
+            case CLASS_WARLOCK:
+                package.Burst = { 17962, SPELL_SCHOOL_MASK_FIRE, 1.20f,
+                    20.0f, 12000, false, 1.0f, 0.65f, false, false };
+                package.Utility = { 47860, SPELL_SCHOOL_MASK_SHADOW, 0.90f,
+                    20.0f, 16000, false, 1.0f, 1.0f, false, false };
+                package.CrowdControl = { 6215, SPELL_SCHOOL_MASK_SHADOW,
+                    0.0f, 30.0f, 18000, false, 1.0f, 1.0f, false, false };
+                package.Area = { 47820, SPELL_SCHOOL_MASK_FIRE, 0.95f,
+                    30.0f, 12000, false, 1.0f, 1.0f, false, true };
+                return package;
+            case CLASS_DRUID:
+                if (activeSpec == TALENT_TREE_DRUID_FERAL_COMBAT)
+                {
+                    package.Burst = { 17116, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                        0.0f, 22000, true, 1.0f, 1.0f, false, false };
+                    package.Utility = { 5211, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                        5.0f, 14000, false, 1.0f, 1.0f, false, false };
+                    package.CrowdControl = { 33786, SPELL_SCHOOL_MASK_NATURE,
+                        0.0f, 20.0f, 18000, false, 1.0f, 1.0f, false, false };
+                    package.Area = { 62078, SPELL_SCHOOL_MASK_NORMAL, 1.00f,
+                        8.0f, 11000, true, 1.0f, 1.0f, false, true };
+                }
+                else
+                {
+                    package.Burst = { 29166, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                        0.0f, 26000, true, 1.0f, 1.0f, false, false };
+                    package.Utility = { 16979, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                        30.0f, 12000, false, 1.0f, 1.0f, true, false };
+                    package.CrowdControl = { 33786, SPELL_SCHOOL_MASK_NATURE,
+                        20.0f, 20.0f, 18000, false, 1.0f, 1.0f, false,
+                        false };
+                    package.Area = { 48467, SPELL_SCHOOL_MASK_ARCANE, 1.00f,
+                        30.0f, 12000, false, 1.0f, 1.0f, false, true };
+                }
+                return package;
+            default:
+                package.Burst = { 48135, SPELL_SCHOOL_MASK_HOLY, 1.00f,
+                    30.0f, 10000, false, 1.0f, 0.60f, false, false };
+                package.Utility = { 15487, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                    30.0f, 14000, false, 1.0f, 1.0f, true, false };
+                package.CrowdControl = { 10890, SPELL_SCHOOL_MASK_SHADOW,
+                    0.0f, 8.0f, 18000, true, 1.0f, 1.0f, false, true };
+                package.Area = { 48078, SPELL_SCHOOL_MASK_HOLY, 0.80f,
+                    10.0f, 12000, true, 1.0f, 1.0f, false, true };
+                return package;
+        }
+    }
+
     uint32 ComputeShadowSpellDamage(Creature* me,
         ShadowProfile const& profile,
         float factor)
@@ -2568,6 +2747,22 @@ namespace
             {
                 events.ScheduleEvent(EVENT_DEFENSIVE,
                     Milliseconds(_package.DefensiveCooldownMs));
+                events.ScheduleEvent(EVENT_CC,
+                    Milliseconds(_tactical.CrowdControl.CooldownMs));
+            }
+
+            if (_profile.StageId >= 2)
+            {
+                events.ScheduleEvent(EVENT_BURST,
+                    Milliseconds(_tactical.Burst.CooldownMs));
+                events.ScheduleEvent(EVENT_UTILITY,
+                    Milliseconds(_tactical.Utility.CooldownMs / 2));
+            }
+
+            if (_profile.StageId >= 4)
+            {
+                events.ScheduleEvent(EVENT_AOE,
+                    Milliseconds(_tactical.Area.CooldownMs));
             }
         }
 
@@ -2694,6 +2889,26 @@ namespace
                         events.ScheduleEvent(EVENT_DEFENSIVE,
                             Milliseconds(_package.DefensiveCooldownMs));
                         break;
+                    case EVENT_BURST:
+                        ExecuteTacticalSpell(_tactical.Burst);
+                        events.ScheduleEvent(EVENT_BURST,
+                            Milliseconds(_tactical.Burst.CooldownMs));
+                        break;
+                    case EVENT_UTILITY:
+                        ExecuteTacticalSpell(_tactical.Utility);
+                        events.ScheduleEvent(EVENT_UTILITY,
+                            Milliseconds(_tactical.Utility.CooldownMs));
+                        break;
+                    case EVENT_CC:
+                        ExecuteTacticalSpell(_tactical.CrowdControl);
+                        events.ScheduleEvent(EVENT_CC,
+                            Milliseconds(_tactical.CrowdControl.CooldownMs));
+                        break;
+                    case EVENT_AOE:
+                        ExecuteTacticalSpell(_tactical.Area);
+                        events.ScheduleEvent(EVENT_AOE,
+                            Milliseconds(_tactical.Area.CooldownMs));
+                        break;
                 }
             }
 
@@ -2712,6 +2927,8 @@ namespace
             _profile = *profile;
             _package = GetSpellPackage(_profile.PlayerClass,
                 _profile.ActiveSpec);
+            _tactical = GetTacticalPackage(_profile.PlayerClass,
+                _profile.ActiveSpec);
             float cooldownScale = std::clamp(_profile.CastSpeedRate,
                 0.55f, 1.25f);
             _package.PrimaryCooldownMs = std::max<uint32>(900u,
@@ -2720,6 +2937,15 @@ namespace
                 uint32(float(_package.SecondaryCooldownMs) * cooldownScale));
             _package.TertiaryCooldownMs = std::max<uint32>(1500u,
                 uint32(float(_package.TertiaryCooldownMs) * cooldownScale));
+            _tactical.Burst.CooldownMs = std::max<uint32>(2500u,
+                uint32(float(_tactical.Burst.CooldownMs) * cooldownScale));
+            _tactical.Utility.CooldownMs = std::max<uint32>(2500u,
+                uint32(float(_tactical.Utility.CooldownMs) * cooldownScale));
+            _tactical.CrowdControl.CooldownMs = std::max<uint32>(3500u,
+                uint32(float(_tactical.CrowdControl.CooldownMs) *
+                cooldownScale));
+            _tactical.Area.CooldownMs = std::max<uint32>(3500u,
+                uint32(float(_tactical.Area.CooldownMs) * cooldownScale));
             _initialized = true;
         }
 
@@ -2784,6 +3010,40 @@ namespace
                 Unit::DealDamage(me, victim, damage, nullptr, DIRECT_DAMAGE,
                     schoolMask, spellInfo, false);
             }
+        }
+
+        void ExecuteTacticalSpell(TacticalSpell const& spell)
+        {
+            if (!spell.SpellId)
+                return;
+
+            if (spell.SelfCast)
+            {
+                if (me->GetHealthPct() > (spell.SelfHealthPct * 100.0f))
+                    return;
+
+                me->CastSpell(me, spell.SpellId, true);
+                return;
+            }
+
+            Unit* victim = me->GetVictim();
+            if (!victim || !victim->IsAlive())
+                return;
+
+            if (spell.TargetHealthPct < 1.0f &&
+                victim->GetHealthPct() > (spell.TargetHealthPct * 100.0f))
+                return;
+
+            if (spell.RequiresCastingTarget &&
+                !victim->HasUnitState(UNIT_STATE_CASTING))
+                return;
+
+            if (spell.RequiresNearbySecondary &&
+                !HasNearbySecondaryTarget(victim, spell.Range))
+                return;
+
+            ExecuteSpell(spell.SpellId, spell.School,
+                spell.DamageFactor, spell.Range, false);
         }
 
         void MaintainCombatSpacing()
@@ -2864,6 +3124,28 @@ namespace
             me->GetMotionMaster()->MovePoint(2, x, y, z);
         }
 
+        bool HasNearbySecondaryTarget(Unit* primaryVictim, float radius) const
+        {
+            ShadowProfile const* profile =
+                SoloArenaMgr::Instance().GetShadowProfile(me->GetGUID());
+            if (!profile)
+                return false;
+
+            Player* player = ObjectAccessor::FindConnectedPlayer(
+                profile->PlayerGuid);
+            if (!player)
+                return false;
+
+            if (Pet* pet = player->GetPet())
+            {
+                if (pet->IsAlive() && pet != primaryVictim &&
+                    me->GetDistance(pet) <= std::max(10.0f, radius))
+                    return true;
+            }
+
+            return false;
+        }
+
         bool IsMeleeProfile() const
         {
             switch (_profile.PlayerClass)
@@ -2923,6 +3205,7 @@ namespace
 
         ShadowProfile _profile;
         SpellPackage _package;
+        TacticalPackage _tactical;
         bool _initialized = false;
         uint32 _petInterceptMs = 0;
         uint32 _petInterceptCooldownMs = 0;
