@@ -39,6 +39,7 @@ namespace
     constexpr BattlegroundTypeId DEFAULT_ARENA_BG_TYPE = BATTLEGROUND_RL;
     constexpr uint32 ACTION_STAGE_BASE = 100;
     constexpr uint32 ACTION_ABANDON = 500;
+    constexpr uint32 SOLO_ARENA_PREPARATION_MS = 20000;
     constexpr uint32 DEFAULT_COMBAT_LIMIT_MS = 180000;
 
     enum class ArenaResult : uint8
@@ -983,7 +984,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     session.ReturnO = player->GetOrientation();
     session.StartedAt = std::time(nullptr);
     session.PreparationEndsAt = session.StartedAt +
-        (stage->PreparationMs / 1000);
+        (SOLO_ARENA_PREPARATION_MS / 1000);
 
     _sessions[player->GetGUID().GetCounter()] = session;
     _managedArenaInstances.insert(session.ArenaInstanceId);
@@ -1010,13 +1011,14 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     {
         ArenaSession& activeSession = _sessions[player->GetGUID().GetCounter()];
         activeSession.PreparationEndsAt = std::time(nullptr) +
-            std::max<int32>(0, playerBg->GetStartDelayTime()) / 1000;
+            (SOLO_ARENA_PREPARATION_MS / 1000);
         SendTrialTimePayload(player, activeSession);
     }
     else
     {
         ArenaSession& activeSession = _sessions[player->GetGUID().GetCounter()];
-        activeSession.PreparationEndsAt = std::time(nullptr) + 60;
+        activeSession.PreparationEndsAt = std::time(nullptr) +
+            (SOLO_ARENA_PREPARATION_MS / 1000);
         SendTrialTimePayload(player, activeSession);
     }
 
@@ -1164,6 +1166,18 @@ void SoloArenaMgr::Update(uint32 diff)
 
                 if (Battleground* bg = player->GetBattleground())
                 {
+                    if (bg->GetStatus() == STATUS_WAIT_JOIN &&
+                        bg->GetStartDelayTime() > int32(SOLO_ARENA_PREPARATION_MS))
+                    {
+                        bg->SetStartDelayTime(SOLO_ARENA_PREPARATION_MS);
+                    }
+
+                    if (bg->GetStatus() == STATUS_WAIT_JOIN)
+                    {
+                        session.PreparationEndsAt = std::time(nullptr) +
+                            std::max<int32>(0, bg->GetStartDelayTime()) / 1000;
+                    }
+
                     if (bg->GetStatus() == STATUS_IN_PROGRESS)
                     {
                         if (Creature* bot = ObjectAccessor::GetCreature(
