@@ -1418,12 +1418,16 @@ void SoloArenaMgr::MarkFailure(ObjectGuid const& playerGuid)
     if (itr == _sessions.end())
         return;
 
+    bool immediateFinish = false;
+    if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
+        immediateFinish = !player->IsAlive();
+
     itr->second.Result = ArenaResult::Failure;
     itr->second.State = SessionState::PendingFinish;
     itr->second.EndedAt = std::time(nullptr);
     itr->second.FailedAt = itr->second.EndedAt;
     itr->second.CombatEndsAt = itr->second.EndedAt;
-    itr->second.FinishDelayMs = 3000;
+    itr->second.FinishDelayMs = immediateFinish ? 1 : 3000;
 
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
     {
