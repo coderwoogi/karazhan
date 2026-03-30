@@ -2002,21 +2002,21 @@ void SoloArenaMgr::LoadDefaultStages()
     StageConfig stage2 = stage1;
     stage2.StageId = 2;
     stage2.Name = "그림자 시련 2단계";
-    stage2.HealthMultiplier = 1.35f;
-    stage2.DamageMultiplier = 1.25f;
-    stage2.AttackTimeMs = 1600;
-    stage2.SpellIntervalMs = 3000;
-    stage2.MoveSpeedRate = 1.10f;
+    stage2.HealthMultiplier = 1.10f;
+    stage2.DamageMultiplier = 1.10f;
+    stage2.AttackTimeMs = 1900;
+    stage2.SpellIntervalMs = 4200;
+    stage2.MoveSpeedRate = 1.00f;
     _stages[stage2.StageId] = stage2;
 
     StageConfig stage3 = stage1;
     stage3.StageId = 3;
     stage3.Name = "그림자 시련 3단계";
-    stage3.HealthMultiplier = 1.75f;
-    stage3.DamageMultiplier = 1.55f;
-    stage3.AttackTimeMs = 1300;
-    stage3.SpellIntervalMs = 2100;
-    stage3.MoveSpeedRate = 1.20f;
+    stage3.HealthMultiplier = 1.20f;
+    stage3.DamageMultiplier = 1.20f;
+    stage3.AttackTimeMs = 1900;
+    stage3.SpellIntervalMs = 4200;
+    stage3.MoveSpeedRate = 1.00f;
     _stages[stage3.StageId] = stage3;
 }
 
@@ -2396,10 +2396,18 @@ namespace
                 Milliseconds(_package.PrimaryCooldownMs));
             events.ScheduleEvent(EVENT_SECONDARY,
                 Milliseconds(_profile.SpellIntervalMs / 2));
-            events.ScheduleEvent(EVENT_TERTIARY,
-                Milliseconds(_package.TertiaryCooldownMs));
-            events.ScheduleEvent(EVENT_DEFENSIVE,
-                Milliseconds(_package.DefensiveCooldownMs));
+
+            if (_profile.StageId >= 2)
+            {
+                events.ScheduleEvent(EVENT_TERTIARY,
+                    Milliseconds(_package.TertiaryCooldownMs));
+            }
+
+            if (_profile.StageId >= 3)
+            {
+                events.ScheduleEvent(EVENT_DEFENSIVE,
+                    Milliseconds(_package.DefensiveCooldownMs));
+            }
         }
 
         void KilledUnit(Unit* victim) override
