@@ -1019,26 +1019,26 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
 
     if (HasSession(player->GetGUID()))
     {
-        SendSystem(player, "?대? 吏꾪뻾 以묒씤 ?쒕젴???덉뒿?덈떎.");
+        SendSystem(player, "이미 진행 중인 시련이 있습니다.");
         return false;
     }
 
     StageConfig const* stage = GetStage(stageId);
     if (!stage || !stage->Enabled)
     {
-        SendSystem(player, "?대떦 ?④퀎???꾩쭅 ?ъ슜?????놁뒿?덈떎.");
+        SendSystem(player, "해당 단계는 아직 사용할 수 없습니다.");
         return false;
     }
 
     if (player->IsInCombat())
     {
-        SendSystem(player, "?꾪닾 以묒뿉???쒕젴???쒖옉?????놁뒿?덈떎.");
+        SendSystem(player, "전투 중에는 시련을 시작할 수 없습니다.");
         return false;
     }
 
     if (!IsStageUnlocked(player, stageId))
     {
-        SendSystem(player, "?댁쟾 ?④퀎瑜?癒쇱? ?대━?댄빐???⑸땲??");
+        SendSystem(player, "이전 단계를 먼저 클리어해야 합니다.");
         return false;
     }
 
@@ -1046,7 +1046,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         sBattlegroundMgr->GetBattlegroundTemplate(BATTLEGROUND_AA);
     if (!arenaTemplate)
     {
-        SendSystem(player, "?붾줈 ?ш린???쒗뵆由우쓣 李얠? 紐삵뻽?듬땲??");
+        SendSystem(player, "솔로 투기장 템플릿을 찾지 못했습니다.");
         return false;
     }
 
@@ -1054,7 +1054,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         arenaTemplate->GetMapId(), arenaTemplate->GetBracketId());
     if (!bracketEntry)
     {
-        SendSystem(player, "?붾줈 ?ш린???깃툒 ?뺣낫瑜?李얠? 紐삵뻽?듬땲??");
+        SendSystem(player, "솔로 투기장 등급 정보를 찾지 못했습니다.");
         return false;
     }
 
@@ -1062,7 +1062,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         DEFAULT_ARENA_BG_TYPE, bracketEntry, ARENA_TYPE_2v2, false);
     if (!arena)
     {
-        SendSystem(player, "?ш린???몄뒪?댁뒪瑜?留뚮뱾吏 紐삵뻽?듬땲??");
+        SendSystem(player, "투기장 인스턴스를 만들지 못했습니다.");
         return false;
     }
 
@@ -1131,12 +1131,12 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         _managedArenaInstances.erase(session.ArenaInstanceId);
         player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
             PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
-        SendSystem(player, "?ш린?μ쑝濡??대룞?섏? 紐삵뻽?듬땲??");
+        SendSystem(player, "투기장으로 이동하지 못했습니다.");
         return false;
     }
 
     SendSystem(player, Acore::StringFormat(
-        "{} ?쒖옉. ?몃뜑?쒗떚 ?ш린?μ쑝濡??대룞?⑸땲??", stage->Name));
+        "{} 시작. 언더시티 투기장으로 이동합니다.", stage->Name));
     LogEvent(player, _sessions[player->GetGUID().GetCounter()],
         "PLAYER_TELEPORTED");
     Debug("Solo arena started: player='{}' stage={} map={} instance={}",
@@ -1291,7 +1291,7 @@ void SoloArenaMgr::Update(uint32 diff)
                         SendTrialTimePayload(player, session);
                         SpeakTrialTaunt(player, session, "combat_start");
                         SendSystem(player,
-                            "臾몄씠 ?대졇?듬땲?? 洹몃┝?먯???寃고닾媛 ?쒖옉?⑸땲??");
+                            "문이 열렸습니다. 그림자와의 결투가 시작됩니다.");
                     }
                 }
                 break;
@@ -1507,7 +1507,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     }
 
     SendSystem(player,
-        "洹몃┝?먭? 紐⑥뒿???쒕윭?덉뒿?덈떎. 臾몄씠 ?대━硫??꾪닾媛 ?쒖옉?⑸땲??");
+        "그림자가 모습을 드러냈습니다. 문이 열리면 전투가 시작됩니다.");
     Debug("Solo arena shadow spawned: player='{}' stage={} botGuid={}",
         player->GetName(), stage->StageId, summon->GetGUID().ToString());
     LogEvent(player, session, "SHADOW_SPAWNED");
@@ -1632,16 +1632,16 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
             SaveProgress(player, session.StageId);
             GrantStageRewards(player, session);
             SendSystem(player, Acore::StringFormat(
-                "{} ?대━?? ?ㅼ쓬 ?④퀎媛 ?대졇?듬땲??",
+                "{} 클리어. 다음 단계가 열렸습니다.",
                 GetStageName(session.StageId)));
             break;
         case ArenaResult::Failure:
             SendSystem(player, Acore::StringFormat(
-                "{} ?ㅽ뙣. ?ㅼ떆 ?꾩쟾?????덉뒿?덈떎.",
+                "{} 실패. 다시 도전할 수 있습니다.",
                 GetStageName(session.StageId)));
             break;
         case ArenaResult::Abandoned:
-            SendSystem(player, "?쒕젴??醫낅즺?덉뒿?덈떎.");
+            SendSystem(player, "시련을 종료했습니다.");
             break;
         default:
             break;
@@ -2067,7 +2067,7 @@ std::string SoloArenaMgr::GetStageName(uint8 stageId) const
     if (stage)
         return stage->Name;
 
-    return Acore::StringFormat("?쒕젴 {}?④퀎", stageId);
+    return Acore::StringFormat("시련 {}단계", stageId);
 }
 
 std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
@@ -2492,7 +2492,7 @@ namespace
             if (!SoloArenaConfig::Instance().IsEnabled())
             {
                 AddGossipItemFor(player, GOSSIP_ICON_CHAT,
-                    "吏湲덉? ?쒕젴???쒖옉?????놁뒿?덈떎.",
+                    "지금은 시련을 시작할 수 없습니다.",
                     GOSSIP_SENDER_MAIN, 0);
                 SendGossipMenuFor(player, DEFAULT_GOSSIP_MESSAGE,
                     creature->GetGUID());
@@ -3133,7 +3133,7 @@ namespace
 
             if (player->GetSession())
                 ChatHandler(player->GetSession()).PSendSysMessage("{}",
-                    "?쒕젴 ?덉뿉?쒕뒗 ?댁쨷?뱀꽦??蹂寃쏀븷 ???놁뒿?덈떎.");
+                    "시련 안에서는 이중특성을 변경할 수 없습니다.");
             return false;
         }
     };
