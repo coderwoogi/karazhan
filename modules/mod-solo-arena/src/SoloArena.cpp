@@ -25,6 +25,7 @@
 #include "../../mod-instance-bonus-mission/src/thirdparty/httplib.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cstdlib>
 #include <ctime>
@@ -129,6 +130,29 @@ namespace
         uint8 StageId = 0;
         uint8 PlayerClass = CLASS_WARRIOR;
         uint32 ActiveSpec = 0;
+        std::string PlayerName;
+        uint8 PlayerRace = RACE_HUMAN;
+        uint8 PlayerGender = GENDER_MALE;
+        uint8 SheathState = 1;
+        uint8 Level = 1;
+        Powers PowerType = POWER_MANA;
+        uint32 MaxHealth = 1;
+        uint32 MaxPower = 0;
+        float ObjectScale = 1.0f;
+        float RunSpeedRate = 1.0f;
+        float CastSpeedRate = 1.0f;
+        float AverageItemLevel = 1.0f;
+        int32 Armor = 0;
+        int32 SpellPowerBonus = 0;
+        std::array<int32, MAX_STATS> Stats = {};
+        std::array<int32, MAX_SPELL_SCHOOL> Resistances = {};
+        std::array<uint32, MAX_ATTACK> AttackTimeMs = {};
+        std::array<float, MAX_ATTACK> WeaponMinDamage = {};
+        std::array<float, MAX_ATTACK> WeaponMaxDamage = {};
+        uint32 MainHandEntry = 0;
+        uint32 OffHandEntry = 0;
+        uint32 RangedEntry = 0;
+        bool CanDualWield = false;
         float DamageMultiplier = 1.0f;
         uint32 SpellIntervalMs = 4000;
     };
@@ -181,6 +205,99 @@ namespace
             return fallbackZ;
 
         return groundZ + 0.15f;
+    }
+
+    int32 CaptureShadowSpellPower(Player* player)
+    {
+        if (!player)
+            return 0;
+
+        int32 best = 0;
+        for (uint32 school = SPELL_SCHOOL_HOLY;
+             school < MAX_SPELL_SCHOOL; ++school)
+        {
+            best = std::max(best,
+                player->SpellBaseDamageBonusDone(
+                    SpellSchoolMask(1u << school)));
+        }
+
+        return best;
+    }
+
+    ShadowProfile CaptureShadowProfile(Player* player, StageConfig const& stage)
+    {
+        ShadowProfile profile;
+        if (!player)
+            return profile;
+
+        profile.PlayerGuid = player->GetGUID();
+        profile.StageId = stage.StageId;
+        profile.PlayerClass = player->getClass();
+        profile.ActiveSpec = player->GetSpec(player->GetActiveSpec());
+        profile.PlayerName = player->GetName();
+        profile.PlayerRace = player->getRace();
+        profile.PlayerGender = player->getGender();
+        profile.SheathState = player->GetSheath();
+        profile.Level = player->GetLevel();
+        profile.PowerType = player->getPowerType();
+        profile.MaxHealth = std::max<uint32>(1u, player->GetMaxHealth());
+        profile.MaxPower = player->GetMaxPower(profile.PowerType);
+        profile.ObjectScale = player->GetObjectScale();
+        profile.RunSpeedRate = player->GetSpeedRate(MOVE_RUN);
+        profile.CastSpeedRate = player->GetFloatValue(UNIT_MOD_CAST_SPEED);
+        profile.AverageItemLevel = std::max<float>(1.0f,
+            player->GetAverageItemLevel());
+        profile.Armor = int32(player->GetArmor());
+        profile.SpellPowerBonus = CaptureShadowSpellPower(player);
+        profile.DamageMultiplier = stage.DamageMultiplier;
+        profile.SpellIntervalMs = stage.SpellIntervalMs;
+
+        for (uint32 stat = STAT_STRENGTH; stat < MAX_STATS; ++stat)
+            profile.Stats[stat] = int32(player->GetStat(Stats(stat)));
+
+        for (uint32 school = SPELL_SCHOOL_NORMAL;
+             school < MAX_SPELL_SCHOOL; ++school)
+        {
+            profile.Resistances[school] =
+                int32(player->GetResistance(SpellSchools(school)));
+        }
+
+        for (uint32 attack = BASE_ATTACK; attack < MAX_ATTACK; ++attack)
+        {
+            profile.AttackTimeMs[attack] =
+                player->GetAttackTime(WeaponAttackType(attack));
+            profile.WeaponMinDamage[attack] =
+                player->GetWeaponDamageRange(
+                    WeaponAttackType(attack), MINDAMAGE);
+            profile.WeaponMaxDamage[attack] =
+                player->GetWeaponDamageRange(
+                    WeaponAttackType(attack), MAXDAMAGE);
+        }
+
+        if (Item* mainHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
+                EQUIPMENT_SLOT_MAINHAND))
+        {
+            profile.MainHandEntry = mainHand->GetEntry();
+        }
+
+        if (Item* offHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
+                EQUIPMENT_SLOT_OFFHAND))
+        {
+            profile.OffHandEntry = offHand->GetEntry();
+            if (offHand->GetTemplate() &&
+                offHand->GetTemplate()->Class == ITEM_CLASS_WEAPON)
+            {
+                profile.CanDualWield = true;
+            }
+        }
+
+        if (Item* ranged = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
+                EQUIPMENT_SLOT_RANGED))
+        {
+            profile.RangedEntry = ranged->GetEntry();
+        }
+
+        return profile;
     }
 
     void ApplyShadowCloneVisual(Player* player, Creature* summon)
@@ -403,7 +520,7 @@ namespace
         bool SyncShadowPet(Player* player, ArenaSession& session,
             bool startCombat);
         void ConfigureShadow(Creature* summon, Player* player,
-            StageConfig const& stage);
+            ShadowProfile const& profile, StageConfig const& stage);
         void FinishSession(Player* player, ArenaSession& session);
         void CleanupPet(ArenaSession& session);
         void CleanupBot(ArenaSession const& session);
@@ -1236,6 +1353,8 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     if (!stage)
         return false;
 
+    ShadowProfile profile = CaptureShadowProfile(player, *stage);
+
     float botZ = stage->BotZ;
     if (Map* map = player->GetMap())
         botZ = ResolveArenaGroundZ(map, stage->BotX, stage->BotY, stage->BotZ);
@@ -1257,19 +1376,12 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         return false;
     }
 
-    ConfigureShadow(summon, player, *stage);
+    ConfigureShadow(summon, player, profile, *stage);
 
     session.BotGuid = summon->GetGUID();
     session.ArenaInstanceId = player->GetInstanceId();
     session.State = SessionState::WaitingForStart;
 
-    ShadowProfile profile;
-    profile.PlayerGuid = player->GetGUID();
-    profile.StageId = stage->StageId;
-    profile.PlayerClass = player->getClass();
-    profile.ActiveSpec = player->GetSpec(player->GetActiveSpec());
-    profile.DamageMultiplier = stage->DamageMultiplier;
-    profile.SpellIntervalMs = stage->SpellIntervalMs;
     _shadowProfiles[summon->GetGUID().GetCounter()] = profile;
 
     summon->ClearInCombat();
@@ -1293,70 +1405,86 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 }
 
 void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
-    StageConfig const& stage)
+    ShadowProfile const& profile, StageConfig const& stage)
 {
-    summon->SetName(player->GetName());
+    summon->SetName(profile.PlayerName);
     ApplyShadowCloneVisual(player, summon);
-    summon->SetLevel(player->GetLevel());
-    summon->SetByteValue(UNIT_FIELD_BYTES_0, 0, player->getRace());
-    summon->SetByteValue(UNIT_FIELD_BYTES_0, 1, player->getClass());
-    summon->SetByteValue(UNIT_FIELD_BYTES_0, 2, player->getGender());
-    summon->SetByteValue(UNIT_FIELD_BYTES_2, 0, player->GetSheath());
-    summon->SetObjectScale(player->GetObjectScale());
+    summon->SetLevel(profile.Level);
+    summon->SetByteValue(UNIT_FIELD_BYTES_0, 0, profile.PlayerRace);
+    summon->SetByteValue(UNIT_FIELD_BYTES_0, 1, profile.PlayerClass);
+    summon->SetByteValue(UNIT_FIELD_BYTES_0, 2, profile.PlayerGender);
+    summon->SetByteValue(UNIT_FIELD_BYTES_2, 0, profile.SheathState);
+    summon->SetObjectScale(profile.ObjectScale);
 
-    bool hasMainHand = false;
-    bool hasOffHandWeapon = false;
+    summon->SetVirtualItem(0, profile.MainHandEntry);
+    summon->SetVirtualItem(1, profile.OffHandEntry);
+    summon->SetVirtualItem(2, profile.RangedEntry);
+    summon->SetCanDualWield(profile.MainHandEntry != 0 &&
+        profile.CanDualWield);
 
-    if (Item* mainHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
-        EQUIPMENT_SLOT_MAINHAND))
+    for (uint32 stat = STAT_STRENGTH; stat < MAX_STATS; ++stat)
+        summon->SetStat(Stats(stat), profile.Stats[stat]);
+
+    summon->SetArmor(profile.Armor);
+    for (uint32 school = SPELL_SCHOOL_HOLY;
+         school < MAX_SPELL_SCHOOL; ++school)
     {
-        summon->SetVirtualItem(0, mainHand->GetEntry());
-        hasMainHand = true;
+        summon->SetResistance(SpellSchools(school),
+            profile.Resistances[school]);
     }
-    else
-        summon->SetVirtualItem(0, 0);
 
-    if (Item* offHand = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
-        EQUIPMENT_SLOT_OFFHAND))
-    {
-        summon->SetVirtualItem(1, offHand->GetEntry());
-        if (offHand->GetTemplate() &&
-            offHand->GetTemplate()->Class == ITEM_CLASS_WEAPON)
-        {
-            hasOffHandWeapon = true;
-        }
-    }
-    else
-        summon->SetVirtualItem(1, 0);
-
-    if (Item* ranged = player->GetItemByPos(INVENTORY_SLOT_BAG_0,
-        EQUIPMENT_SLOT_RANGED))
-    {
-        summon->SetVirtualItem(2, ranged->GetEntry());
-    }
-    else
-        summon->SetVirtualItem(2, 0);
-
-    summon->SetCanDualWield(hasMainHand && hasOffHandWeapon);
+    summon->setPowerType(profile.PowerType);
+    summon->SetMaxPower(profile.PowerType, profile.MaxPower);
+    summon->SetPower(profile.PowerType, profile.MaxPower);
 
     uint32 maxHealth = std::max<uint32>(5000u,
-        static_cast<uint32>(player->GetMaxHealth() *
+        static_cast<uint32>(profile.MaxHealth *
             stage.HealthMultiplier));
     summon->SetMaxHealth(maxHealth);
     summon->SetHealth(maxHealth);
 
-    float averageItemLevel = std::max<float>(1.0f,
-        player->GetAverageItemLevel());
-    float baseDamage =
-        ((averageItemLevel * 6.5f) +
-        (static_cast<float>(player->GetLevel()) * 12.0f)) *
-        stage.DamageMultiplier;
-
-    summon->SetAttackTime(BASE_ATTACK, stage.AttackTimeMs);
-    summon->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, baseDamage * 0.8f);
-    summon->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, baseDamage * 1.2f);
+    uint32 baseAttackTime = profile.AttackTimeMs[BASE_ATTACK] ?
+        std::min(profile.AttackTimeMs[BASE_ATTACK], stage.AttackTimeMs) :
+        stage.AttackTimeMs;
+    summon->SetAttackTime(BASE_ATTACK, baseAttackTime);
+    summon->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE,
+        std::max(1.0f, profile.WeaponMinDamage[BASE_ATTACK] *
+            stage.DamageMultiplier));
+    summon->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE,
+        std::max(2.0f, profile.WeaponMaxDamage[BASE_ATTACK] *
+            stage.DamageMultiplier));
     summon->UpdateDamagePhysical(BASE_ATTACK);
-    summon->SetSpeed(MOVE_RUN, stage.MoveSpeedRate, true);
+
+    if (profile.AttackTimeMs[OFF_ATTACK] != 0)
+    {
+        summon->SetAttackTime(OFF_ATTACK,
+            std::min(profile.AttackTimeMs[OFF_ATTACK], stage.AttackTimeMs));
+        summon->SetBaseWeaponDamage(OFF_ATTACK, MINDAMAGE,
+            std::max(1.0f, profile.WeaponMinDamage[OFF_ATTACK] *
+                stage.DamageMultiplier));
+        summon->SetBaseWeaponDamage(OFF_ATTACK, MAXDAMAGE,
+            std::max(2.0f, profile.WeaponMaxDamage[OFF_ATTACK] *
+                stage.DamageMultiplier));
+        summon->UpdateDamagePhysical(OFF_ATTACK);
+    }
+
+    if (profile.AttackTimeMs[RANGED_ATTACK] != 0)
+    {
+        summon->SetAttackTime(RANGED_ATTACK,
+            std::min(profile.AttackTimeMs[RANGED_ATTACK], stage.AttackTimeMs));
+        summon->SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE,
+            std::max(1.0f, profile.WeaponMinDamage[RANGED_ATTACK] *
+                stage.DamageMultiplier));
+        summon->SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE,
+            std::max(2.0f, profile.WeaponMaxDamage[RANGED_ATTACK] *
+                stage.DamageMultiplier));
+        summon->UpdateDamagePhysical(RANGED_ATTACK);
+    }
+
+    summon->SetFloatValue(UNIT_MOD_CAST_SPEED,
+        std::max(0.5f, profile.CastSpeedRate));
+    summon->SetSpeed(MOVE_RUN, std::max(profile.RunSpeedRate,
+        stage.MoveSpeedRate), true);
     summon->SetReactState(REACT_PASSIVE);
     summon->SetFaction(14);
     summon->SetWalk(false);
@@ -2184,6 +2312,7 @@ namespace
             return 0;
 
         float baseDamage = (me->GetMaxHealth() / 18.0f) * factor;
+        baseDamage += float(profile.SpellPowerBonus) * 0.65f * factor;
         baseDamage *= profile.DamageMultiplier;
         return std::max<uint32>(150u, static_cast<uint32>(baseDamage));
     }
@@ -2414,6 +2543,14 @@ namespace
             _profile = *profile;
             _package = GetSpellPackage(_profile.PlayerClass,
                 _profile.ActiveSpec);
+            float cooldownScale = std::clamp(_profile.CastSpeedRate,
+                0.55f, 1.25f);
+            _package.PrimaryCooldownMs = std::max<uint32>(900u,
+                uint32(float(_package.PrimaryCooldownMs) * cooldownScale));
+            _package.SecondaryCooldownMs = std::max<uint32>(1200u,
+                uint32(float(_package.SecondaryCooldownMs) * cooldownScale));
+            _package.TertiaryCooldownMs = std::max<uint32>(1500u,
+                uint32(float(_package.TertiaryCooldownMs) * cooldownScale));
             _initialized = true;
         }
 
