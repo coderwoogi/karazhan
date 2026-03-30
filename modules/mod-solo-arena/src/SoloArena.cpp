@@ -724,35 +724,132 @@ namespace
     }
 
     std::string BuildTrialTauntFallback(Player* player,
-        uint8 playerClass, std::string const& eventType)
+        uint8 playerClass, uint8 stageId, std::string const& eventType)
     {
         std::string classLabel = GetTrialClassDisplayName(playerClass);
         std::string playerName = player ? player->GetName() : "도전자";
+        std::string stageLabel = Acore::StringFormat(
+            "그림자 시련 {}단계", uint32(stageId));
+
+        auto stageLine = [&](std::string const& s1,
+                             std::string const& s2,
+                             std::string const& s3,
+                             std::string const& s4,
+                             std::string const& s5) -> std::string
+        {
+            switch (stageId)
+            {
+                case 1: return s1;
+                case 2: return s2;
+                case 3: return s3;
+                case 4:
+                case 5: return s4;
+                default: return s5;
+            }
+        };
 
         if (eventType == "spawn")
-            return Acore::StringFormat(
-                "{}, {}의 그림자가 이미 기다리고 있다.",
-                playerName, classLabel);
+            return stageLine(
+                Acore::StringFormat(
+                    "{}, {}의 그림자가 이미 기다리고 있다.",
+                    playerName, classLabel),
+                Acore::StringFormat(
+                    "{}, {}의 손놀림까지도 내가 지켜보고 있었다.",
+                    playerName, classLabel),
+                Acore::StringFormat(
+                    "{}, 네 익숙한 기술이 여기선 전부 읽힌다.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, {}의 힘을 조금 더 끌어낸 그림자가 왔다.",
+                    playerName, classLabel),
+                Acore::StringFormat(
+                    "{}, {}의 끝을 시험할 그림자가 기다린다.",
+                    playerName, classLabel));
         if (eventType == "combat_start")
-            return Acore::StringFormat(
-                "{}답게 끝까지 버텨 봐라. 지금부터 시작이다.",
-                classLabel);
+            return stageLine(
+                Acore::StringFormat(
+                    "{}답게 끝까지 버텨 봐라. 지금부터 시작이다.",
+                    classLabel),
+                Acore::StringFormat(
+                    "이번엔 네 기술이 얼마나 다양한지 내가 먼저 보여 주지.",
+                    classLabel),
+                Acore::StringFormat(
+                    "{}의 빈틈까지 모두 찌를 테니 정신 차려라.",
+                    classLabel),
+                Acore::StringFormat(
+                    "{}의 힘이 커진 만큼, 내 그림자도 더 무거워졌다.",
+                    classLabel),
+                Acore::StringFormat(
+                    "여기부터는 네가 아는 {}와는 다를 것이다.",
+                    classLabel));
         if (eventType == "victory")
-            return Acore::StringFormat(
-                "{}, 이번엔 네가 한 수 위였군.",
-                playerName);
+            return stageLine(
+                Acore::StringFormat(
+                    "{}, 이번엔 네가 한 수 위였군.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, 제법이다. 다음 단계의 그림자는 더 날카롭다.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, 이 정도로 끝낼 생각은 하지 마라.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, 더 무거운 그림자가 아직 남아 있다.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, {}의 시련은 아직 끝나지 않았다.",
+                    playerName, stageLabel));
         if (eventType == "failure")
-            return Acore::StringFormat(
-                "{}의 힘이 이 정도라면 아직 그림자를 넘기 어렵다.",
-                classLabel);
+            return stageLine(
+                Acore::StringFormat(
+                    "{}의 힘이 이 정도라면 아직 그림자를 넘기 어렵다.",
+                    classLabel),
+                Acore::StringFormat(
+                    "{}의 기술이 늘어도, 나를 넘기엔 아직 부족하다.",
+                    classLabel),
+                Acore::StringFormat(
+                    "네 빈틈을 읽는 것만으로도 이 정도다, {}.",
+                    classLabel),
+                Acore::StringFormat(
+                    "{}의 힘이 커질수록 그림자도 더 짙어진다.",
+                    classLabel),
+                Acore::StringFormat(
+                    "{}의 끝은 아직 멀다. 다시 올라와라.",
+                    stageLabel));
         if (eventType == "abandoned")
-            return Acore::StringFormat(
-                "{}, 이번엔 물러가도 된다. 다음엔 끝까지 버텨 봐라.",
-                playerName);
+            return stageLine(
+                Acore::StringFormat(
+                    "{}, 이번엔 물러가도 된다. 다음엔 끝까지 버텨 봐라.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, 손을 뗐군. 하지만 내 그림자는 남아 있다.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, 기술을 감춘다고 그림자가 사라지진 않는다.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, 더 짙은 그림자를 보기 전에 돌아섰군.",
+                    playerName),
+                Acore::StringFormat(
+                    "{}, {}의 끝에서 다시 만나자.",
+                    playerName, stageLabel));
 
-        return Acore::StringFormat(
-            "{}, {}의 그림자는 언제나 너를 기다린다.",
-            playerName, classLabel);
+        return stageLine(
+            Acore::StringFormat(
+                "{}, {}의 그림자는 언제나 너를 기다린다.",
+                playerName, classLabel),
+            Acore::StringFormat(
+                "{}, 이번 단계의 그림자는 네 기술을 더 많이 닮았다.",
+                playerName),
+            Acore::StringFormat(
+                "{}, 여기선 네 습관까지도 그림자가 된다.",
+                playerName),
+            Acore::StringFormat(
+                "{}, {}의 그림자는 점점 더 무거워진다.",
+                playerName, classLabel),
+            Acore::StringFormat(
+                "{}, {}는 끝으로 갈수록 더 선명해진다.",
+                playerName, stageLabel));
     }
 
     void SendTrialTimePayload(Player* player, ArenaSession const& session)
@@ -1589,7 +1686,8 @@ std::string SoloArenaMgr::RequestTrialTaunt(Player* player,
         }
     }
 
-    return BuildTrialTauntFallback(player, player->getClass(), eventType);
+    return BuildTrialTauntFallback(player, player->getClass(),
+        session.StageId, eventType);
 }
 
 void SoloArenaMgr::SpeakTrialTaunt(Player* player, ArenaSession const& session,
