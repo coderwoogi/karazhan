@@ -2608,9 +2608,9 @@ void SoloArenaMgr::LoadDefaultMechanics()
     stage4.SlotId = 1;
     stage4.MechanicType = StageMechanicType::HealingSurge;
     stage4.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
-    stage4.SpawnX = 1328.72f;
-    stage4.SpawnY = 1632.72f;
-    stage4.SpawnZ = 36.73f;
+    stage4.SpawnX = 1281.90f;
+    stage4.SpawnY = 1667.30f;
+    stage4.SpawnZ = 39.96f;
     stage4.SpawnIntervalMs = 20000;
     stage4.DurationMs = 15000;
     stage4.EffectValue1 = 0.20f;
@@ -2623,9 +2623,9 @@ void SoloArenaMgr::LoadDefaultMechanics()
     stage5.SlotId = 1;
     stage5.MechanicType = StageMechanicType::ShadowBurnHazard;
     stage5.ObjectEntry = TRIAL_MECHANIC_BAD_ENTRY;
-    stage5.SpawnX = 1243.30f;
-    stage5.SpawnY = 1699.17f;
-    stage5.SpawnZ = 34.87f;
+    stage5.SpawnX = 1289.60f;
+    stage5.SpawnY = 1668.10f;
+    stage5.SpawnZ = 39.96f;
     stage5.SpawnIntervalMs = 22000;
     stage5.DurationMs = 15000;
     stage5.EffectValue1 = 0.10f;
@@ -2639,8 +2639,8 @@ void SoloArenaMgr::LoadDefaultMechanics()
     stage6.SlotId = 1;
     stage6.MechanicType = StageMechanicType::GuardianSummon;
     stage6.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
-    stage6.SpawnX = 1285.81f;
-    stage6.SpawnY = 1667.90f;
+    stage6.SpawnX = 1285.80f;
+    stage6.SpawnY = 1662.80f;
     stage6.SpawnZ = 39.96f;
     stage6.SpawnIntervalMs = 25000;
     stage6.DurationMs = 15000;
