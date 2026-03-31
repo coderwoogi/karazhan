@@ -377,6 +377,18 @@ local function GetStageDescription(stage)
   return table.concat(lines, "\n")
 end
 
+local function GetBestRankText(stage)
+  if not stage or not stage.bestRankLabel or stage.bestRankLabel == "-" then
+    return "최고 랭크: 미기록"
+  end
+
+  return string.format(
+    "최고 랭크: %s (%s)",
+    stage.bestRankLabel,
+    FormatDuration(stage.bestTimeSec)
+  )
+end
+
 local function GetStageReward(stage)
   if not stage or not stage.rewards or #stage.rewards == 0 then
     return {
@@ -454,10 +466,7 @@ local function RefreshSelection()
 
   Trial.stageBadgeText:SetText(stage.stageId)
   Trial.stageTitle:SetText(stage.name)
-  local rankText = stage.bestRankLabel ~= "-" and
-    string.format("최고 랭크: %s (%s)", stage.bestRankLabel, FormatDuration(stage.bestTimeSec)) or
-    "최고 랭크: 미기록"
-  Trial.stageMeta:SetText(rankText)
+  Trial.stageMeta:SetText(GetBestRankText(stage))
   Trial.stageDesc:SetText(GetStageDescription(stage))
 
   local reward = GetStageReward(stage)
@@ -488,8 +497,8 @@ end
 
 local function CreateStageButton(index)
   local button = CreateFrame("Button", nil, Trial.leftPane)
-  button:SetSize(256, 40)
-  button:SetPoint("TOPLEFT", Trial.leftPane, "TOPLEFT", 8, -38 - ((index - 1) * 42))
+  button:SetSize(252, 52)
+  button:SetPoint("TOPLEFT", Trial.leftPane, "TOPLEFT", 8, -38 - ((index - 1) * 56))
   button:SetBackdrop({
     bgFile = "Interface\\Buttons\\WHITE8x8",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -502,24 +511,20 @@ local function CreateStageButton(index)
 
   button.icon = button:CreateTexture(nil, "ARTWORK")
   button.icon:SetTexture("Interface\\Icons\\Achievement_Arena_2v2_7")
-  button.icon:SetSize(24, 24)
+  button.icon:SetSize(26, 26)
   button.icon:SetPoint("LEFT", button, "LEFT", 10, 0)
 
-  button.name = CreateLabel(button, "GameFontHighlight", 13, 1.0, 0.84, 0.25)
+  button.name = CreateLabel(button, "GameFontHighlight", 14, 1.0, 0.84, 0.25)
   button.name:SetPoint("TOPLEFT", button.icon, "TOPRIGHT", 10, -2)
-  button.name:SetWidth(128)
+  button.name:SetWidth(190)
 
-  button.meta = CreateLabel(button, "GameFontNormalSmall", 10, 0.72, 0.72, 0.72)
-  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -4)
-  button.meta:SetWidth(128)
+  button.meta = CreateLabel(button, "GameFontNormalSmall", 11, 0.72, 0.72, 0.72)
+  button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -5)
+  button.meta:SetWidth(190)
 
-  button.rank = CreateLabel(button, "GameFontHighlightSmall", 11, 0.95, 0.90, 0.70, "RIGHT")
-  button.rank:SetPoint("TOPRIGHT", button, "TOPRIGHT", -10, -8)
-  button.rank:SetWidth(64)
-
-  button.cleared = CreateLabel(button, "GameFontHighlightSmall", 10, 0.35, 1.0, 0.35, "RIGHT")
-  button.cleared:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -10, 8)
-  button.cleared:SetWidth(64)
+  button.cleared = CreateLabel(button, "GameFontHighlightSmall", 11, 0.35, 1.0, 0.35, "RIGHT")
+  button.cleared:SetPoint("TOPRIGHT", button, "TOPRIGHT", -10, -8)
+  button.cleared:SetWidth(72)
   button.cleared:SetText("성공")
   button.cleared:Hide()
 
@@ -542,11 +547,14 @@ local function RefreshList()
     local stage = Trial.state.stages[i]
     if stage then
       button.name:SetText(stage.name)
-      button.meta:SetText(string.format("단계 %d", stage.stageId))
       if stage.bestRankLabel and stage.bestRankLabel ~= "-" then
-        button.rank:SetText("랭크 " .. stage.bestRankLabel)
+        button.meta:SetText(string.format(
+          "단계 %d / 최고 랭크 %s",
+          stage.stageId,
+          stage.bestRankLabel
+        ))
       else
-        button.rank:SetText("미기록")
+        button.meta:SetText(string.format("단계 %d / 랭크 미기록", stage.stageId))
       end
       button.cleared:SetShown(stage.stageId <= Trial.state.highestCleared)
       button:Show()
@@ -580,16 +588,17 @@ local function ShowResult()
   Trial.resultFrame:Show()
 end
 
-local function ApplyOpen(parts)
+local function ApplyOpenPayload(highestCleared, encoded, inProgress,
+  preparationEndsAt, combatEndsAt, sessionState)
   Trial.state = NewState()
-  Trial.state.highestCleared = tonumber(parts[2]) or 0
-  Trial.state.inProgress = tonumber(parts[4]) == 1
+  Trial.state.highestCleared = tonumber(highestCleared) or 0
+  Trial.state.inProgress = tonumber(inProgress) == 1
   Trial.state.pendingArena = Trial.state.inProgress
-  Trial.state.preparationEndsAt = tonumber(parts[5]) or nil
-  Trial.state.combatEndsAt = tonumber(parts[7]) or nil
-  Trial.state.sessionState = tonumber(parts[9]) or SESSION_PENDING_SPAWN
+  Trial.state.preparationEndsAt = tonumber(preparationEndsAt) or nil
+  Trial.state.combatEndsAt = tonumber(combatEndsAt) or nil
+  Trial.state.sessionState = tonumber(sessionState) or SESSION_PENDING_SPAWN
 
-  local encoded = parts[3] or ""
+  encoded = encoded or ""
   if encoded ~= "" then
     local items = Split(encoded, "|")
     for _, item in ipairs(items) do
@@ -633,6 +642,17 @@ local function ApplyOpen(parts)
   Trial.resultFrame:Hide()
   Trial:Show()
   RefreshList()
+
+  if #Trial.state.stages == 0 then
+    Trial.stageBadgeText:SetText("-")
+    Trial.stageTitle:SetText("표시할 단계 데이터가 없습니다")
+    Trial.stageMeta:SetText("서버에서 시련 단계 목록을 받지 못했습니다.")
+    Trial.stageDesc:SetText("서버 로그의 SoloArena SendUi 항목을 확인해 주세요.")
+  end
+end
+
+local function ApplyOpen(parts)
+  ApplyOpenPayload(parts[2], parts[3], parts[4], parts[5], parts[7], parts[9])
 end
 
 Trial.start:SetScript("OnClick", function()
@@ -699,6 +719,11 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   local parts = Split(message, "\t")
   if parts[1] == "OPEN" then
     ApplyOpen(parts)
+    return
+  end
+
+  if tonumber(parts[1]) then
+    ApplyOpenPayload(parts[1], parts[2], parts[3], parts[4], parts[6], parts[8])
     return
   end
 
