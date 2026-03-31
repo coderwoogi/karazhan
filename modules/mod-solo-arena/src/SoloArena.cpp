@@ -971,6 +971,35 @@ namespace
         return uint32(session.EndedAt - session.CombatStartedAt);
     }
 
+    std::string GetFixedStageLabel(uint8 stageId)
+    {
+        switch (stageId)
+        {
+            case 1: return "그림자 시련 1단계";
+            case 2: return "그림자 시련 2단계";
+            case 3: return "그림자 시련 3단계";
+            case 4: return "그림자 시련 4단계";
+            case 5: return "그림자 시련 5단계";
+            case 6: return "그림자 시련 6단계";
+            case 7: return "그림자 시련 7단계";
+            case 8: return "그림자 시련 8단계";
+            case 9: return "그림자 시련 9단계";
+            case 10: return "그림자 시련 10단계";
+            default: return "";
+        }
+    }
+
+    std::string GetFixedMechanicLabel(uint8 stageId)
+    {
+        switch (stageId)
+        {
+            case 1: return "시련의 숨결";
+            case 2: return "뒤틀린 파편";
+            case 3: return "균열의 제단";
+            default: return "";
+        }
+    }
+
     bool StartsWith(std::string const& text, std::string const& token)
     {
         return text.compare(0, token.size(), token) == 0;
@@ -1064,6 +1093,9 @@ void SoloArenaMgr::LoadStages()
         stage.MoveSpeedRate = fields[15].Get<float>();
         stage.PreparationMs = fields[16].Get<uint32>();
         stage.Enabled = fields[17].Get<uint8>() != 0;
+        if (std::string fixedName = GetFixedStageLabel(stage.StageId);
+            !fixedName.empty())
+            stage.Name = fixedName;
 
         _stages[stage.StageId] = stage;
     } while (result->NextRow());
@@ -1110,6 +1142,9 @@ void SoloArenaMgr::LoadMechanics()
         mechanic.SummonEntry = fields[12].Get<uint32>();
         mechanic.Enabled = fields[13].Get<uint8>() != 0;
         mechanic.Name = fields[14].Get<std::string>();
+        if (std::string fixedName = GetFixedMechanicLabel(mechanic.StageId);
+            !fixedName.empty())
+            mechanic.Name = fixedName;
 
         if (mechanic.Enabled)
             _mechanics.emplace(mechanic.StageId, mechanic);
@@ -1375,21 +1410,31 @@ void SoloArenaMgr::SendUi(Player* player)
             entries << "|";
 
         first = false;
+        std::string rewardPayload = BuildStageRewardPayload(stage.StageId);
+        std::string rankPayload = BuildStageRankPayload(player, stage.StageId);
+        std::string mechanicName = SanitizeAddonField(
+            GetStageMechanicName(stage.StageId), 48);
         entries << uint32(stage.StageId) << "~";
         entries << SanitizeAddonField(stage.Name, 64) << "~";
         entries << stage.HealthMultiplier << "~";
         entries << stage.DamageMultiplier << "~";
         entries << stage.SpellIntervalMs << "~";
         entries << stage.MoveSpeedRate << "~";
-        entries << BuildStageRewardPayload(stage.StageId) << "~";
-        entries << BuildStageRankPayload(player, stage.StageId) << "~";
-        entries << SanitizeAddonField(GetStageMechanicName(stage.StageId), 48);
+        entries << rewardPayload << "~";
+        entries << rankPayload << "~";
+        entries << mechanicName;
+        LOG_INFO("module",
+            "SoloArena UI Stage: id={} name='{}' reward='{}' rank='{}' "
+            "mechanic='{}'",
+            uint32(stage.StageId), stage.Name, rewardPayload, rankPayload,
+            mechanicName);
         ++sentStages;
     }
 
     LOG_INFO("module",
         "SoloArena SendUi: player='{}' highest={} sentStages={}",
         player->GetName(), uint32(highestStage), sentStages);
+    LOG_INFO("module", "SoloArena SendUi payload: {}", entries.str());
 
     if (sentStages == 0)
         SendSystem(player, "시련 UI에 표시할 단계 데이터가 없습니다.");
