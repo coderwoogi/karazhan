@@ -48,6 +48,7 @@ namespace
     constexpr uint32 TRIAL_MECHANIC_BAD_ENTRY = 184664;
     constexpr uint32 TRIAL_HELPER_ENTRY = 190023;
     constexpr uint32 TRIAL_HAZARD_ENTRY = 190024;
+    constexpr uint32 TRIAL_MECHANIC_BUFF_AURA = 32182;
 
     enum class StageMechanicType : uint8
     {
@@ -1450,6 +1451,15 @@ void SoloArenaMgr::Update(uint32 diff)
                 SyncShadowPet(player, session, true);
                 UpdateMechanics(player, session);
 
+                if (session.PlayerDamageBuffEndsAt != 0 &&
+                    uint64(std::time(nullptr)) >= session.PlayerDamageBuffEndsAt)
+                {
+                    player->RemoveAurasDueToSpell(TRIAL_MECHANIC_BUFF_AURA);
+                    session.PlayerDamageBuffEndsAt = 0;
+                    SendSystem(player,
+                        "시련의 숨결 효과가 사라졌습니다.");
+                }
+
                 if (player->GetMapId() != session.ArenaMapId)
                 {
                     session.Result = ArenaResult::Abandoned;
@@ -1763,6 +1773,7 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
 {
     ClearMechanicObject(session);
     ClearMechanicSummons(session);
+    player->RemoveAurasDueToSpell(TRIAL_MECHANIC_BUFF_AURA);
     CleanupPet(session);
     CleanupBot(session);
 
@@ -2423,6 +2434,8 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
                 uint32(player->GetMaxHealth() * mechanic.EffectValue1));
             player->ModifyHealth(int32(heal));
             session.PlayerDamageBuffEndsAt = std::time(nullptr) + 12;
+            player->RemoveAurasDueToSpell(TRIAL_MECHANIC_BUFF_AURA);
+            player->CastSpell(player, TRIAL_MECHANIC_BUFF_AURA, true);
             SendSystem(player,
                 "시련의 숨결이 당신을 감쌉니다. 잠시 더 강하게 싸웁니다.");
             LogEvent(player, session, "MECHANIC_TRIGGERED",
