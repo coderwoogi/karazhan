@@ -5,6 +5,17 @@ CREATE TABLE IF NOT EXISTS `solo_arena_progress` (
     PRIMARY KEY (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS `solo_arena_stage_record` (
+    `guid` BIGINT UNSIGNED NOT NULL,
+    `stage_id` TINYINT UNSIGNED NOT NULL,
+    `best_rank` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `best_rank_label` VARCHAR(8) NOT NULL DEFAULT '',
+    `best_time_sec` INT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`guid`, `stage_id`),
+    KEY `idx_solo_arena_stage_record_stage` (`stage_id`, `best_rank`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS `solo_arena_run_log` (
     `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     `run_uid` BIGINT UNSIGNED NOT NULL DEFAULT 0,
@@ -25,6 +36,9 @@ CREATE TABLE IF NOT EXISTS `solo_arena_run_log` (
     `failed_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     `abandoned_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     `duration_sec` INT UNSIGNED NOT NULL DEFAULT 0,
+    `rank_value` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    `rank_label` VARCHAR(8) NOT NULL DEFAULT '',
+    `combat_duration_sec` INT UNSIGNED NOT NULL DEFAULT 0,
     `arena_map_id` SMALLINT UNSIGNED NOT NULL DEFAULT 617,
     `arena_instance_id` INT UNSIGNED NOT NULL DEFAULT 0,
     `return_map_id` SMALLINT UNSIGNED NOT NULL DEFAULT 0,

@@ -71,7 +71,8 @@ namespace
         PendingSpawn = 0,
         WaitingForStart = 1,
         Active = 2,
-        PendingFinish = 3
+        PendingFinish = 3,
+        AwaitingReturn = 4
     };
 
     enum CloneVisualSpells : uint32
@@ -137,6 +138,7 @@ namespace
         uint64 CompletedAt = 0;
         uint64 FailedAt = 0;
         uint64 AbandonedAt = 0;
+        uint32 CombatDurationSec = 0;
         uint32 SpawnDelayMs = 1000;
         uint32 FinishDelayMs = 3000;
         uint32 PetEntry = 0;
@@ -148,6 +150,8 @@ namespace
         StageMechanicType MechanicType = StageMechanicType::None;
         uint64 NextMechanicAt = 0;
         uint64 PlayerDamageBuffEndsAt = 0;
+        uint8 RankValue = 0;
+        std::string RankLabel;
         ArenaResult Result = ArenaResult::None;
         SessionState State = SessionState::PendingSpawn;
     };
@@ -574,6 +578,7 @@ namespace
         ArenaSession const* GetSession(ObjectGuid const& playerGuid) const;
         bool IsCombatActive(ObjectGuid const& playerGuid) const;
         bool StartChallenge(Player* player, uint8 stageId);
+        bool ReturnPlayer(Player* player);
         void SendUi(Player* player);
         void Update(uint32 diff);
         void OnPlayerMapChanged(Player* player);
@@ -602,6 +607,7 @@ namespace
         uint8 GetHighestStageCleared(Player* player) const;
         bool IsStageUnlocked(Player* player, uint8 stageId) const;
         void SaveProgress(Player* player, uint8 stageId);
+        void SaveStageRecord(Player* player, ArenaSession const& session);
         void GrantStageRewards(Player* player, ArenaSession const& session);
         void LogRun(Player* player, ArenaSession const& session);
         void LogEvent(Player* player, ArenaSession const& session,
@@ -611,6 +617,11 @@ namespace
             std::string const& status);
         std::string GetStageName(uint8 stageId) const;
         std::string BuildStageRewardPayload(uint8 stageId) const;
+        std::string BuildStageRankPayload(Player* player, uint8 stageId) const;
+        std::string GetStageMechanicName(uint8 stageId) const;
+        std::pair<uint8, std::string> ComputeTrialRank(
+            ArenaSession const& session) const;
+        void SendResultPayload(Player* player, ArenaSession const& session);
         void LoadDefaultStages();
         void LoadDefaultMechanics();
         void UpdateMechanics(Player* player, ArenaSession& session);
@@ -951,6 +962,15 @@ namespace
         SendAddonPayload(player, "TRIAL_UI", payload.str());
     }
 
+    uint32 GetCombatDurationSec(ArenaSession const& session)
+    {
+        if (session.CombatStartedAt == 0 || session.EndedAt == 0 ||
+            session.EndedAt < session.CombatStartedAt)
+            return 0;
+
+        return uint32(session.EndedAt - session.CombatStartedAt);
+    }
+
     bool StartsWith(std::string const& text, std::string const& token)
     {
         return text.compare(0, token.size(), token) == 0;
@@ -991,6 +1011,12 @@ namespace
         if (msg == "TRIAL_CMD\tABANDON")
         {
             SoloArenaMgr::Instance().MarkAbandoned(player->GetGUID());
+            return true;
+        }
+
+        if (msg == "TRIAL_CMD\tRETURN")
+        {
+            SoloArenaMgr::Instance().ReturnPlayer(player);
             return true;
         }
 
@@ -1293,10 +1319,42 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     return true;
 }
 
+bool SoloArenaMgr::ReturnPlayer(Player* player)
+{
+    if (!player)
+        return false;
+
+    auto itr = _sessions.find(player->GetGUID().GetCounter());
+    if (itr == _sessions.end())
+        return false;
+
+    ArenaSession session = itr->second;
+
+    if (Battleground* battleground = player->GetBattleground())
+        battleground->RemovePlayerAtLeave(player);
+    else if (session.ArenaInstanceId)
+        if (Battleground* arena = sBattlegroundMgr->GetBattleground(
+                session.ArenaInstanceId, DEFAULT_ARENA_BG_TYPE))
+            arena->RemovePlayerAtLeave(player);
+
+    _managedArenaInstances.erase(session.ArenaInstanceId);
+    player->TeleportTo(session.ReturnMapId, session.ReturnX, session.ReturnY,
+        session.ReturnZ, session.ReturnO);
+    _sessions.erase(itr);
+    return true;
+}
+
 void SoloArenaMgr::SendUi(Player* player)
 {
     if (!SoloArenaConfig::Instance().IsEnabled() || !player)
         return;
+
+    if (ArenaSession const* session = GetSession(player->GetGUID()))
+        if (session->State == SessionState::AwaitingReturn)
+        {
+            SendResultPayload(player, *session);
+            return;
+        }
 
     uint8 highestStage = GetHighestStageCleared(player);
     uint8 maxUnlockedStage = highestStage + 1;
@@ -1322,7 +1380,9 @@ void SoloArenaMgr::SendUi(Player* player)
         entries << stage.DamageMultiplier << "~";
         entries << stage.SpellIntervalMs << "~";
         entries << stage.MoveSpeedRate << "~";
-        entries << BuildStageRewardPayload(stage.StageId);
+        entries << BuildStageRewardPayload(stage.StageId) << "~";
+        entries << BuildStageRankPayload(player, stage.StageId) << "~";
+        entries << SanitizeAddonField(GetStageMechanicName(stage.StageId), 48);
     }
 
     std::ostringstream payload;
@@ -1344,6 +1404,27 @@ void SoloArenaMgr::SendUi(Player* player)
                 << uint64(0) << "\t" << uint64(0) << "\t"
                 << uint32(SessionState::PendingSpawn);
     }
+    SendAddonPayload(player, "TRIAL_UI", payload.str());
+}
+
+void SoloArenaMgr::SendResultPayload(Player* player,
+    ArenaSession const& session)
+{
+    if (!player)
+        return;
+
+    std::ostringstream payload;
+    payload << "RESULT\t";
+    payload << uint32(session.StageId) << "\t";
+    payload << SanitizeAddonField(GetStageName(session.StageId), 64) << "\t";
+    payload << SanitizeAddonField(
+        session.Result == ArenaResult::Victory ? "성공" :
+        session.Result == ArenaResult::Failure ? "실패" :
+        session.Result == ArenaResult::Abandoned ? "포기" : "종료", 16)
+        << "\t";
+    payload << SanitizeAddonField(
+        session.RankLabel.empty() ? "-" : session.RankLabel, 8) << "\t";
+    payload << uint32(session.CombatDurationSec);
     SendAddonPayload(player, "TRIAL_UI", payload.str());
 }
 
@@ -1435,7 +1516,7 @@ void SoloArenaMgr::Update(uint32 diff)
                         session.CombatStartedAt = std::time(nullptr);
                         session.CombatEndsAt = session.CombatStartedAt +
                             (DEFAULT_COMBAT_LIMIT_MS / 1000);
-                        if (session.StageId >= 4 && session.StageId <= 6)
+                        if (session.StageId >= 1 && session.StageId <= 3)
                             session.NextMechanicAt =
                                 session.CombatStartedAt + 8;
                         session.EndedAt = 0;
@@ -1505,7 +1586,10 @@ void SoloArenaMgr::Update(uint32 diff)
                 }
 
                 FinishSession(player, session);
-                toErase.push_back(playerKey);
+                if (session.State != SessionState::AwaitingReturn)
+                    toErase.push_back(playerKey);
+                break;
+            case SessionState::AwaitingReturn:
                 break;
         }
     }
@@ -1523,6 +1607,14 @@ void SoloArenaMgr::OnPlayerMapChanged(Player* player)
     {
         Debug("Solo arena map change: player='{}' map={} stage={}",
             player->GetName(), player->GetMapId(), session->StageId);
+
+        if (session->State == SessionState::AwaitingReturn &&
+            player->GetMapId() != session->ArenaMapId)
+        {
+            _managedArenaInstances.erase(session->ArenaInstanceId);
+            _sessions.erase(player->GetGUID().GetCounter());
+            return;
+        }
     }
 }
 
@@ -1537,6 +1629,9 @@ void SoloArenaMgr::MarkVictory(ObjectGuid const& playerGuid)
     itr->second.EndedAt = std::time(nullptr);
     itr->second.CompletedAt = itr->second.EndedAt;
     itr->second.CombatEndsAt = itr->second.EndedAt;
+    itr->second.CombatDurationSec = GetCombatDurationSec(itr->second);
+    std::tie(itr->second.RankValue, itr->second.RankLabel) =
+        ComputeTrialRank(itr->second);
     itr->second.FinishDelayMs = 3000;
 
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
@@ -1562,6 +1657,9 @@ void SoloArenaMgr::MarkFailure(ObjectGuid const& playerGuid)
     itr->second.EndedAt = std::time(nullptr);
     itr->second.FailedAt = itr->second.EndedAt;
     itr->second.CombatEndsAt = itr->second.EndedAt;
+    itr->second.CombatDurationSec = GetCombatDurationSec(itr->second);
+    std::tie(itr->second.RankValue, itr->second.RankLabel) =
+        ComputeTrialRank(itr->second);
     itr->second.FinishDelayMs = immediateFinish ? 1 : 3000;
 
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
@@ -1584,6 +1682,9 @@ void SoloArenaMgr::MarkAbandoned(ObjectGuid const& playerGuid)
     itr->second.AbandonedAt = itr->second.EndedAt;
     if (itr->second.CombatStartedAt != 0)
         itr->second.CombatEndsAt = itr->second.EndedAt;
+    itr->second.CombatDurationSec = GetCombatDurationSec(itr->second);
+    std::tie(itr->second.RankValue, itr->second.RankLabel) =
+        ComputeTrialRank(itr->second);
     itr->second.FinishDelayMs = 1;
 
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
@@ -1777,40 +1878,34 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
     CleanupPet(session);
     CleanupBot(session);
 
+    session.CombatDurationSec = GetCombatDurationSec(session);
+    if (session.RankLabel.empty())
+        std::tie(session.RankValue, session.RankLabel) =
+            ComputeTrialRank(session);
+
     if (session.Result == ArenaResult::Failure && !player->IsAlive())
     {
         player->ResurrectPlayer(1.0f);
         player->SpawnCorpseBones();
     }
 
-    if (Battleground* battleground = player->GetBattleground())
-        battleground->RemovePlayerAtLeave(player);
-    else if (session.ArenaInstanceId)
-        if (Battleground* arena = sBattlegroundMgr->GetBattleground(
-                session.ArenaInstanceId, DEFAULT_ARENA_BG_TYPE))
-            arena->RemovePlayerAtLeave(player);
-
-    _managedArenaInstances.erase(session.ArenaInstanceId);
-
-    player->TeleportTo(session.ReturnMapId, session.ReturnX, session.ReturnY,
-        session.ReturnZ, session.ReturnO);
-
     switch (session.Result)
     {
         case ArenaResult::Victory:
             SaveProgress(player, session.StageId);
+            SaveStageRecord(player, session);
             GrantStageRewards(player, session);
             SendSystem(player, Acore::StringFormat(
-                "{} 클리어. 다음 단계가 열렸습니다.",
+                "{} 성공. 결과를 확인한 뒤 복귀할 수 있습니다.",
                 GetStageName(session.StageId)));
             break;
         case ArenaResult::Failure:
             SendSystem(player, Acore::StringFormat(
-                "{} 실패. 다시 도전할 수 있습니다.",
+                "{} 실패. 결과를 확인한 뒤 복귀할 수 있습니다.",
                 GetStageName(session.StageId)));
             break;
         case ArenaResult::Abandoned:
-            SendSystem(player, "시련을 종료했습니다.");
+            SendSystem(player, "시련을 포기했습니다. 결과를 확인한 뒤 복귀할 수 있습니다.");
             break;
         default:
             break;
@@ -1818,6 +1913,9 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
 
     LogRun(player, session);
     LogEvent(player, session, "RUN_FINISHED");
+    session.State = SessionState::AwaitingReturn;
+    SendTrialTimePayload(player, session);
+    SendResultPayload(player, session);
 }
 
 std::string SoloArenaMgr::RequestTrialTaunt(Player* player,
@@ -2093,6 +2191,24 @@ bool SoloArenaMgr::IsStageUnlocked(Player* player, uint8 stageId) const
     return stageId <= GetHighestStageCleared(player) + 1;
 }
 
+std::pair<uint8, std::string> SoloArenaMgr::ComputeTrialRank(
+    ArenaSession const& session) const
+{
+    if (session.Result != ArenaResult::Victory)
+        return { 0, "F" };
+
+    uint32 durationSec = GetCombatDurationSec(session);
+    if (durationSec <= 45)
+        return { 5, "S" };
+    if (durationSec <= 75)
+        return { 4, "A" };
+    if (durationSec <= 105)
+        return { 3, "B" };
+    if (durationSec <= 135)
+        return { 2, "C" };
+    return { 1, "D" };
+}
+
 void SoloArenaMgr::SaveProgress(Player* player, uint8 stageId)
 {
     uint8 highestStage = GetHighestStageCleared(player);
@@ -2104,6 +2220,45 @@ void SoloArenaMgr::SaveProgress(Player* player, uint8 stageId)
         "(guid, highest_stage_cleared, updated_at) "
         "VALUES ({}, {}, {})",
         player->GetGUID().GetCounter(), stageId, std::time(nullptr));
+}
+
+void SoloArenaMgr::SaveStageRecord(Player* player, ArenaSession const& session)
+{
+    if (!player || session.Result != ArenaResult::Victory ||
+        session.RankLabel.empty())
+        return;
+
+    uint32 durationSec = GetCombatDurationSec(session);
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT best_rank, best_time_sec "
+        "FROM solo_arena_stage_record "
+        "WHERE guid = {} AND stage_id = {}",
+        player->GetGUID().GetCounter(), session.StageId);
+
+    bool shouldSave = true;
+    if (result)
+    {
+        Field* fields = result->Fetch();
+        uint8 bestRank = fields[0].Get<uint8>();
+        uint32 bestTime = fields[1].Get<uint32>();
+        shouldSave = session.RankValue > bestRank ||
+            (session.RankValue == bestRank &&
+             (bestTime == 0 || durationSec < bestTime));
+    }
+
+    if (!shouldSave)
+        return;
+
+    CharacterDatabase.Execute(
+        "REPLACE INTO solo_arena_stage_record "
+        "(guid, stage_id, best_rank, best_rank_label, best_time_sec, "
+        "updated_at) VALUES ({}, {}, {}, '{}', {}, {})",
+        player->GetGUID().GetCounter(),
+        session.StageId,
+        session.RankValue,
+        EscapeCharacterDb(session.RankLabel),
+        durationSec,
+        std::time(nullptr));
 }
 
 void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session)
@@ -2153,9 +2308,10 @@ void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
         "result, result_label, session_state, started_at, "
         "preparation_ends_at, combat_started_at, combat_ended_at, "
         "ended_at, completed_at, failed_at, abandoned_at, duration_sec, "
-        "arena_map_id, arena_instance_id, return_map_id) "
+        "rank_value, rank_label, combat_duration_sec, arena_map_id, "
+        "arena_instance_id, return_map_id) "
         "VALUES ({}, {}, {}, '{}', {}, '{}', {}, '{}', {}, {}, {}, {}, "
-        "{}, {}, {}, {}, {}, {}, {}, {}, {})",
+        "{}, {}, {}, {}, '{}', {}, {}, {}, {})",
         session.RunUid,
         player->GetGUID().GetCounter(),
         player->GetSession() ? player->GetSession()->GetAccountId() : 0,
@@ -2178,6 +2334,9 @@ void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
         session.AbandonedAt,
         session.EndedAt > session.StartedAt ?
             uint32(session.EndedAt - session.StartedAt) : 0,
+        session.RankValue,
+        EscapeCharacterDb(session.RankLabel),
+        session.CombatDurationSec,
         session.ArenaMapId,
         session.ArenaInstanceId,
         session.ReturnMapId);
@@ -2237,6 +2396,42 @@ std::string SoloArenaMgr::GetStageName(uint8 stageId) const
         return stage->Name;
 
     return Acore::StringFormat("시련 {}단계", stageId);
+}
+
+std::string SoloArenaMgr::GetStageMechanicName(uint8 stageId) const
+{
+    auto range = _mechanics.equal_range(stageId);
+    for (auto itr = range.first; itr != range.second; ++itr)
+    {
+        if (itr->second.Enabled)
+            return itr->second.Name;
+    }
+
+    return "";
+}
+
+std::string SoloArenaMgr::BuildStageRankPayload(Player* player,
+    uint8 stageId) const
+{
+    if (!player)
+        return "-^0";
+
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT best_rank_label, best_time_sec "
+        "FROM solo_arena_stage_record "
+        "WHERE guid = {} AND stage_id = {}",
+        player->GetGUID().GetCounter(), stageId);
+
+    if (!result)
+        return "-^0";
+
+    Field* fields = result->Fetch();
+    std::string rankLabel = fields[0].Get<std::string>();
+    uint32 bestTime = fields[1].Get<uint32>();
+    if (rankLabel.empty())
+        rankLabel = "-";
+
+    return Acore::StringFormat("{}^{}", rankLabel, bestTime);
 }
 
 std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
@@ -2617,7 +2812,7 @@ void SoloArenaMgr::LoadDefaultMechanics()
     _mechanics.clear();
 
     StageMechanicConfig stage4;
-    stage4.StageId = 4;
+    stage4.StageId = 1;
     stage4.SlotId = 1;
     stage4.MechanicType = StageMechanicType::HealingSurge;
     stage4.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
@@ -2632,7 +2827,7 @@ void SoloArenaMgr::LoadDefaultMechanics()
     _mechanics.emplace(stage4.StageId, stage4);
 
     StageMechanicConfig stage5;
-    stage5.StageId = 5;
+    stage5.StageId = 2;
     stage5.SlotId = 1;
     stage5.MechanicType = StageMechanicType::ShadowBurnHazard;
     stage5.ObjectEntry = TRIAL_MECHANIC_BAD_ENTRY;
@@ -2648,7 +2843,7 @@ void SoloArenaMgr::LoadDefaultMechanics()
     _mechanics.emplace(stage5.StageId, stage5);
 
     StageMechanicConfig stage6;
-    stage6.StageId = 6;
+    stage6.StageId = 3;
     stage6.SlotId = 1;
     stage6.MechanicType = StageMechanicType::GuardianSummon;
     stage6.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
@@ -3214,7 +3409,7 @@ namespace
                     Milliseconds(_tactical.Utility.CooldownMs / 2));
             }
 
-            if (_profile.StageId >= 4)
+            if (_profile.StageId >= 3)
             {
                 events.ScheduleEvent(EVENT_AOE,
                     Milliseconds(_tactical.Area.CooldownMs));
