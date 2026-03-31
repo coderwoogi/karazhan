@@ -1264,7 +1264,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     if (!player->HasItemCount(TRIAL_TICKET_ITEM, 1, false))
     {
         SendSystem(player,
-            "시련 입장권이 필요합니다. 필요 아이템: 600022");
+            "시련 입장권이 필요합니다.");
         return false;
     }
 

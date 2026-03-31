@@ -6,6 +6,7 @@ local SESSION_WAITING_FOR_START = 1
 local SESSION_ACTIVE = 2
 local SESSION_PENDING_FINISH = 3
 local SESSION_AWAITING_RETURN = 4
+local TRIAL_TICKET_ITEM = 600022
 
 local function Split(input, sep)
   local parts = {}
@@ -291,9 +292,47 @@ if Trial.stageDesc.SetWordWrap then
   Trial.stageDesc:SetWordWrap(true)
 end
 
+Trial.requirementTitle = CreateLabel(
+  Trial.infoPane, "GameFontHighlight", 13, 1.0, 0.84, 0.25)
+Trial.requirementTitle:SetPoint("TOPLEFT", Trial.stageDesc, "BOTTOMLEFT", 0, -12)
+Trial.requirementTitle:SetText("필요조건")
+
+Trial.requirementIconBg = CreatePanel(Trial.infoPane, 40, 40)
+Trial.requirementIconBg:SetPoint("TOPLEFT", Trial.requirementTitle, "BOTTOMLEFT", 0, -8)
+Trial.requirementIconBg.itemEntry = TRIAL_TICKET_ITEM
+
+Trial.requirementIcon = Trial.requirementIconBg:CreateTexture(nil, "ARTWORK")
+Trial.requirementIcon:SetPoint("TOPLEFT", Trial.requirementIconBg, "TOPLEFT", 4, -4)
+Trial.requirementIcon:SetPoint("BOTTOMRIGHT", Trial.requirementIconBg, "BOTTOMRIGHT", -4, 4)
+Trial.requirementIcon:SetTexture(GetItemIcon(TRIAL_TICKET_ITEM)
+  or "Interface\\Icons\\INV_Misc_QuestionMark")
+
+Trial.requirementIconBg:EnableMouse(true)
+Trial.requirementIconBg:SetScript("OnEnter", function(self)
+  if not self.itemEntry or self.itemEntry <= 0 then
+    return
+  end
+
+  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+  GameTooltip:SetHyperlink("item:" .. tostring(self.itemEntry))
+  GameTooltip:Show()
+end)
+Trial.requirementIconBg:SetScript("OnLeave", function()
+  GameTooltip:Hide()
+end)
+
+Trial.requirementText = CreateLabel(
+  Trial.infoPane, "GameFontNormal", 12, 0.95, 0.82, 0.24)
+Trial.requirementText:SetPoint("TOPLEFT", Trial.requirementIconBg, "TOPRIGHT", 12, -2)
+Trial.requirementText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -58)
+Trial.requirementText:SetJustifyH("LEFT")
+if Trial.requirementText.SetWordWrap then
+  Trial.requirementText:SetWordWrap(true)
+end
+
 Trial.rewardTitle = CreateLabel(
   Trial.infoPane, "GameFontHighlight", 13, 1.0, 0.84, 0.25)
-Trial.rewardTitle:SetPoint("TOPLEFT", Trial.stageDesc, "BOTTOMLEFT", 0, -12)
+Trial.rewardTitle:SetPoint("TOPLEFT", Trial.requirementIconBg, "BOTTOMLEFT", 0, -16)
 Trial.rewardTitle:SetText("보상")
 
 Trial.rewardIconBg = CreatePanel(Trial.infoPane, 40, 40)
@@ -322,7 +361,7 @@ end)
 Trial.rewardText = CreateLabel(
   Trial.infoPane, "GameFontNormal", 12, 0.95, 0.82, 0.24)
 Trial.rewardText:SetPoint("TOPLEFT", Trial.rewardIconBg, "TOPRIGHT", 12, -2)
-Trial.rewardText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -58)
+Trial.rewardText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -128)
 Trial.rewardText:SetJustifyH("LEFT")
 if Trial.rewardText.SetWordWrap then
   Trial.rewardText:SetWordWrap(true)
@@ -407,7 +446,6 @@ local function GetStageDescription(stage)
 
   local lines = {
     "언더시티 투기장에서 당신의 그림자와 1:1 결투를 치릅니다.",
-    "입장 조건: 아이템 600022 입장권 1개 필요",
     "일일 입장 제한: 하루 최대 5회",
     string.format("체력 배율 %.2f / 공격 배율 %.2f", stage.health, stage.damage),
     string.format("스킬 주기 %dms / 이동 속도 %.2f", stage.spellInterval, stage.moveSpeed),
@@ -469,6 +507,11 @@ local function GetStageReward(stage)
   }
 end
 
+local function GetRequirementText()
+  local itemName = GetItemInfo(TRIAL_TICKET_ITEM) or "시련 입장권"
+  return string.format("%s x 1개", itemName)
+end
+
 local function RefreshStatusTimes()
   if Trial.state.sessionState == SESSION_ACTIVE and Trial.state.combatEndsAt then
     Trial.currentTimeText:SetText(
@@ -502,6 +545,9 @@ local function RefreshSelection()
     Trial.stageTitle:SetText("선택 가능한 시련이 없습니다")
     Trial.stageMeta:SetText("이전 단계를 먼저 클리어해야 다음 단계가 열립니다.")
     Trial.stageDesc:SetText("")
+    Trial.requirementIcon:SetTexture(GetItemIcon(TRIAL_TICKET_ITEM)
+      or "Interface\\Icons\\INV_Misc_QuestionMark")
+    Trial.requirementText:SetText(GetRequirementText())
     Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
     Trial.rewardText:SetText("설정된 보상이 없습니다.")
     Trial.rewardIconBg.itemEntry = nil
@@ -513,6 +559,9 @@ local function RefreshSelection()
   Trial.stageTitle:SetText(stage.name)
   Trial.stageMeta:SetText(GetBestRankText(stage))
   Trial.stageDesc:SetText(GetStageDescription(stage))
+  Trial.requirementIcon:SetTexture(GetItemIcon(TRIAL_TICKET_ITEM)
+    or "Interface\\Icons\\INV_Misc_QuestionMark")
+  Trial.requirementText:SetText(GetRequirementText())
 
   local reward = GetStageReward(stage)
   Trial.rewardIcon:SetTexture(reward.icon)
