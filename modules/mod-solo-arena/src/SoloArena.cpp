@@ -6,6 +6,7 @@
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "Duration.h"
+#include "GameObject.h"
 #include "LFGMgr.h"
 #include "MapMgr.h"
 #include "ObjectAccessor.h"
@@ -19,6 +20,7 @@
 #include "SpellMgr.h"
 #include "StringFormat.h"
 #include "TemporarySummon.h"
+#include "UnitScript.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 
@@ -27,6 +29,7 @@
 #include <algorithm>
 #include <array>
 #include <atomic>
+#include <cmath>
 #include <cstdlib>
 #include <ctime>
 #include <unordered_map>
@@ -41,6 +44,18 @@ namespace
     constexpr uint32 ACTION_ABANDON = 500;
     constexpr uint32 SOLO_ARENA_PREPARATION_MS = 20000;
     constexpr uint32 DEFAULT_COMBAT_LIMIT_MS = 180000;
+    constexpr uint32 TRIAL_MECHANIC_GOOD_ENTRY = 184663;
+    constexpr uint32 TRIAL_MECHANIC_BAD_ENTRY = 184664;
+    constexpr uint32 TRIAL_HELPER_ENTRY = 190023;
+    constexpr uint32 TRIAL_HAZARD_ENTRY = 190024;
+
+    enum class StageMechanicType : uint8
+    {
+        None = 0,
+        HealingSurge = 1,
+        ShadowBurnHazard = 2,
+        GuardianSummon = 3
+    };
 
     enum class ArenaResult : uint8
     {
@@ -125,8 +140,34 @@ namespace
         uint32 FinishDelayMs = 3000;
         uint32 PetEntry = 0;
         uint32 PetDisplayId = 0;
+        ObjectGuid MechanicGuid = ObjectGuid::Empty;
+        ObjectGuid HelperGuid = ObjectGuid::Empty;
+        ObjectGuid HazardGuid = ObjectGuid::Empty;
+        uint8 MechanicSlot = 0;
+        StageMechanicType MechanicType = StageMechanicType::None;
+        uint64 NextMechanicAt = 0;
+        uint64 PlayerDamageBuffEndsAt = 0;
         ArenaResult Result = ArenaResult::None;
         SessionState State = SessionState::PendingSpawn;
+    };
+
+    struct StageMechanicConfig
+    {
+        uint8 StageId = 0;
+        uint8 SlotId = 0;
+        StageMechanicType MechanicType = StageMechanicType::None;
+        uint32 ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
+        float SpawnX = 1285.81f;
+        float SpawnY = 1667.90f;
+        float SpawnZ = 39.96f;
+        float SpawnO = 0.0f;
+        uint32 SpawnIntervalMs = 20000;
+        uint32 DurationMs = 20000;
+        float EffectValue1 = 0.0f;
+        float EffectValue2 = 0.0f;
+        uint32 SummonEntry = 0;
+        bool Enabled = true;
+        std::string Name;
     };
 
     struct ShadowProfile
@@ -524,8 +565,10 @@ namespace
         }
 
         void LoadStages();
+        void LoadMechanics();
         std::vector<StageConfig> GetStages() const;
         StageConfig const* GetStage(uint8 stageId) const;
+        std::vector<StageMechanicConfig> GetMechanics(uint8 stageId) const;
         bool HasSession(ObjectGuid const& playerGuid) const;
         ArenaSession const* GetSession(ObjectGuid const& playerGuid) const;
         bool IsCombatActive(ObjectGuid const& playerGuid) const;
@@ -568,6 +611,18 @@ namespace
         std::string GetStageName(uint8 stageId) const;
         std::string BuildStageRewardPayload(uint8 stageId) const;
         void LoadDefaultStages();
+        void LoadDefaultMechanics();
+        void UpdateMechanics(Player* player, ArenaSession& session);
+        bool SpawnMechanicObject(Player* player, ArenaSession& session,
+            StageMechanicConfig const& mechanic);
+        void ClearMechanicObject(ArenaSession& session);
+        void ClearMechanicSummons(ArenaSession& session);
+        void ApplyMechanicEffect(Player* player, ArenaSession& session,
+            StageMechanicConfig const& mechanic);
+        bool SummonMechanicHelper(Player* player, ArenaSession& session,
+            StageMechanicConfig const& mechanic);
+        bool SummonMechanicHazard(Player* player, ArenaSession& session,
+            StageMechanicConfig const& mechanic);
 
         template <typename... Args>
         void Debug(std::string const& fmt, Args&&... args) const
@@ -588,6 +643,7 @@ namespace
         }
 
         std::unordered_map<uint8, StageConfig> _stages;
+        std::unordered_multimap<uint8, StageMechanicConfig> _mechanics;
         std::unordered_map<uint64, ArenaSession> _sessions;
         std::unordered_map<uint64, ShadowProfile> _shadowProfiles;
         std::unordered_set<uint32> _managedArenaInstances;
@@ -989,6 +1045,53 @@ void SoloArenaMgr::LoadStages()
         LoadDefaultStages();
 }
 
+void SoloArenaMgr::LoadMechanics()
+{
+    _mechanics.clear();
+
+    QueryResult result = WorldDatabase.Query(
+        "SELECT stage_id, slot_id, mechanic_type, object_entry, "
+        "spawn_x, spawn_y, spawn_z, spawn_o, spawn_interval_ms, "
+        "duration_ms, effect_value_1, effect_value_2, summon_entry, "
+        "enabled, name "
+        "FROM solo_arena_stage_mechanic "
+        "ORDER BY stage_id, slot_id");
+
+    if (!result)
+    {
+        LoadDefaultMechanics();
+        return;
+    }
+
+    do
+    {
+        Field* fields = result->Fetch();
+
+        StageMechanicConfig mechanic;
+        mechanic.StageId = fields[0].Get<uint8>();
+        mechanic.SlotId = fields[1].Get<uint8>();
+        mechanic.MechanicType = StageMechanicType(fields[2].Get<uint8>());
+        mechanic.ObjectEntry = fields[3].Get<uint32>();
+        mechanic.SpawnX = fields[4].Get<float>();
+        mechanic.SpawnY = fields[5].Get<float>();
+        mechanic.SpawnZ = fields[6].Get<float>();
+        mechanic.SpawnO = fields[7].Get<float>();
+        mechanic.SpawnIntervalMs = fields[8].Get<uint32>();
+        mechanic.DurationMs = fields[9].Get<uint32>();
+        mechanic.EffectValue1 = fields[10].Get<float>();
+        mechanic.EffectValue2 = fields[11].Get<float>();
+        mechanic.SummonEntry = fields[12].Get<uint32>();
+        mechanic.Enabled = fields[13].Get<uint8>() != 0;
+        mechanic.Name = fields[14].Get<std::string>();
+
+        if (mechanic.Enabled)
+            _mechanics.emplace(mechanic.StageId, mechanic);
+    } while (result->NextRow());
+
+    if (_mechanics.empty())
+        LoadDefaultMechanics();
+}
+
 std::vector<StageConfig> SoloArenaMgr::GetStages() const
 {
     std::vector<StageConfig> stages;
@@ -1028,6 +1131,23 @@ ArenaSession const* SoloArenaMgr::GetSession(ObjectGuid const& playerGuid) const
         return nullptr;
 
     return &itr->second;
+}
+
+std::vector<StageMechanicConfig> SoloArenaMgr::GetMechanics(
+    uint8 stageId) const
+{
+    std::vector<StageMechanicConfig> mechanics;
+    auto [itr, end] = _mechanics.equal_range(stageId);
+    for (; itr != end; ++itr)
+        mechanics.push_back(itr->second);
+
+    std::sort(mechanics.begin(), mechanics.end(),
+        [](StageMechanicConfig const& lhs, StageMechanicConfig const& rhs)
+        {
+            return lhs.SlotId < rhs.SlotId;
+        });
+
+    return mechanics;
 }
 
 bool SoloArenaMgr::IsCombatActive(ObjectGuid const& playerGuid) const
@@ -1109,6 +1229,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     session.StartedAt = std::time(nullptr);
     session.PreparationEndsAt = session.StartedAt +
         (SOLO_ARENA_PREPARATION_MS / 1000);
+    session.NextMechanicAt = 0;
 
     _sessions[player->GetGUID().GetCounter()] = session;
     _managedArenaInstances.insert(session.ArenaInstanceId);
@@ -1313,6 +1434,9 @@ void SoloArenaMgr::Update(uint32 diff)
                         session.CombatStartedAt = std::time(nullptr);
                         session.CombatEndsAt = session.CombatStartedAt +
                             (DEFAULT_COMBAT_LIMIT_MS / 1000);
+                        if (session.StageId >= 4 && session.StageId <= 6)
+                            session.NextMechanicAt =
+                                session.CombatStartedAt + 8;
                         session.EndedAt = 0;
                         LogEvent(player, session, "COMBAT_STARTED");
                         SendTrialTimePayload(player, session);
@@ -1324,6 +1448,7 @@ void SoloArenaMgr::Update(uint32 diff)
                 break;
             case SessionState::Active:
                 SyncShadowPet(player, session, true);
+                UpdateMechanics(player, session);
 
                 if (player->GetMapId() != session.ArenaMapId)
                 {
@@ -1636,6 +1761,8 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
 
 void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
 {
+    ClearMechanicObject(session);
+    ClearMechanicSummons(session);
     CleanupPet(session);
     CleanupBot(session);
 
@@ -2133,6 +2260,266 @@ std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
     return rewards.str();
 }
 
+void SoloArenaMgr::ClearMechanicObject(ArenaSession& session)
+{
+    if (session.MechanicGuid.IsEmpty())
+        return;
+
+    if (Player* player = ObjectAccessor::FindConnectedPlayer(
+            session.PlayerGuid))
+        if (GameObject* go = ObjectAccessor::GetGameObject(*player,
+                session.MechanicGuid))
+        {
+            go->SetRespawnTime(0);
+            go->Delete();
+        }
+
+    session.MechanicGuid = ObjectGuid::Empty;
+    session.MechanicSlot = 0;
+    session.MechanicType = StageMechanicType::None;
+}
+
+void SoloArenaMgr::ClearMechanicSummons(ArenaSession& session)
+{
+    if (!session.HelperGuid.IsEmpty())
+        if (Player* player = ObjectAccessor::FindConnectedPlayer(
+                session.PlayerGuid))
+            if (Creature* helper = ObjectAccessor::GetCreature(*player,
+                    session.HelperGuid))
+                helper->DespawnOrUnsummon();
+
+    if (!session.HazardGuid.IsEmpty())
+        if (Player* player = ObjectAccessor::FindConnectedPlayer(
+                session.PlayerGuid))
+            if (Creature* hazard = ObjectAccessor::GetCreature(*player,
+                    session.HazardGuid))
+                hazard->DespawnOrUnsummon();
+
+    session.HelperGuid = ObjectGuid::Empty;
+    session.HazardGuid = ObjectGuid::Empty;
+}
+
+bool SoloArenaMgr::SpawnMechanicObject(Player* player,
+    ArenaSession& session, StageMechanicConfig const& mechanic)
+{
+    if (!player)
+        return false;
+
+    Map* map = player->GetMap();
+    if (!map || player->GetMapId() != session.ArenaMapId)
+        return false;
+
+    float z = ResolveArenaGroundZ(map, mechanic.SpawnX, mechanic.SpawnY,
+        mechanic.SpawnZ);
+    GameObject* go = map->SummonGameObject(mechanic.ObjectEntry,
+        mechanic.SpawnX, mechanic.SpawnY, z, mechanic.SpawnO,
+        0.0f, 0.0f, 0.0f, 0.0f,
+        std::max<uint32>(10u, mechanic.DurationMs / 1000), true);
+    if (!go)
+        return false;
+
+    session.MechanicGuid = go->GetGUID();
+    session.MechanicSlot = mechanic.SlotId;
+    session.MechanicType = mechanic.MechanicType;
+    LogEvent(player, session, "MECHANIC_SPAWNED", mechanic.Name);
+    return true;
+}
+
+bool SoloArenaMgr::SummonMechanicHelper(Player* player,
+    ArenaSession& session, StageMechanicConfig const& mechanic)
+{
+    if (!player)
+        return false;
+
+    ClearMechanicSummons(session);
+
+    Unit* target = nullptr;
+    if (!session.BotGuid.IsEmpty())
+        target = ObjectAccessor::GetCreature(*player, session.BotGuid);
+
+    float angle = player->GetOrientation() + 0.8f;
+    float x = player->GetPositionX() + std::cos(angle) * 2.5f;
+    float y = player->GetPositionY() + std::sin(angle) * 2.5f;
+    float z = ResolveArenaGroundZ(player->GetMap(), x, y,
+        player->GetPositionZ());
+
+    TempSummon* summon = player->SummonCreature(mechanic.SummonEntry,
+        x, y, z, player->GetOrientation(),
+        TEMPSUMMON_TIMED_DESPAWN, uint32(mechanic.EffectValue1) * 1000);
+    if (!summon)
+        return false;
+
+    summon->SetFaction(player->GetFaction());
+    summon->SetReactState(REACT_AGGRESSIVE);
+    summon->SetWalk(false);
+    summon->SetMaxHealth(std::max<uint32>(6000u,
+        uint32(player->GetMaxHealth() * 0.20f)));
+    summon->SetHealth(summon->GetMaxHealth());
+    summon->SetAttackTime(BASE_ATTACK, 1800);
+    summon->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE,
+        std::max(120.0f, player->GetMaxHealth() * 0.010f));
+    summon->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE,
+        std::max(220.0f, player->GetMaxHealth() * 0.018f));
+    summon->UpdateDamagePhysical(BASE_ATTACK);
+    session.HelperGuid = summon->GetGUID();
+
+    if (target)
+    {
+        summon->SetInCombatWith(target);
+        target->SetInCombatWith(summon);
+        summon->AI()->AttackStart(target);
+    }
+
+    return true;
+}
+
+bool SoloArenaMgr::SummonMechanicHazard(Player* player,
+    ArenaSession& session, StageMechanicConfig const& mechanic)
+{
+    if (!player)
+        return false;
+
+    ClearMechanicSummons(session);
+
+    float angle = player->GetOrientation() - 0.9f;
+    float x = player->GetPositionX() + std::cos(angle) * 3.0f;
+    float y = player->GetPositionY() + std::sin(angle) * 3.0f;
+    float z = ResolveArenaGroundZ(player->GetMap(), x, y,
+        player->GetPositionZ());
+
+    TempSummon* summon = player->SummonCreature(mechanic.SummonEntry,
+        x, y, z, player->GetOrientation(),
+        TEMPSUMMON_TIMED_DESPAWN, 18000);
+    if (!summon)
+        return false;
+
+    summon->SetFaction(14);
+    summon->SetReactState(REACT_AGGRESSIVE);
+    summon->SetWalk(false);
+    summon->SetMaxHealth(std::max<uint32>(5000u,
+        uint32(player->GetMaxHealth() * 0.16f)));
+    summon->SetHealth(summon->GetMaxHealth());
+    summon->SetAttackTime(BASE_ATTACK, 1900);
+    summon->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE,
+        std::max(90.0f, player->GetMaxHealth() * 0.008f));
+    summon->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE,
+        std::max(180.0f, player->GetMaxHealth() * 0.014f));
+    summon->UpdateDamagePhysical(BASE_ATTACK);
+    session.HazardGuid = summon->GetGUID();
+    summon->SetInCombatWith(player);
+    player->SetInCombatWith(summon);
+    summon->AI()->AttackStart(player);
+    return true;
+}
+
+void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
+    StageMechanicConfig const& mechanic)
+{
+    switch (mechanic.MechanicType)
+    {
+        case StageMechanicType::HealingSurge:
+        {
+            uint32 heal = std::max<uint32>(1u,
+                uint32(player->GetMaxHealth() * mechanic.EffectValue1));
+            player->ModifyHealth(int32(heal));
+            session.PlayerDamageBuffEndsAt = std::time(nullptr) + 12;
+            SendSystem(player,
+                "시련의 숨결이 당신을 감쌉니다. 잠시 더 강하게 싸웁니다.");
+            LogEvent(player, session, "MECHANIC_TRIGGERED",
+                "시련의 숨결");
+            break;
+        }
+        case StageMechanicType::ShadowBurnHazard:
+        {
+            if (Creature* bot = ObjectAccessor::GetCreature(*player,
+                    session.BotGuid))
+            {
+                uint32 damage = uint32(bot->GetMaxHealth() *
+                    mechanic.EffectValue1);
+                damage = std::max<uint32>(1u, damage);
+                uint32 newHealth = (bot->GetHealth() > damage) ?
+                    (bot->GetHealth() - damage) : 1;
+                bot->SetHealth(newHealth);
+            }
+
+            uint32 selfDamage = std::max<uint32>(1u,
+                uint32(player->GetMaxHealth() * mechanic.EffectValue2));
+            if (player->GetHealth() > selfDamage)
+                player->ModifyHealth(-int32(selfDamage));
+
+            SummonMechanicHazard(player, session, mechanic);
+            SendSystem(player,
+                "뒤틀린 파편이 폭주합니다. 그림자는 흔들리지만 잔영이 덤벼듭니다.");
+            LogEvent(player, session, "MECHANIC_TRIGGERED",
+                "뒤틀린 파편");
+            break;
+        }
+        case StageMechanicType::GuardianSummon:
+        {
+            SummonMechanicHelper(player, session, mechanic);
+            SendSystem(player,
+                "균열의 제단이 응답합니다. 시련 수호자가 당신을 돕습니다.");
+            LogEvent(player, session, "MECHANIC_TRIGGERED",
+                "균열의 제단");
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+void SoloArenaMgr::UpdateMechanics(Player* player, ArenaSession& session)
+{
+    if (!player || session.StageId < 4 || session.StageId > 6)
+        return;
+
+    std::vector<StageMechanicConfig> mechanics = GetMechanics(session.StageId);
+    if (mechanics.empty())
+        return;
+
+    uint64 now = std::time(nullptr);
+
+    if (!session.MechanicGuid.IsEmpty())
+    {
+        GameObject* go = ObjectAccessor::GetGameObject(*player,
+            session.MechanicGuid);
+        StageMechanicConfig const* activeMechanic = nullptr;
+        for (StageMechanicConfig const& mechanic : mechanics)
+            if (mechanic.SlotId == session.MechanicSlot)
+            {
+                activeMechanic = &mechanic;
+                break;
+            }
+
+        if (!go || !activeMechanic)
+        {
+            session.MechanicGuid = ObjectGuid::Empty;
+            session.MechanicSlot = 0;
+            session.MechanicType = StageMechanicType::None;
+        }
+        else if (player->GetDistance(go) <= 3.0f)
+        {
+            ApplyMechanicEffect(player, session, *activeMechanic);
+            ClearMechanicObject(session);
+            session.NextMechanicAt = now +
+                (activeMechanic->SpawnIntervalMs / 1000);
+        }
+
+        return;
+    }
+
+    if (session.NextMechanicAt == 0 || now < session.NextMechanicAt)
+        return;
+
+    size_t index = 0;
+    if (!mechanics.empty())
+        index = size_t(now % mechanics.size());
+
+    if (SpawnMechanicObject(player, session, mechanics[index]))
+        session.NextMechanicAt = now +
+            (mechanics[index].SpawnIntervalMs / 1000);
+}
+
 void SoloArenaMgr::LoadDefaultStages()
 {
     _stages.clear();
@@ -2210,6 +2597,57 @@ void SoloArenaMgr::LoadDefaultStages()
     stage10.HealthMultiplier = 1.90f;
     stage10.DamageMultiplier = 1.90f;
     _stages[stage10.StageId] = stage10;
+}
+
+void SoloArenaMgr::LoadDefaultMechanics()
+{
+    _mechanics.clear();
+
+    StageMechanicConfig stage4;
+    stage4.StageId = 4;
+    stage4.SlotId = 1;
+    stage4.MechanicType = StageMechanicType::HealingSurge;
+    stage4.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
+    stage4.SpawnX = 1328.72f;
+    stage4.SpawnY = 1632.72f;
+    stage4.SpawnZ = 36.73f;
+    stage4.SpawnIntervalMs = 20000;
+    stage4.DurationMs = 15000;
+    stage4.EffectValue1 = 0.20f;
+    stage4.EffectValue2 = 0.25f;
+    stage4.Name = "시련의 숨결";
+    _mechanics.emplace(stage4.StageId, stage4);
+
+    StageMechanicConfig stage5;
+    stage5.StageId = 5;
+    stage5.SlotId = 1;
+    stage5.MechanicType = StageMechanicType::ShadowBurnHazard;
+    stage5.ObjectEntry = TRIAL_MECHANIC_BAD_ENTRY;
+    stage5.SpawnX = 1243.30f;
+    stage5.SpawnY = 1699.17f;
+    stage5.SpawnZ = 34.87f;
+    stage5.SpawnIntervalMs = 22000;
+    stage5.DurationMs = 15000;
+    stage5.EffectValue1 = 0.10f;
+    stage5.EffectValue2 = 0.08f;
+    stage5.SummonEntry = TRIAL_HAZARD_ENTRY;
+    stage5.Name = "뒤틀린 파편";
+    _mechanics.emplace(stage5.StageId, stage5);
+
+    StageMechanicConfig stage6;
+    stage6.StageId = 6;
+    stage6.SlotId = 1;
+    stage6.MechanicType = StageMechanicType::GuardianSummon;
+    stage6.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
+    stage6.SpawnX = 1285.81f;
+    stage6.SpawnY = 1667.90f;
+    stage6.SpawnZ = 39.96f;
+    stage6.SpawnIntervalMs = 25000;
+    stage6.DurationMs = 15000;
+    stage6.EffectValue1 = 18.0f;
+    stage6.SummonEntry = TRIAL_HELPER_ENTRY;
+    stage6.Name = "균열의 제단";
+    _mechanics.emplace(stage6.StageId, stage6);
 }
 
 namespace
@@ -3228,6 +3666,118 @@ namespace
         }
     };
 
+    struct npc_solo_arena_mechanicAI : public ScriptedAI
+    {
+        npc_solo_arena_mechanicAI(Creature* creature, bool ally) :
+            ScriptedAI(creature), _ally(ally)
+        {
+        }
+
+        void Reset() override
+        {
+            me->SetWalk(false);
+            me->SetReactState(REACT_AGGRESSIVE);
+        }
+
+        void EnterEvadeMode(EvadeReason /*why*/ = EVADE_REASON_OTHER) override
+        {
+            if (Unit* target = ResolveTarget())
+            {
+                me->Attack(target, true);
+                me->GetMotionMaster()->Clear();
+                me->GetMotionMaster()->MoveChase(target, 1.5f);
+                return;
+            }
+
+            me->DespawnOrUnsummon();
+        }
+
+        void UpdateAI(uint32 /*diff*/) override
+        {
+            Player* owner = ObjectAccessor::FindConnectedPlayer(
+                me->GetSummonerGUID());
+            if (!owner)
+            {
+                me->DespawnOrUnsummon();
+                return;
+            }
+
+            ArenaSession const* session = SoloArenaMgr::Instance().GetSession(
+                owner->GetGUID());
+            if (!session || !SoloArenaMgr::Instance().IsCombatActive(
+                    owner->GetGUID()))
+            {
+                me->DespawnOrUnsummon();
+                return;
+            }
+
+            Unit* target = ResolveTarget();
+            if (!target)
+            {
+                me->DespawnOrUnsummon();
+                return;
+            }
+
+            if (!UpdateVictim())
+            {
+                AttackStart(target);
+                return;
+            }
+
+            if (me->GetVictim() != target)
+                AttackStart(target);
+
+            DoMeleeAttackIfReady();
+        }
+
+    private:
+        Unit* ResolveTarget() const
+        {
+            Player* owner = ObjectAccessor::FindConnectedPlayer(
+                me->GetSummonerGUID());
+            if (!owner)
+                return nullptr;
+
+            ArenaSession const* session = SoloArenaMgr::Instance().GetSession(
+                owner->GetGUID());
+            if (!session)
+                return nullptr;
+
+            if (_ally)
+                return ObjectAccessor::GetCreature(*owner, session->BotGuid);
+
+            return owner;
+        }
+
+        bool _ally = false;
+    };
+
+    class npc_solo_arena_helper : public CreatureScript
+    {
+    public:
+        npc_solo_arena_helper() : CreatureScript("npc_solo_arena_helper")
+        {
+        }
+
+        CreatureAI* GetAI(Creature* creature) const override
+        {
+            return new npc_solo_arena_mechanicAI(creature, true);
+        }
+    };
+
+    class npc_solo_arena_hazard : public CreatureScript
+    {
+    public:
+        npc_solo_arena_hazard() : CreatureScript("npc_solo_arena_hazard")
+        {
+        }
+
+        CreatureAI* GetAI(Creature* creature) const override
+        {
+            return new npc_solo_arena_mechanicAI(creature, false);
+        }
+    };
+
     class SoloArenaWorldScript : public WorldScript
     {
     public:
@@ -3243,6 +3793,7 @@ namespace
         void OnStartup() override
         {
             SoloArenaMgr::Instance().LoadStages();
+            SoloArenaMgr::Instance().LoadMechanics();
         }
 
         void OnUpdate(uint32 diff) override
@@ -3424,6 +3975,43 @@ namespace
             return false;
         }
     };
+
+    class SoloArenaUnitScript : public UnitScript
+    {
+    public:
+        SoloArenaUnitScript() : UnitScript("SoloArenaUnitScript", true,
+            { UNITHOOK_ON_DAMAGE })
+        {
+        }
+
+        void OnDamage(Unit* attacker, Unit* victim, uint32& damage) override
+        {
+            if (!attacker || !victim || damage == 0)
+                return;
+
+            Player* player = attacker->ToPlayer();
+            if (!player)
+                player = ObjectAccessor::FindConnectedPlayer(
+                    attacker->GetOwnerGUID());
+
+            if (!player)
+                return;
+
+            ArenaSession const* session = SoloArenaMgr::Instance().GetSession(
+                player->GetGUID());
+            if (!session || session->PlayerDamageBuffEndsAt == 0)
+                return;
+
+            if (uint64(std::time(nullptr)) >= session->PlayerDamageBuffEndsAt)
+                return;
+
+            if (victim->GetGUID() != session->BotGuid)
+                return;
+
+            damage = std::max<uint32>(damage + 1,
+                uint32(float(damage) * 1.25f));
+        }
+    };
 }
 
 void AddSoloArenaScripts()
@@ -3433,7 +4021,10 @@ void AddSoloArenaScripts()
     new SoloArenaArenaScript();
     new SoloArenaServerScript();
     new SoloArenaAllSpellScript();
+    new SoloArenaUnitScript();
     new npc_solo_arena_master();
     new npc_solo_arena_shadow();
+    new npc_solo_arena_helper();
+    new npc_solo_arena_hazard();
 }
 
