@@ -100,12 +100,7 @@ INSERT INTO `solo_arena_stage_mechanic` (
 (6, 1, 3, 184663, 1285.81, 1667.90, 39.96, 0.00, 25000, 15000, 18.00, 0.00, 190023, 1, '균열의 제단');
 
 DELETE FROM `creature_template`
-WHERE `entry` IN (190021, 190022, 190023, 190024)
-  AND `ScriptName` IN (
-      'npc_solo_arena_master',
-      'npc_solo_arena_shadow',
-      'npc_solo_arena_helper',
-      'npc_solo_arena_hazard');
+WHERE `entry` IN (190021, 190022, 190023, 190024);
 
 INSERT INTO `creature_template` (
     `entry`, `name`, `subname`, `gossip_menu_id`,
