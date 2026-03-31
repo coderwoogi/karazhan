@@ -633,6 +633,13 @@ local function ApplyOpen(parts)
   Trial.resultFrame:Hide()
   Trial:Show()
   RefreshList()
+
+  if #Trial.state.stages == 0 then
+    Trial.stageBadgeText:SetText("-")
+    Trial.stageTitle:SetText("표시할 단계 데이터가 없습니다")
+    Trial.stageMeta:SetText("서버에서 시련 단계 목록을 받지 못했습니다.")
+    Trial.stageDesc:SetText("서버 로그의 SoloArena SendUi 항목을 확인해 주세요.")
+  end
 end
 
 Trial.start:SetScript("OnClick", function()

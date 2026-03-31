@@ -1361,6 +1361,7 @@ void SoloArenaMgr::SendUi(Player* player)
 
     std::ostringstream entries;
     bool first = true;
+    uint32 sentStages = 0;
 
     for (StageConfig const& stage : GetStages())
     {
@@ -1383,7 +1384,15 @@ void SoloArenaMgr::SendUi(Player* player)
         entries << BuildStageRewardPayload(stage.StageId) << "~";
         entries << BuildStageRankPayload(player, stage.StageId) << "~";
         entries << SanitizeAddonField(GetStageMechanicName(stage.StageId), 48);
+        ++sentStages;
     }
+
+    LOG_INFO("module",
+        "SoloArena SendUi: player='{}' highest={} sentStages={}",
+        player->GetName(), uint32(highestStage), sentStages);
+
+    if (sentStages == 0)
+        SendSystem(player, "시련 UI에 표시할 단계 데이터가 없습니다.");
 
     std::ostringstream payload;
     payload << "OPEN\t";
