@@ -51,6 +51,33 @@ local function FormatRemaining(targetTime)
   return string.format("%d초", math.max(0, targetTime - time()))
 end
 
+local function GetStageNameById(stageId)
+  local names = {
+    [1] = "그림자 시련 1단계",
+    [2] = "그림자 시련 2단계",
+    [3] = "그림자 시련 3단계",
+    [4] = "그림자 시련 4단계",
+    [5] = "그림자 시련 5단계",
+    [6] = "그림자 시련 6단계",
+    [7] = "그림자 시련 7단계",
+    [8] = "그림자 시련 8단계",
+    [9] = "그림자 시련 9단계",
+    [10] = "그림자 시련 10단계",
+  }
+
+  return names[tonumber(stageId) or 0] or string.format("시련 %d단계", tonumber(stageId) or 0)
+end
+
+local function GetMechanicNameByStage(stageId)
+  local names = {
+    [1] = "시련의 숨결",
+    [2] = "뒤틀린 파편",
+    [3] = "균열의 제단",
+  }
+
+  return names[tonumber(stageId) or 0] or ""
+end
+
 local function IsInArenaInstance()
   local _, instanceType = GetInstanceInfo()
   return instanceType == ARENA_INSTANCE_TYPE
@@ -606,7 +633,7 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
       local rankParts = Split(fields[8] or "-^0", "^")
       local stage = {
         stageId = tonumber(fields[1]) or 0,
-        name = fields[2] or "시련",
+        name = GetStageNameById(tonumber(fields[1]) or 0),
         health = tonumber(fields[3]) or 1,
         damage = tonumber(fields[4]) or 1,
         spellInterval = tonumber(fields[5]) or 0,
@@ -614,7 +641,7 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
         rewards = {},
         bestRankLabel = rankParts[1] or "-",
         bestTimeSec = tonumber(rankParts[2]) or 0,
-        mechanicName = fields[9] or "",
+        mechanicName = GetMechanicNameByStage(tonumber(fields[1]) or 0),
       }
 
       local rewardField = fields[7] or ""
@@ -746,7 +773,7 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     Trial.state.pendingArena = false
     Trial.state.sessionState = SESSION_AWAITING_RETURN
     Trial.state.result.stageId = tonumber(parts[2]) or 0
-    Trial.state.result.stageName = parts[3] or "시련"
+    Trial.state.result.stageName = GetStageNameById(tonumber(parts[2]) or 0)
     Trial.state.result.resultLabel = parts[4] or "종료"
     Trial.state.result.rankLabel = parts[5] or "-"
     Trial.state.result.durationSec = tonumber(parts[6]) or 0
