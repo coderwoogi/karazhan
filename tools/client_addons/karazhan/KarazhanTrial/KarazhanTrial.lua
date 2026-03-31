@@ -122,6 +122,7 @@ Trial:SetSize(860, 540)
 Trial:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 Trial:SetClampedToScreen(true)
 Trial:EnableMouse(true)
+Trial:SetFrameStrata("DIALOG")
 Trial:SetMovable(true)
 Trial:RegisterForDrag("LeftButton")
 Trial:SetScript("OnDragStart", Trial.StartMoving)
@@ -508,6 +509,19 @@ local function RefreshSelection()
   end
 end
 
+local function ForceRefreshSelection()
+  if #Trial.state.stages == 0 then
+    RefreshSelection()
+    return
+  end
+
+  if Trial.state.selected < 1 or Trial.state.selected > #Trial.state.stages then
+    Trial.state.selected = 1
+  end
+
+  RefreshSelection()
+end
+
 local function SelectStage(index)
   Trial.state.selected = index
   for i, button in ipairs(Trial.buttons) do
@@ -544,10 +558,12 @@ local function CreateStageButton(index)
   button.name = CreateLabel(button, "GameFontHighlight", 14, 1.0, 0.84, 0.25)
   button.name:SetPoint("TOPLEFT", button.icon, "TOPRIGHT", 10, -2)
   button.name:SetWidth(190)
+  button.name:SetText("단계 로딩")
 
   button.meta = CreateLabel(button, "GameFontNormalSmall", 11, 0.72, 0.72, 0.72)
   button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -5)
   button.meta:SetWidth(190)
+  button.meta:SetText("정보 로딩")
 
   button.cleared = CreateLabel(button, "GameFontHighlightSmall", 11, 0.35, 1.0, 0.35, "RIGHT")
   button.cleared:SetPoint("TOPRIGHT", button, "TOPRIGHT", -10, -8)
@@ -669,6 +685,7 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
   Trial.resultFrame:Hide()
   Trial:Show()
   RefreshList()
+  ForceRefreshSelection()
 
   if #Trial.state.stages == 0 then
     Trial.stageBadgeText:SetText("-")
@@ -677,6 +694,12 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
     Trial.stageDesc:SetText("서버 로그의 SoloArena SendUi 항목을 확인해 주세요.")
   end
 end
+
+Trial:SetScript("OnShow", function()
+  if #Trial.state.stages > 0 then
+    ForceRefreshSelection()
+  end
+end)
 
 local function ApplyOpen(parts)
   ApplyOpenPayload(parts[2], parts[3], parts[4], parts[5], parts[7], parts[9])
