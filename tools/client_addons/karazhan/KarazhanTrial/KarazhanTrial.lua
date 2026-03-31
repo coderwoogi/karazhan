@@ -535,36 +535,28 @@ local function SelectStage(index)
   Trial.state.selected = index
   for i, button in ipairs(Trial.buttons) do
     if i == index then
-      button:SetBackdropColor(0.24, 0.17, 0.05, 0.95)
-      button:SetBackdropBorderColor(0.95, 0.78, 0.22, 1)
+      if button.LockHighlight then
+        button:LockHighlight()
+      end
+      button.name:SetTextColor(1.0, 0.9, 0.35)
     else
-      button:SetBackdropColor(0.05, 0.05, 0.05, 0.82)
-      button:SetBackdropBorderColor(0.18, 0.18, 0.18, 0.90)
+      if button.UnlockHighlight then
+        button:UnlockHighlight()
+      end
+      button.name:SetTextColor(1.0, 0.84, 0.25)
     end
   end
   RefreshSelection()
 end
 
 local function CreateStageButton(index)
-  local button = CreateFrame("Button", nil, Trial.leftPane)
+  local button = CreateFrame("Button", nil, Trial.leftPane, "UIPanelButtonTemplate")
   button:SetSize(252, 52)
   button:SetPoint("TOPLEFT", Trial.leftPane, "TOPLEFT", 8, -38 - ((index - 1) * 56))
   button:SetFrameStrata("DIALOG")
-  button:SetFrameLevel(Trial.leftPane:GetFrameLevel() + 20)
-  button:SetBackdrop({
-    bgFile = "Interface\\Buttons\\WHITE8x8",
-    edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-    edgeSize = 10,
-    insets = { left = 2, right = 2, top = 2, bottom = 2 },
-  })
-  button:SetBackdropColor(0.05, 0.05, 0.05, 0.82)
-  button:SetBackdropBorderColor(0.18, 0.18, 0.18, 0.90)
+  button:SetFrameLevel(Trial.leftPane:GetFrameLevel() + 40)
   button:Hide()
-
-  button.bg = button:CreateTexture(nil, "BACKGROUND")
-  button.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
-  button.bg:SetVertexColor(0.05, 0.05, 0.05, 0.82)
-  button.bg:SetAllPoints(button)
+  button:SetText("")
 
   button.icon = button:CreateTexture(nil, "ARTWORK")
   button.icon:SetTexture("Interface\\Icons\\Achievement_Arena_2v2_7")
@@ -576,18 +568,21 @@ local function CreateStageButton(index)
   button.name:SetWidth(190)
   button.name:SetText("단계 로딩")
   button.name:SetDrawLayer("OVERLAY", 7)
+  button.name:SetParent(button)
 
   button.meta = CreateLabel(button, "GameFontNormalSmall", 11, 0.72, 0.72, 0.72)
   button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -5)
   button.meta:SetWidth(190)
   button.meta:SetText("정보 로딩")
   button.meta:SetDrawLayer("OVERLAY", 7)
+  button.meta:SetParent(button)
 
   button.cleared = CreateLabel(button, "GameFontHighlightSmall", 11, 0.35, 1.0, 0.35, "RIGHT")
   button.cleared:SetPoint("TOPRIGHT", button, "TOPRIGHT", -10, -8)
   button.cleared:SetWidth(72)
   button.cleared:SetText("성공")
   button.cleared:SetDrawLayer("OVERLAY", 7)
+  button.cleared:SetParent(button)
   button.cleared:Hide()
 
   button:SetScript("OnClick", function(self)
