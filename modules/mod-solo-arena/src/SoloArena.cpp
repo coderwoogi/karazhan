@@ -49,6 +49,8 @@ namespace
     constexpr uint32 TRIAL_HELPER_ENTRY = 190023;
     constexpr uint32 TRIAL_HAZARD_ENTRY = 190024;
     constexpr uint32 TRIAL_MECHANIC_BUFF_AURA = 32182;
+    constexpr uint32 TRIAL_TICKET_ITEM = 600022;
+    constexpr uint32 TRIAL_DAILY_LIMIT = 5;
 
     enum class StageMechanicType : uint8
     {
@@ -609,6 +611,7 @@ namespace
         void SaveProgress(Player* player, uint8 stageId);
         void SaveStageRecord(Player* player, ArenaSession const& session);
         void GrantStageRewards(Player* player, ArenaSession const& session);
+        uint32 GetTodayEntryCount(Player* player) const;
         void LogRun(Player* player, ArenaSession const& session);
         void LogEvent(Player* player, ArenaSession const& session,
             std::string const& eventType, std::string const& note = "");
@@ -1251,6 +1254,20 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         return false;
     }
 
+    if (GetTodayEntryCount(player) >= TRIAL_DAILY_LIMIT)
+    {
+        SendSystem(player,
+            "오늘의 시련 입장 가능 횟수 5회를 모두 사용했습니다.");
+        return false;
+    }
+
+    if (!player->HasItemCount(TRIAL_TICKET_ITEM, 1, false))
+    {
+        SendSystem(player,
+            "시련 입장권이 필요합니다. 필요 아이템: 600022");
+        return false;
+    }
+
     Battleground* arenaTemplate =
         sBattlegroundMgr->GetBattlegroundTemplate(BATTLEGROUND_AA);
     if (!arenaTemplate)
@@ -1344,6 +1361,12 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         SendSystem(player, "투기장으로 이동하지 못했습니다.");
         return false;
     }
+
+    player->DestroyItemCount(TRIAL_TICKET_ITEM, 1, true, false);
+    LogEvent(player, _sessions[player->GetGUID().GetCounter()],
+        "TICKET_CONSUMED", Acore::StringFormat(
+            "item={} remaining={}", TRIAL_TICKET_ITEM,
+            player->GetItemCount(TRIAL_TICKET_ITEM, false)));
 
     SendSystem(player, Acore::StringFormat(
         "{} 시작. 언더시티 투기장으로 이동합니다.", stage->Name));
@@ -2261,6 +2284,25 @@ std::pair<uint8, std::string> SoloArenaMgr::ComputeTrialRank(
     if (durationSec <= 135)
         return { 2, "C" };
     return { 1, "D" };
+}
+
+uint32 SoloArenaMgr::GetTodayEntryCount(Player* player) const
+{
+    if (!player)
+        return 0;
+
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT COUNT(*) "
+        "FROM solo_arena_run_log "
+        "WHERE guid = {} "
+        "AND started_at >= UNIX_TIMESTAMP(CURDATE()) "
+        "AND started_at < UNIX_TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 1 DAY))",
+        player->GetGUID().GetCounter());
+
+    if (!result)
+        return 0;
+
+    return result->Fetch()[0].Get<uint32>();
 }
 
 void SoloArenaMgr::SaveProgress(Player* player, uint8 stageId)
