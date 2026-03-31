@@ -256,7 +256,16 @@ Trial.modelBg:SetAllPoints(Trial.model)
 Trial.stageDesc = CreateLabel(Trial.infoPane, "GameFontNormal", 13, 0.95, 0.82, 0.24)
 Trial.stageDesc:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -4)
 Trial.stageDesc:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -4)
+Trial.stageDesc:SetWidth(250)
+Trial.stageDesc:SetHeight(108)
 Trial.stageDesc:SetJustifyH("LEFT")
+Trial.stageDesc:SetJustifyV("TOP")
+if Trial.stageDesc.SetNonSpaceWrap then
+  Trial.stageDesc:SetNonSpaceWrap(false)
+end
+if Trial.stageDesc.SetWordWrap then
+  Trial.stageDesc:SetWordWrap(true)
+end
 
 Trial.rewardTitle = CreateLabel(Trial.infoPane, "GameFontHighlight", 13, 1.0, 0.84, 0.25)
 Trial.rewardTitle:SetPoint("TOPLEFT", Trial.stageDesc, "BOTTOMLEFT", 0, -12)
@@ -540,6 +549,8 @@ local function CreateStageButton(index)
   local button = CreateFrame("Button", nil, Trial.leftPane)
   button:SetSize(252, 52)
   button:SetPoint("TOPLEFT", Trial.leftPane, "TOPLEFT", 8, -38 - ((index - 1) * 56))
+  button:SetFrameStrata("DIALOG")
+  button:SetFrameLevel(Trial.leftPane:GetFrameLevel() + 20)
   button:SetBackdrop({
     bgFile = "Interface\\Buttons\\WHITE8x8",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -550,6 +561,11 @@ local function CreateStageButton(index)
   button:SetBackdropBorderColor(0.18, 0.18, 0.18, 0.90)
   button:Hide()
 
+  button.bg = button:CreateTexture(nil, "BACKGROUND")
+  button.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
+  button.bg:SetVertexColor(0.05, 0.05, 0.05, 0.82)
+  button.bg:SetAllPoints(button)
+
   button.icon = button:CreateTexture(nil, "ARTWORK")
   button.icon:SetTexture("Interface\\Icons\\Achievement_Arena_2v2_7")
   button.icon:SetSize(26, 26)
@@ -559,16 +575,19 @@ local function CreateStageButton(index)
   button.name:SetPoint("TOPLEFT", button.icon, "TOPRIGHT", 10, -2)
   button.name:SetWidth(190)
   button.name:SetText("단계 로딩")
+  button.name:SetDrawLayer("OVERLAY", 7)
 
   button.meta = CreateLabel(button, "GameFontNormalSmall", 11, 0.72, 0.72, 0.72)
   button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -5)
   button.meta:SetWidth(190)
   button.meta:SetText("정보 로딩")
+  button.meta:SetDrawLayer("OVERLAY", 7)
 
   button.cleared = CreateLabel(button, "GameFontHighlightSmall", 11, 0.35, 1.0, 0.35, "RIGHT")
   button.cleared:SetPoint("TOPRIGHT", button, "TOPRIGHT", -10, -8)
   button.cleared:SetWidth(72)
   button.cleared:SetText("성공")
+  button.cleared:SetDrawLayer("OVERLAY", 7)
   button.cleared:Hide()
 
   button:SetScript("OnClick", function(self)
@@ -600,6 +619,7 @@ local function RefreshList()
         button.meta:SetText(string.format("단계 %d / 랭크 미기록", stage.stageId))
       end
       button.cleared:SetShown(stage.stageId <= Trial.state.highestCleared)
+      button:Enable()
       button:Show()
     else
       button:Hide()
