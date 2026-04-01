@@ -432,11 +432,11 @@ Trial.returnButton:SetSize(140, 28)
 Trial.returnButton:SetPoint("BOTTOM", Trial.resultFrame, "BOTTOM", 0, 18)
 Trial.returnButton:SetText("복귀")
 
-Trial.rewardModal = CreatePanel(UIParent, 500, 360)
-Trial.rewardModal:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+Trial.rewardModal = CreatePanel(Trial, 500, 360)
+Trial.rewardModal:SetPoint("CENTER", Trial, "CENTER", 0, 0)
 Trial.rewardModal:SetClampedToScreen(true)
-Trial.rewardModal:SetFrameStrata("FULLSCREEN_DIALOG")
-Trial.rewardModal:SetFrameLevel(50)
+Trial.rewardModal:SetFrameStrata("DIALOG")
+Trial.rewardModal:SetFrameLevel(Trial:GetFrameLevel() + 100)
 Trial.rewardModal:EnableMouse(true)
 Trial.rewardModal:Hide()
 
@@ -748,16 +748,12 @@ local function OpenRewardModal()
 
   RefreshRewardModal()
   Trial.rewardModal:ClearAllPoints()
-  Trial.rewardModal:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+  Trial.rewardModal:SetPoint("CENTER", Trial, "CENTER", 0, 0)
   Trial.rewardModal:Show()
-  Trial:Hide()
 end
 
 local function CloseRewardModal()
   Trial.rewardModal:Hide()
-  if not Trial.resultFrame:IsShown() then
-    Trial:Show()
-  end
 end
 
 Trial.rewardModalClose:SetScript("OnClick", function()
