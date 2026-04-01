@@ -642,11 +642,8 @@ namespace
         template <typename... Args>
         void Debug(std::string const& fmt, Args&&... args) const
         {
-            if (!SoloArenaConfig::Instance().IsDebug())
-                return;
-
-            LOG_INFO("module", "{}", Acore::StringFormat(
-                fmt, std::forward<Args>(args)...));
+            (void)fmt;
+            (void)sizeof...(args);
         }
 
         static void SendSystem(Player* player, std::string const& message)
@@ -1019,17 +1016,10 @@ namespace
         if (!player || !StartsWith(msg, "TRIAL_CMD\t"))
             return false;
 
-        LOG_INFO("module",
-            "SoloArena addon command: player='{}' msg='{}'",
-            player->GetName(), msg);
-
         if (StartsWith(msg, "TRIAL_CMD\tSTART\t"))
         {
             std::string stageText = msg.substr(16);
             uint8 stageId = uint8(std::max(0, atoi(stageText.c_str())));
-            LOG_INFO("module",
-                "SoloArena start request: player='{}' stage={}",
-                player->GetName(), uint32(stageId));
             SoloArenaMgr::Instance().StartChallenge(player, stageId);
             return true;
         }
@@ -1446,18 +1436,8 @@ void SoloArenaMgr::SendUi(Player* player)
         entries << rewardPayload << "~";
         entries << rankPayload << "~";
         entries << mechanicName;
-        LOG_INFO("module",
-            "SoloArena UI Stage: id={} name='{}' reward='{}' rank='{}' "
-            "mechanic='{}'",
-            uint32(stage.StageId), stage.Name, rewardPayload, rankPayload,
-            mechanicName);
         ++sentStages;
     }
-
-    LOG_INFO("module",
-        "SoloArena SendUi: player='{}' highest={} sentStages={}",
-        player->GetName(), uint32(highestStage), sentStages);
-    LOG_INFO("module", "SoloArena SendUi payload: {}", entries.str());
 
     if (sentStages == 0)
         SendSystem(player, "시련 UI에 표시할 단계 데이터가 없습니다.");
@@ -1821,13 +1801,6 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 
     if (!summon)
     {
-        LOG_ERROR("module",
-            "SoloArena shadow spawn failed: player='{}' stage={} map={} "
-            "instance={} entry={} pos=({}, {}, {}, {})",
-            player->GetName(), stage->StageId, player->GetMapId(),
-            player->GetInstanceId(),
-            SoloArenaConfig::Instance().GetShadowEntry(),
-            stage->BotX, stage->BotY, botZ, stage->BotO);
         return false;
     }
 
