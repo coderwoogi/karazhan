@@ -139,6 +139,12 @@ local function SendCommand(payload)
   SendAddonMessage("TRIAL_CMD", payload, "WHISPER", UnitName("player"))
 end
 
+local function DebugChat(message)
+  if DEFAULT_CHAT_FRAME and message then
+    DEFAULT_CHAT_FRAME:AddMessage("|cffd7b35d[시련]|r " .. tostring(message))
+  end
+end
+
 StaticPopupDialogs["KARAZHAN_TRIAL_ABANDON_CONFIRM"] = {
   text = "시련 종료시 어떠한 보상을 받을 수 없고, 미션 또한 실패로 간주합니다.\n그래도 종료 하시겠습니까?",
   button1 = ACCEPT,
@@ -355,11 +361,11 @@ end
 Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
 
 Trial.rewardButton = CreateFrame(
-  "Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
+  "Button", nil, Trial, "UIPanelButtonTemplate")
 Trial.rewardButton:SetSize(120, 28)
 Trial.rewardButton:SetText("보상확인")
-Trial.rewardButton:SetFrameStrata("DIALOG")
-Trial.rewardButton:SetFrameLevel(Trial.rightPane:GetFrameLevel() + 30)
+Trial.rewardButton:SetFrameStrata("FULLSCREEN_DIALOG")
+Trial.rewardButton:SetFrameLevel(Trial:GetFrameLevel() + 200)
 Trial.rewardButton:EnableMouse(true)
 Trial.rewardButton:RegisterForClicks("AnyUp", "AnyDown")
 
@@ -998,11 +1004,18 @@ local function ApplyOpen(parts)
 end
 
 Trial.rewardButton:SetScript("OnClick", function()
+  DebugChat("보상 버튼 클릭")
   if Trial.rewardViewOpen then
     CloseRewardModal()
   else
     OpenRewardModal()
   end
+end)
+Trial.rewardButton:SetScript("OnMouseDown", function()
+  DebugChat("보상 버튼 누름")
+end)
+Trial.rewardButton:SetScript("OnMouseUp", function()
+  DebugChat("보상 버튼 뗌")
 end)
 
 Trial.rewardModalClose:SetScript("OnClick", function()
