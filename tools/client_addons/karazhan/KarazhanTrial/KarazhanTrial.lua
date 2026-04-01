@@ -1028,6 +1028,27 @@ local function CloseRewardModal()
   RefreshSelection()
 end
 
+local function ResetTrialDetailView()
+  Trial.rewardViewOpen = false
+  Trial.modelPane:Show()
+  Trial.infoPane:Show()
+  Trial.stageDesc:Show()
+  Trial.requirementTitle:Show()
+  Trial.requirementIconBg:Show()
+  Trial.requirementText:Show()
+  Trial.rewardTitle:Show()
+  Trial.rewardHint:Show()
+  Trial.rewardListText:Hide()
+  Trial.rewardListPane:Hide()
+  Trial.rewardListEmpty:Hide()
+  Trial.rewardView:Hide()
+  Trial.start:Show()
+  Trial.cancel:Show()
+  Trial.rewardButton:SetText("보상확인")
+  Trial.rewardButton:Show()
+  Trial.rewardModalDismiss:Hide()
+end
+
 local function SelectStage(index)
   Trial.state.selected = index
   for i, button in ipairs(Trial.buttons) do
@@ -1231,15 +1252,13 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
 end
 
 Trial:SetScript("OnShow", function()
-  Trial.rewardViewOpen = false
-  Trial.rewardButton:SetText("보상확인")
+  ResetTrialDetailView()
   Trial.contentPane:Show()
-  Trial.modelPane:Show()
-  Trial.infoPane:Show()
-  Trial.rewardListText:Hide()
-  Trial.start:Show()
-  Trial.cancel:Show()
   RefreshList()
+end)
+
+Trial:SetScript("OnHide", function()
+  ResetTrialDetailView()
 end)
 
 local function ApplyOpen(parts)
@@ -1344,6 +1363,7 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   end
 
   if parts[1] == "RESULT" then
+    ResetTrialDetailView()
     Trial.state.resultShown = true
     Trial.state.inProgress = false
     Trial.state.pendingArena = false
