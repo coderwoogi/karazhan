@@ -934,33 +934,77 @@ local function BuildRewardListText(stage)
   return table.concat(lines, "\n")
 end
 
-local function RefreshRewardListRows(stage)
+local function BuildGroupedRewardRows(stage)
   local rewards = GetSortedStageRewards(stage)
-  local totalRewards = #rewards
+  local rows = {}
+  local currentRank = nil
+
+  for _, reward in ipairs(rewards) do
+    local rankLabel = reward.rankLabel ~= "" and reward.rankLabel or "-"
+    if rankLabel ~= currentRank then
+      currentRank = rankLabel
+      table.insert(rows, {
+        kind = "header",
+        rankLabel = rankLabel,
+      })
+    end
+
+    table.insert(rows, {
+      kind = "reward",
+      reward = reward,
+    })
+  end
+
+  return rows
+end
+
+local function RefreshRewardListRows(stage)
+  local displayRows = BuildGroupedRewardRows(stage)
+  local totalRows = #displayRows
   local visibleRows = #Trial.rewardListRows
   local offset = FauxScrollFrame_GetOffset(Trial.rewardListScroll) or 0
 
   for i, row in ipairs(Trial.rewardListRows) do
-    local reward = rewards[i + offset]
-    if reward then
-      local itemName = reward.itemName or GetItemInfo(reward.itemEntry)
+    local displayRow = displayRows[i + offset]
+    if displayRow then
+      if displayRow.kind == "header" then
+        row.bg:SetVertexColor(0.24, 0.15, 0.03, 0.90)
+        row.rank:SetText(displayRow.rankLabel)
+        row.rank:Show()
+        row.iconBg:Hide()
+        row.name:SetText(displayRow.rankLabel .. " 랭크 보상")
+        row.name:SetPoint("LEFT", row, "LEFT", 84, 0)
+        row.name:SetWidth(320)
+        row.count:SetText("")
+        row.count:Hide()
+        row:Show()
+      else
+        local reward = displayRow.reward
+        local itemName = reward.itemName or GetItemInfo(reward.itemEntry)
         or "이름 로딩 중"
-      row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
-      row.icon:SetTexture(GetItemIcon(reward.itemEntry)
-        or "Interface\\Icons\\INV_Misc_QuestionMark")
-      row.iconBg.itemEntry = reward.itemEntry
-      row.name:SetText(itemName)
-      row.count:SetText(tostring(reward.itemCount or 1))
-      row:Show()
+        row.bg:SetVertexColor(0.07, 0.04, 0.02, 0.58)
+        row.rank:SetText("")
+        row.rank:Show()
+        row.icon:SetTexture(GetItemIcon(reward.itemEntry)
+          or "Interface\\Icons\\INV_Misc_QuestionMark")
+        row.iconBg.itemEntry = reward.itemEntry
+        row.iconBg:Show()
+        row.name:SetPoint("LEFT", row, "LEFT", 132, 0)
+        row.name:SetWidth(268)
+        row.name:SetText(itemName)
+        row.count:SetText(tostring(reward.itemCount or 1))
+        row.count:Show()
+        row:Show()
+      end
     else
       row.iconBg.itemEntry = nil
       row:Hide()
     end
   end
 
-  FauxScrollFrame_Update(Trial.rewardListScroll, totalRewards, visibleRows, 40)
+  FauxScrollFrame_Update(Trial.rewardListScroll, totalRows, visibleRows, 40)
 
-  if totalRewards == 0 then
+  if totalRows == 0 then
     Trial.rewardListEmpty:Show()
     Trial.rewardListPane:Show()
   else
