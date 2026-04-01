@@ -321,6 +321,104 @@ if Trial.rewardListText.SetSpacing then
 end
 Trial.rewardListText:Hide()
 
+Trial.rewardListPane = CreateFrame("Frame", nil, Trial.infoPane)
+Trial.rewardListPane:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, 0)
+Trial.rewardListPane:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, 0)
+Trial.rewardListPane:SetHeight(340)
+Trial.rewardListPane:Hide()
+
+Trial.rewardListHeader = CreateFrame("Frame", nil, Trial.rewardListPane)
+Trial.rewardListHeader:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, 0)
+Trial.rewardListHeader:SetSize(258, 24)
+
+Trial.rewardListHeaderRank = CreateLabel(
+  Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
+Trial.rewardListHeaderRank:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 10, -2)
+Trial.rewardListHeaderRank:SetWidth(38)
+Trial.rewardListHeaderRank:SetText("랭크")
+
+Trial.rewardListHeaderIcon = CreateLabel(
+  Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
+Trial.rewardListHeaderIcon:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 58, -2)
+Trial.rewardListHeaderIcon:SetWidth(36)
+Trial.rewardListHeaderIcon:SetText("")
+
+Trial.rewardListHeaderName = CreateLabel(
+  Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
+Trial.rewardListHeaderName:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 94, -2)
+Trial.rewardListHeaderName:SetWidth(128)
+Trial.rewardListHeaderName:SetText("아이템 이름")
+
+Trial.rewardListHeaderCount = CreateLabel(
+  Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
+Trial.rewardListHeaderCount:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 224, -2)
+Trial.rewardListHeaderCount:SetWidth(28)
+Trial.rewardListHeaderCount:SetText("개수")
+
+Trial.rewardListRows = {}
+for i = 1, 8 do
+  local row = CreateFrame("Frame", nil, Trial.rewardListPane)
+  row:SetSize(258, 34)
+  row:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, -28 - ((i - 1) * 38))
+
+  row.bg = row:CreateTexture(nil, "BACKGROUND")
+  row.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
+  row.bg:SetAllPoints(row)
+  if math.fmod(i, 2) == 0 then
+    row.bg:SetVertexColor(0.10, 0.06, 0.04, 0.70)
+  else
+    row.bg:SetVertexColor(0.07, 0.04, 0.02, 0.58)
+  end
+
+  row.top = row:CreateTexture(nil, "BORDER")
+  row.top:SetTexture("Interface\\Buttons\\WHITE8x8")
+  row.top:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+  row.top:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
+  row.top:SetHeight(1)
+  row.top:SetVertexColor(0.42, 0.28, 0.08, 0.88)
+
+  row.bottom = row:CreateTexture(nil, "BORDER")
+  row.bottom:SetTexture("Interface\\Buttons\\WHITE8x8")
+  row.bottom:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+  row.bottom:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+  row.bottom:SetHeight(1)
+  row.bottom:SetVertexColor(0.42, 0.28, 0.08, 0.88)
+
+  row.left = row:CreateTexture(nil, "BORDER")
+  row.left:SetTexture("Interface\\Buttons\\WHITE8x8")
+  row.left:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+  row.left:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+  row.left:SetWidth(1)
+  row.left:SetVertexColor(0.42, 0.28, 0.08, 0.88)
+
+  row.right = row:CreateTexture(nil, "BORDER")
+  row.right:SetTexture("Interface\\Buttons\\WHITE8x8")
+  row.right:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
+  row.right:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+  row.right:SetWidth(1)
+  row.right:SetVertexColor(0.42, 0.28, 0.08, 0.88)
+
+  row.rank = CreateLabel(row, "GameFontNormal", 14, 1.0, 0.88, 0.32, "LEFT")
+  row.rank:SetPoint("LEFT", row, "LEFT", 10, 0)
+  row.rank:SetWidth(38)
+
+  row.iconSlot = CreateLabel(row, "GameFontNormal", 14, 0.65, 0.55, 0.28, "LEFT")
+  row.iconSlot:SetPoint("LEFT", row, "LEFT", 58, 0)
+  row.iconSlot:SetWidth(30)
+  row.iconSlot:SetText("")
+
+  row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
+  row.name:SetPoint("LEFT", row, "LEFT", 94, 0)
+  row.name:SetWidth(126)
+
+  row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "LEFT")
+  row.count:SetPoint("LEFT", row, "LEFT", 224, 0)
+  row.count:SetWidth(24)
+
+  row:Hide()
+  Trial.rewardListRows[i] = row
+end
+
 Trial.requirementTitle = CreateLabel(
   Trial.infoPane, "GameFontHighlight", 13, 1.0, 0.84, 0.25)
 Trial.requirementTitle:SetPoint("TOPLEFT", Trial.stageDesc, "BOTTOMLEFT", 0, -12)
@@ -794,6 +892,32 @@ local function BuildRewardListText(stage)
   return table.concat(lines, "\n")
 end
 
+local function RefreshRewardListRows(stage)
+  local rewards = GetSortedStageRewards(stage)
+  for i, row in ipairs(Trial.rewardListRows) do
+    local reward = rewards[i]
+    if reward then
+      local itemName = GetItemInfo(reward.itemEntry)
+        or ("아이템 " .. tostring(reward.itemEntry))
+      row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
+      row.name:SetText(itemName)
+      row.count:SetText(tostring(reward.itemCount or 1))
+      row:Show()
+    else
+      row:Hide()
+    end
+  end
+
+  if #rewards == 0 then
+    Trial.rewardListText:SetText("설정된 보상이 없습니다.")
+    Trial.rewardListText:Show()
+    Trial.rewardListPane:Hide()
+  else
+    Trial.rewardListText:Hide()
+    Trial.rewardListPane:Show()
+  end
+end
+
 local function OpenRewardModal()
   local stage = Trial.state.stages[Trial.state.selected]
   if not stage then
@@ -812,8 +936,7 @@ local function OpenRewardModal()
   Trial.rewardHint:Hide()
   Trial.stageDesc:Hide()
   Trial.rewardView:Hide()
-  Trial.rewardListText:SetText(BuildRewardListText(stage))
-  Trial.rewardListText:Show()
+  RefreshRewardListRows(stage)
   Trial.start:Hide()
   Trial.cancel:Hide()
   Trial.rewardButton:SetText("뒤로가기")
@@ -831,6 +954,7 @@ local function CloseRewardModal()
   Trial.rewardTitle:Show()
   Trial.rewardHint:Show()
   Trial.rewardListText:Hide()
+  Trial.rewardListPane:Hide()
   Trial.rewardView:Hide()
   Trial.start:Show()
   Trial.cancel:Show()
