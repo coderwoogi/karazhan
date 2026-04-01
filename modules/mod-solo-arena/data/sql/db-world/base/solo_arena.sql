@@ -28,11 +28,14 @@ CREATE TABLE `solo_arena_stage_reward` (
     `item_entry` INT UNSIGNED NOT NULL,
     `item_count` INT UNSIGNED NOT NULL DEFAULT 1,
     `chance` FLOAT NOT NULL DEFAULT 100,
+    `reward_rank_value` TINYINT UNSIGNED NOT NULL DEFAULT 3,
+    `reward_rank_label` VARCHAR(8) NOT NULL DEFAULT 'B',
     `sort_order` INT UNSIGNED NOT NULL DEFAULT 0,
     `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `comment` VARCHAR(255) NOT NULL DEFAULT '',
     PRIMARY KEY (`id`),
-    KEY `idx_solo_arena_stage_reward_stage` (`stage_id`, `enabled`)
+    KEY `idx_solo_arena_stage_reward_stage` (`stage_id`, `enabled`,
+        `reward_rank_value`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 DROP TABLE IF EXISTS `solo_arena_stage_mechanic`;

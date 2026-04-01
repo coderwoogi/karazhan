@@ -488,12 +488,17 @@ local function GetStageReward(stage)
     local itemName = GetItemInfo(reward.itemEntry)
       or ("아이템 " .. tostring(reward.itemEntry))
     local chanceText = ""
+    local rankText = ""
     if reward.chance and reward.chance > 0 and reward.chance < 100 then
       chanceText = string.format(" (%.1f%%)", reward.chance)
     end
+    if reward.rankLabel and reward.rankLabel ~= "" then
+      rankText = string.format("[%s] ", reward.rankLabel)
+    end
 
     table.insert(lines, string.format(
-      "%s x%d%s",
+      "%s%s x%d%s",
+      rankText,
       itemName,
       reward.itemCount or 1,
       chanceText
@@ -752,6 +757,7 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
               itemEntry = itemEntry,
               itemCount = tonumber(rewardParts[2]) or 1,
               chance = tonumber(rewardParts[3]) or 100,
+              rankLabel = rewardParts[4] or "",
             })
           end
         end

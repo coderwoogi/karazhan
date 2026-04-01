@@ -1969,12 +1969,21 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
     switch (session.Result)
     {
         case ArenaResult::Victory:
-            SaveProgress(player, session.StageId);
             SaveStageRecord(player, session);
             GrantStageRewards(player, session);
-            SendSystem(player, Acore::StringFormat(
-                "{} 성공. 결과를 확인한 뒤 복귀할 수 있습니다.",
-                GetStageName(session.StageId)));
+            if (session.RankValue >= 3)
+            {
+                SaveProgress(player, session.StageId);
+                SendSystem(player, Acore::StringFormat(
+                    "{} 성공. B랭크 이상 달성으로 다음 단계가 해금됩니다. 결과를 확인한 뒤 복귀할 수 있습니다.",
+                    GetStageName(session.StageId)));
+            }
+            else
+            {
+                SendSystem(player, Acore::StringFormat(
+                    "{} 승리. 하지만 B랭크 이상을 달성하지 못해 다음 단계는 해금되지 않습니다.",
+                    GetStageName(session.StageId)));
+            }
             break;
         case ArenaResult::Failure:
             SendSystem(player, Acore::StringFormat(
@@ -2363,11 +2372,13 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
         return;
 
     QueryResult result = WorldDatabase.Query(
-        "SELECT item_entry, item_count, chance "
+        "SELECT item_entry, item_count, chance, reward_rank_value, "
+        "reward_rank_label "
         "FROM solo_arena_stage_reward "
         "WHERE stage_id = {} AND enabled = 1 "
+        "AND (reward_rank_value = 0 OR reward_rank_value = {}) "
         "ORDER BY sort_order, id",
-        session.StageId);
+        session.StageId, session.RankValue);
 
     if (!result)
         return;
@@ -2378,21 +2389,29 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
         uint32 itemEntry = fields[0].Get<uint32>();
         uint32 itemCount = std::max<uint32>(1, fields[1].Get<uint32>());
         float chance = fields[2].Get<float>();
+        uint8 rewardRankValue = fields[3].Get<uint8>();
+        std::string rewardRankLabel = fields[4].Get<std::string>();
         float roll = float(std::rand() % 10000) / 100.0f;
 
         if (chance > 0.0f && roll > chance)
         {
-            LogReward(player, session, itemEntry, itemCount, chance, "SKIPPED");
+            LogReward(player, session, itemEntry, itemCount, chance,
+                Acore::StringFormat("SKIPPED:{}:{}",
+                    rewardRankValue, rewardRankLabel));
             continue;
         }
 
         if (player->AddItem(itemEntry, itemCount))
         {
-            LogReward(player, session, itemEntry, itemCount, chance, "GRANTED");
+            LogReward(player, session, itemEntry, itemCount, chance,
+                Acore::StringFormat("GRANTED:{}:{}",
+                    rewardRankValue, rewardRankLabel));
             continue;
         }
 
-        LogReward(player, session, itemEntry, itemCount, chance, "FAILED");
+        LogReward(player, session, itemEntry, itemCount, chance,
+            Acore::StringFormat("FAILED:{}:{}",
+                rewardRankValue, rewardRankLabel));
     } while (result->NextRow());
 }
 
@@ -2533,7 +2552,7 @@ std::string SoloArenaMgr::BuildStageRankPayload(Player* player,
 std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
 {
     QueryResult result = WorldDatabase.Query(
-        "SELECT item_entry, item_count, chance "
+        "SELECT item_entry, item_count, chance, reward_rank_label "
         "FROM solo_arena_stage_reward "
         "WHERE stage_id = {} AND enabled = 1 "
         "ORDER BY sort_order, id",
@@ -2551,12 +2570,14 @@ std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
         uint32 itemEntry = fields[0].Get<uint32>();
         uint32 itemCount = std::max<uint32>(1, fields[1].Get<uint32>());
         float chance = fields[2].Get<float>();
+        std::string rewardRankLabel = fields[3].Get<std::string>();
 
         if (!first)
             rewards << ",";
 
         first = false;
-        rewards << itemEntry << "^" << itemCount << "^" << chance;
+        rewards << itemEntry << "^" << itemCount << "^" << chance
+                << "^" << SanitizeAddonField(rewardRankLabel, 8);
     } while (result->NextRow());
 
     return rewards.str();
