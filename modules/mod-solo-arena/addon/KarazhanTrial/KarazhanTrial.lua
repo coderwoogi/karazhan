@@ -432,11 +432,11 @@ Trial.returnButton:SetSize(140, 28)
 Trial.returnButton:SetPoint("BOTTOM", Trial.resultFrame, "BOTTOM", 0, 18)
 Trial.returnButton:SetText("복귀")
 
-Trial.rewardModal = CreatePanel(Trial, 500, 360)
-Trial.rewardModal:SetPoint("CENTER", Trial, "CENTER", 0, 0)
+Trial.rewardModal = CreatePanel(Trial.rightPane, 534, 452)
+Trial.rewardModal:SetAllPoints(Trial.rightPane)
 Trial.rewardModal:SetClampedToScreen(true)
 Trial.rewardModal:SetFrameStrata("DIALOG")
-Trial.rewardModal:SetFrameLevel(Trial:GetFrameLevel() + 100)
+Trial.rewardModal:SetFrameLevel(Trial.rightPane:GetFrameLevel() + 100)
 Trial.rewardModal:EnableMouse(true)
 Trial.rewardModal:Hide()
 
@@ -454,7 +454,7 @@ Trial.rewardModalClose = CreateFrame(
   "Button", nil, Trial.rewardModal, "UIPanelCloseButton")
 Trial.rewardModalClose:SetPoint("TOPRIGHT", Trial.rewardModal, "TOPRIGHT", -8, -8)
 
-Trial.rewardTable = CreatePanel(Trial.rewardModal, 452, 236)
+Trial.rewardTable = CreatePanel(Trial.rewardModal, 470, 280)
 Trial.rewardTable:SetPoint("TOP", Trial.rewardModalStage, "BOTTOM", 0, -12)
 
 local rewardHeaderTexts = {
@@ -485,7 +485,7 @@ Trial.rewardHeaderDivider:SetHeight(8)
 Trial.rewardRows = {}
 for i = 1, 8 do
   local row = CreateFrame("Frame", nil, Trial.rewardTable)
-  row:SetSize(430, 24)
+  row:SetSize(446, 24)
   row:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", 10, -44 - ((i - 1) * 25))
 
   row.bg = row:CreateTexture(nil, "BACKGROUND")
@@ -536,14 +536,14 @@ end
 Trial.rewardEmpty = CreateLabel(
   Trial.rewardTable, "GameFontNormal", 13, 0.82, 0.82, 0.82, "CENTER")
 Trial.rewardEmpty:SetPoint("CENTER", Trial.rewardTable, "CENTER", 0, -6)
-Trial.rewardEmpty:SetWidth(360)
+Trial.rewardEmpty:SetWidth(400)
 Trial.rewardEmpty:SetText("설정된 보상이 없습니다.")
 
 Trial.rewardModalDismiss = CreateFrame(
   "Button", nil, Trial.rewardModal, "UIPanelButtonTemplate")
 Trial.rewardModalDismiss:SetSize(120, 28)
 Trial.rewardModalDismiss:SetPoint("BOTTOM", Trial.rewardModal, "BOTTOM", 0, 18)
-Trial.rewardModalDismiss:SetText("닫기")
+Trial.rewardModalDismiss:SetText("뒤로가기")
 Trial.rewardModalDismiss:SetScript("OnClick", function() end)
 
 local function GetStageDescription(stage)
@@ -747,8 +747,6 @@ local function OpenRewardModal()
   end
 
   RefreshRewardModal()
-  Trial.rewardModal:ClearAllPoints()
-  Trial.rewardModal:SetPoint("CENTER", Trial, "CENTER", 0, 0)
   Trial.rewardModal:Show()
 end
 
