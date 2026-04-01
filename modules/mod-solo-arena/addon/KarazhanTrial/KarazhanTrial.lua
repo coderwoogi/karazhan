@@ -362,14 +362,11 @@ Trial.rewardListHeaderDivider:SetPoint("TOPRIGHT", Trial.rewardListPane, "TOPRIG
 Trial.rewardListHeaderDivider:SetHeight(8)
 
 Trial.rewardListScroll = CreateFrame(
-  "ScrollFrame", nil, Trial.rewardListPane, "UIPanelScrollFrameTemplate")
-Trial.rewardListScroll:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, -38)
-Trial.rewardListScroll:SetPoint("BOTTOMRIGHT", Trial.rewardListPane, "BOTTOMRIGHT", -26, 0)
-
-Trial.rewardListScrollChild = CreateFrame("Frame", nil, Trial.rewardListScroll)
-Trial.rewardListScrollChild:SetWidth(470)
-Trial.rewardListScrollChild:SetHeight(1)
-Trial.rewardListScroll:SetScrollChild(Trial.rewardListScrollChild)
+  "ScrollFrame", "KarazhanTrialRewardScroll", Trial.rewardListPane,
+  "FauxScrollFrameTemplate")
+Trial.rewardListScroll:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", -2, -34)
+Trial.rewardListScroll:SetPoint("BOTTOMRIGHT", Trial.rewardListPane, "BOTTOMRIGHT", -28, 36)
+Trial.rewardListScroll.offset = 0
 
 Trial.rewardListEmpty = CreateLabel(
   Trial.rewardListPane, "GameFontNormal", 14, 0.82, 0.82, 0.82, "CENTER")
@@ -379,10 +376,10 @@ Trial.rewardListEmpty:SetText("설정된 보상이 없습니다.")
 Trial.rewardListEmpty:Hide()
 
 Trial.rewardListRows = {}
-for i = 1, 12 do
-  local row = CreateFrame("Frame", nil, Trial.rewardListScrollChild)
+for i = 1, 8 do
+  local row = CreateFrame("Frame", nil, Trial.rewardListPane)
   row:SetSize(494, 36)
-  row:SetPoint("TOPLEFT", Trial.rewardListScrollChild, "TOPLEFT", 0, -((i - 1) * 40))
+  row:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, -34 - ((i - 1) * 40))
 
   row.bg = row:CreateTexture(nil, "BACKGROUND")
   row.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
@@ -939,8 +936,12 @@ end
 
 local function RefreshRewardListRows(stage)
   local rewards = GetSortedStageRewards(stage)
+  local totalRewards = #rewards
+  local visibleRows = #Trial.rewardListRows
+  local offset = FauxScrollFrame_GetOffset(Trial.rewardListScroll) or 0
+
   for i, row in ipairs(Trial.rewardListRows) do
-    local reward = rewards[i]
+    local reward = rewards[i + offset]
     if reward then
       local itemName = reward.itemName or GetItemInfo(reward.itemEntry)
         or "이름 로딩 중"
@@ -957,16 +958,25 @@ local function RefreshRewardListRows(stage)
     end
   end
 
-  if #rewards == 0 then
+  FauxScrollFrame_Update(Trial.rewardListScroll, totalRewards, visibleRows, 40)
+
+  if totalRewards == 0 then
     Trial.rewardListEmpty:Show()
     Trial.rewardListPane:Show()
   else
     Trial.rewardListEmpty:Hide()
     Trial.rewardListPane:Show()
   end
-  Trial.rewardListScrollChild:SetHeight(math.max(1, #rewards * 40))
-  Trial.rewardListScroll:SetVerticalScroll(0)
 end
+
+Trial.rewardListScroll:SetScript("OnVerticalScroll", function(self, offset)
+  FauxScrollFrame_OnVerticalScroll(self, offset, 40, function()
+    local stage = Trial.state.stages[Trial.state.selected]
+    if stage and Trial.rewardViewOpen then
+      RefreshRewardListRows(stage)
+    end
+  end)
+end)
 
 local function OpenRewardModal()
   local stage = Trial.state.stages[Trial.state.selected]
@@ -987,6 +997,7 @@ local function OpenRewardModal()
   Trial.rewardHint:Hide()
   Trial.stageDesc:Hide()
   Trial.rewardView:Hide()
+  FauxScrollFrame_SetOffset(Trial.rewardListScroll, 0)
   RefreshRewardListRows(stage)
   Trial.start:Hide()
   Trial.cancel:Hide()

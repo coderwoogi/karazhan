@@ -2558,6 +2558,23 @@ std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
             }
         }
 
+        if (rewardItemName.empty() || rewardItemName == "이름 로딩 중")
+        {
+            if (QueryResult itemNameResult = WorldDatabase.Query(
+                "SELECT COALESCE(("
+                "SELECT Name FROM item_template_locale "
+                "WHERE ID = {} AND locale = 'koKR' LIMIT 1"
+                "), ("
+                "SELECT name FROM item_template WHERE entry = {} LIMIT 1"
+                "))",
+                itemEntry, itemEntry))
+            {
+                Field* itemNameFields = itemNameResult->Fetch();
+                if (itemNameFields && !itemNameFields[0].IsNull())
+                    rewardItemName = itemNameFields[0].Get<std::string>();
+            }
+        }
+
         if (!first)
             rewards << ",";
 
