@@ -307,14 +307,17 @@ end
 
 Trial.rewardListText = CreateLabel(
   Trial.infoPane, "GameFontNormal", 15, 0.96, 0.92, 0.86)
-Trial.rewardListText:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -4)
-Trial.rewardListText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -4)
-Trial.rewardListText:SetWidth(250)
+Trial.rewardListText:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 4, -4)
+Trial.rewardListText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", -4, -4)
+Trial.rewardListText:SetWidth(258)
 Trial.rewardListText:SetHeight(340)
 Trial.rewardListText:SetJustifyH("LEFT")
 Trial.rewardListText:SetJustifyV("TOP")
 if Trial.rewardListText.SetWordWrap then
   Trial.rewardListText:SetWordWrap(true)
+end
+if Trial.rewardListText.SetSpacing then
+  Trial.rewardListText:SetSpacing(5)
 end
 Trial.rewardListText:Hide()
 
@@ -772,8 +775,8 @@ local function BuildRewardListText(stage)
   end
 
   local lines = {
-    "랭크        이름                           개수",
-    "------------------------------------------------",
+    "랭크 | 이름 | 개수",
+    "--------------------",
   }
 
   for _, reward in ipairs(rewards) do
@@ -782,7 +785,7 @@ local function BuildRewardListText(stage)
     table.insert(
       lines,
       string.format(
-        "%-4s        %-28s %3d",
+        "%s | %s | %d",
         reward.rankLabel ~= "" and reward.rankLabel or "-",
         itemName,
         reward.itemCount or 1
