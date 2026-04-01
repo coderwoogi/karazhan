@@ -365,10 +365,9 @@ Trial.rewardInlineTitle:SetPoint("TOP", Trial.rewardInline, "TOP", 0, 0)
 Trial.rewardInlineTitle:SetText("랭크 보상 목록")
 
 local inlineHeaders = {
-  { text = "랭크", x = 0, width = 40, justify = "CENTER" },
-  { text = "", x = 50, width = 28, justify = "CENTER" },
-  { text = "아이템", x = 86, width = 104, justify = "LEFT" },
-  { text = "개수", x = 196, width = 34, justify = "CENTER" },
+  { text = "랭크", x = 0, width = 46, justify = "CENTER" },
+  { text = "이름", x = 56, width = 134, justify = "LEFT" },
+  { text = "개수", x = 194, width = 34, justify = "CENTER" },
 }
 
 Trial.rewardInlineHeaderFrame = CreatePanel(Trial.rewardInline, 236, 28)
@@ -401,31 +400,11 @@ for i = 1, 6 do
 
   row.rank = CreateLabel(row, "GameFontNormal", 13, 0.95, 0.82, 0.24, "CENTER")
   row.rank:SetPoint("LEFT", row, "LEFT", 0, 0)
-  row.rank:SetWidth(40)
-
-  row.iconBg = CreatePanel(row, 24, 24)
-  row.iconBg:SetPoint("LEFT", row, "LEFT", 48, 0)
-  row.iconBg.itemEntry = nil
-  row.iconBg:EnableMouse(true)
-  row.iconBg:SetScript("OnEnter", function(self)
-    if not self.itemEntry or self.itemEntry <= 0 then
-      return
-    end
-    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-    GameTooltip:SetHyperlink("item:" .. tostring(self.itemEntry))
-    GameTooltip:Show()
-  end)
-  row.iconBg:SetScript("OnLeave", function()
-    GameTooltip:Hide()
-  end)
-
-  row.icon = row.iconBg:CreateTexture(nil, "ARTWORK")
-  row.icon:SetPoint("TOPLEFT", row.iconBg, "TOPLEFT", 4, -4)
-  row.icon:SetPoint("BOTTOMRIGHT", row.iconBg, "BOTTOMRIGHT", -4, 4)
+  row.rank:SetWidth(46)
 
   row.name = CreateLabel(row, "GameFontNormal", 13, 0.96, 0.92, 0.86, "LEFT")
-  row.name:SetPoint("LEFT", row, "LEFT", 82, 0)
-  row.name:SetWidth(104)
+  row.name:SetPoint("LEFT", row, "LEFT", 56, 0)
+  row.name:SetWidth(134)
   if row.name.SetWordWrap then
     row.name:SetWordWrap(true)
   end
@@ -842,14 +821,10 @@ local function RefreshRewardModal()
       local itemName = GetItemInfo(reward.itemEntry)
         or ("아이템 " .. tostring(reward.itemEntry))
       row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
-      row.icon:SetTexture(GetItemIcon(reward.itemEntry)
-        or "Interface\\Icons\\INV_Misc_QuestionMark")
-      row.iconBg.itemEntry = reward.itemEntry
       row.name:SetText(itemName)
       row.count:SetText(tostring(reward.itemCount or 1))
       row:Show()
     else
-      row.iconBg.itemEntry = nil
       row:Hide()
     end
   end
