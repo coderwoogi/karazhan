@@ -340,7 +340,7 @@ Trial.rewardListHeaderIcon = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
 Trial.rewardListHeaderIcon:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 84, -2)
 Trial.rewardListHeaderIcon:SetWidth(48)
-Trial.rewardListHeaderIcon:SetText("")
+Trial.rewardListHeaderIcon:SetText("아이콘")
 
 Trial.rewardListHeaderName = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
@@ -354,11 +354,35 @@ Trial.rewardListHeaderCount:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT
 Trial.rewardListHeaderCount:SetWidth(48)
 Trial.rewardListHeaderCount:SetText("개수")
 
+Trial.rewardListHeaderDivider = Trial.rewardListPane:CreateTexture(nil, "ARTWORK")
+Trial.rewardListHeaderDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
+Trial.rewardListHeaderDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
+Trial.rewardListHeaderDivider:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 4, -28)
+Trial.rewardListHeaderDivider:SetPoint("TOPRIGHT", Trial.rewardListPane, "TOPRIGHT", -24, -28)
+Trial.rewardListHeaderDivider:SetHeight(8)
+
+Trial.rewardListScroll = CreateFrame(
+  "ScrollFrame", nil, Trial.rewardListPane, "UIPanelScrollFrameTemplate")
+Trial.rewardListScroll:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, -38)
+Trial.rewardListScroll:SetPoint("BOTTOMRIGHT", Trial.rewardListPane, "BOTTOMRIGHT", -26, 0)
+
+Trial.rewardListScrollChild = CreateFrame("Frame", nil, Trial.rewardListScroll)
+Trial.rewardListScrollChild:SetWidth(470)
+Trial.rewardListScrollChild:SetHeight(1)
+Trial.rewardListScroll:SetScrollChild(Trial.rewardListScrollChild)
+
+Trial.rewardListEmpty = CreateLabel(
+  Trial.rewardListPane, "GameFontNormal", 14, 0.82, 0.82, 0.82, "CENTER")
+Trial.rewardListEmpty:SetPoint("CENTER", Trial.rewardListPane, "CENTER", 0, 0)
+Trial.rewardListEmpty:SetWidth(420)
+Trial.rewardListEmpty:SetText("설정된 보상이 없습니다.")
+Trial.rewardListEmpty:Hide()
+
 Trial.rewardListRows = {}
-for i = 1, 8 do
-  local row = CreateFrame("Frame", nil, Trial.rewardListPane)
+for i = 1, 16 do
+  local row = CreateFrame("Frame", nil, Trial.rewardListScrollChild)
   row:SetSize(494, 36)
-  row:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, -34 - ((i - 1) * 40))
+  row:SetPoint("TOPLEFT", Trial.rewardListScrollChild, "TOPLEFT", 0, -((i - 1) * 40))
 
   row.bg = row:CreateTexture(nil, "BACKGROUND")
   row.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
@@ -401,14 +425,30 @@ for i = 1, 8 do
   row.rank:SetPoint("LEFT", row, "LEFT", 10, 0)
   row.rank:SetWidth(56)
 
-  row.iconSlot = CreateLabel(row, "GameFontNormal", 14, 0.65, 0.55, 0.28, "LEFT")
-  row.iconSlot:SetPoint("LEFT", row, "LEFT", 84, 0)
-  row.iconSlot:SetWidth(48)
-  row.iconSlot:SetText("")
+  row.iconBg = CreatePanel(row, 24, 24)
+  row.iconBg:SetPoint("LEFT", row, "LEFT", 92, 0)
+  row.iconBg.itemEntry = nil
+  row.iconBg:EnableMouse(true)
+  row.iconBg:SetScript("OnEnter", function(self)
+    if not self.itemEntry or self.itemEntry <= 0 then
+      return
+    end
+
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetHyperlink("item:" .. tostring(self.itemEntry))
+    GameTooltip:Show()
+  end)
+  row.iconBg:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+
+  row.icon = row.iconBg:CreateTexture(nil, "ARTWORK")
+  row.icon:SetPoint("TOPLEFT", row.iconBg, "TOPLEFT", 4, -4)
+  row.icon:SetPoint("BOTTOMRIGHT", row.iconBg, "BOTTOMRIGHT", -4, 4)
 
   row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
-  row.name:SetPoint("LEFT", row, "LEFT", 140, 0)
-  row.name:SetWidth(250)
+  row.name:SetPoint("LEFT", row, "LEFT", 132, 0)
+  row.name:SetWidth(268)
 
   row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "LEFT")
   row.count:SetPoint("LEFT", row, "LEFT", 416, 0)
@@ -896,25 +936,29 @@ local function RefreshRewardListRows(stage)
   for i, row in ipairs(Trial.rewardListRows) do
     local reward = rewards[i]
     if reward then
-      local itemName = GetItemInfo(reward.itemEntry)
-        or ("아이템 " .. tostring(reward.itemEntry))
+      local itemName = GetItemInfo(reward.itemEntry) or "이름 로딩 중"
       row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
+      row.icon:SetTexture(GetItemIcon(reward.itemEntry)
+        or "Interface\\Icons\\INV_Misc_QuestionMark")
+      row.iconBg.itemEntry = reward.itemEntry
       row.name:SetText(itemName)
       row.count:SetText(tostring(reward.itemCount or 1))
       row:Show()
     else
+      row.iconBg.itemEntry = nil
       row:Hide()
     end
   end
 
   if #rewards == 0 then
-    Trial.rewardListText:SetText("설정된 보상이 없습니다.")
-    Trial.rewardListText:Show()
-    Trial.rewardListPane:Hide()
+    Trial.rewardListEmpty:Show()
+    Trial.rewardListPane:Show()
   else
-    Trial.rewardListText:Hide()
+    Trial.rewardListEmpty:Hide()
     Trial.rewardListPane:Show()
   end
+  Trial.rewardListScrollChild:SetHeight(math.max(1, #rewards * 40))
+  Trial.rewardListScroll:SetVerticalScroll(0)
 end
 
 local function OpenRewardModal()
@@ -928,6 +972,7 @@ local function OpenRewardModal()
   Trial.stageTitle:SetText("보상 목록")
   Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
   Trial.modelPane:Hide()
+  Trial.infoPane:Hide()
   Trial.requirementTitle:Hide()
   Trial.requirementIconBg:Hide()
   Trial.requirementText:Hide()
@@ -946,6 +991,7 @@ end
 local function CloseRewardModal()
   Trial.rewardViewOpen = false
   Trial.modelPane:Show()
+  Trial.infoPane:Show()
   Trial.stageDesc:Show()
   Trial.requirementTitle:Show()
   Trial.requirementIconBg:Show()
@@ -954,6 +1000,7 @@ local function CloseRewardModal()
   Trial.rewardHint:Show()
   Trial.rewardListText:Hide()
   Trial.rewardListPane:Hide()
+  Trial.rewardListEmpty:Hide()
   Trial.rewardView:Hide()
   Trial.start:Show()
   Trial.cancel:Show()
