@@ -550,6 +550,8 @@ Trial.rewardModalDismiss:SetPoint("BOTTOM", Trial.rewardModal, "BOTTOM", 0, 18)
 Trial.rewardModalDismiss:SetText("뒤로가기")
 Trial.rewardModalDismiss:SetScript("OnClick", function() end)
 
+Trial.rewardViewOpen = false
+
 local function GetStageDescription(stage)
   if not stage then
     return ""
@@ -750,36 +752,33 @@ local function OpenRewardModal()
     return
   end
 
+  Trial.rewardViewOpen = true
   RefreshRewardModal()
-  Trial.stageBadge:Hide()
-  Trial.stageTitle:Hide()
-  Trial.stageMeta:Hide()
-  Trial.stageDivider:Hide()
+  Trial.stageBadgeText:SetText("R")
+  Trial.stageTitle:SetText("보상 목록")
+  Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
   Trial.contentPane:Hide()
   Trial.start:Hide()
   Trial.cancel:Hide()
-  Trial.rewardButton:Hide()
+  Trial.rewardTitle:Hide()
+  Trial.rewardHint:Hide()
   Trial.rewardModal:Show()
-end
-
-local function CloseRewardModal()
-  Trial.rewardModal:Hide()
-  Trial.stageBadge:Show()
-  Trial.stageTitle:Show()
-  Trial.stageMeta:Show()
-  Trial.stageDivider:Show()
-  Trial.contentPane:Show()
-  Trial.start:Show()
-  Trial.cancel:Show()
+  Trial.rewardButton:SetText("뒤로가기")
   Trial.rewardButton:Show()
 end
 
-Trial.rewardModalClose:SetScript("OnClick", function()
-  CloseRewardModal()
-end)
-Trial.rewardModalDismiss:SetScript("OnClick", function()
-  CloseRewardModal()
-end)
+local function CloseRewardModal()
+  Trial.rewardViewOpen = false
+  Trial.rewardModal:Hide()
+  Trial.contentPane:Show()
+  Trial.start:Show()
+  Trial.cancel:Show()
+  Trial.rewardTitle:Show()
+  Trial.rewardHint:Show()
+  Trial.rewardButton:SetText("보상확인")
+  Trial.rewardButton:Show()
+  RefreshSelection()
+end
 
 local function SelectStage(index)
   Trial.state.selected = index
@@ -983,6 +982,14 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
 end
 
 Trial:SetScript("OnShow", function()
+  Trial.rewardViewOpen = false
+  Trial.rewardModal:Hide()
+  Trial.rewardButton:SetText("보상확인")
+  Trial.rewardTitle:Show()
+  Trial.rewardHint:Show()
+  Trial.contentPane:Show()
+  Trial.start:Show()
+  Trial.cancel:Show()
   RefreshList()
 end)
 
@@ -991,13 +998,18 @@ local function ApplyOpen(parts)
 end
 
 Trial.rewardButton:SetScript("OnClick", function()
-  OpenRewardModal()
+  if Trial.rewardViewOpen then
+    CloseRewardModal()
+  else
+    OpenRewardModal()
+  end
 end)
-Trial.rewardButton:SetScript("OnMouseDown", function()
-  OpenRewardModal()
+
+Trial.rewardModalClose:SetScript("OnClick", function()
+  CloseRewardModal()
 end)
-Trial.rewardButton:SetScript("OnMouseUp", function()
-  OpenRewardModal()
+Trial.rewardModalDismiss:SetScript("OnClick", function()
+  CloseRewardModal()
 end)
 
 Trial.start:SetScript("OnClick", function()

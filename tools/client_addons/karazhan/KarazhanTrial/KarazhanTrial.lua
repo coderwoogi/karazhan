@@ -7,6 +7,15 @@ local SESSION_ACTIVE = 2
 local SESSION_PENDING_FINISH = 3
 local SESSION_AWAITING_RETURN = 4
 local TRIAL_TICKET_ITEM = 600022
+local RANK_SORT_ORDER = {
+  S = 1,
+  A = 2,
+  B = 3,
+  C = 4,
+  D = 5,
+  F = 6,
+  [""] = 99,
+}
 
 local function Split(input, sep)
   local parts = {}
@@ -335,37 +344,24 @@ Trial.rewardTitle = CreateLabel(
 Trial.rewardTitle:SetPoint("TOPLEFT", Trial.requirementIconBg, "BOTTOMLEFT", 0, -16)
 Trial.rewardTitle:SetText("보상")
 
-Trial.rewardIconBg = CreatePanel(Trial.infoPane, 40, 40)
-Trial.rewardIconBg:SetPoint("TOPLEFT", Trial.rewardTitle, "BOTTOMLEFT", 0, -8)
-Trial.rewardIconBg.itemEntry = nil
-
-Trial.rewardIcon = Trial.rewardIconBg:CreateTexture(nil, "ARTWORK")
-Trial.rewardIcon:SetPoint("TOPLEFT", Trial.rewardIconBg, "TOPLEFT", 4, -4)
-Trial.rewardIcon:SetPoint("BOTTOMRIGHT", Trial.rewardIconBg, "BOTTOMRIGHT", -4, 4)
-Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-
-Trial.rewardIconBg:EnableMouse(true)
-Trial.rewardIconBg:SetScript("OnEnter", function(self)
-  if not self.itemEntry or self.itemEntry <= 0 then
-    return
-  end
-
-  GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-  GameTooltip:SetHyperlink("item:" .. tostring(self.itemEntry))
-  GameTooltip:Show()
-end)
-Trial.rewardIconBg:SetScript("OnLeave", function()
-  GameTooltip:Hide()
-end)
-
-Trial.rewardText = CreateLabel(
+Trial.rewardHint = CreateLabel(
   Trial.infoPane, "GameFontNormal", 12, 0.95, 0.82, 0.24)
-Trial.rewardText:SetPoint("TOPLEFT", Trial.rewardIconBg, "TOPRIGHT", 12, -2)
-Trial.rewardText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -128)
-Trial.rewardText:SetJustifyH("LEFT")
-if Trial.rewardText.SetWordWrap then
-  Trial.rewardText:SetWordWrap(true)
+Trial.rewardHint:SetPoint("TOPLEFT", Trial.rewardTitle, "BOTTOMLEFT", 0, -8)
+Trial.rewardHint:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -8)
+Trial.rewardHint:SetJustifyH("LEFT")
+if Trial.rewardHint.SetWordWrap then
+  Trial.rewardHint:SetWordWrap(true)
 end
+Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
+
+Trial.rewardButton = CreateFrame(
+  "Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
+Trial.rewardButton:SetSize(120, 28)
+Trial.rewardButton:SetText("보상확인")
+Trial.rewardButton:SetFrameStrata("DIALOG")
+Trial.rewardButton:SetFrameLevel(Trial.rightPane:GetFrameLevel() + 30)
+Trial.rewardButton:EnableMouse(true)
+Trial.rewardButton:RegisterForClicks("AnyUp", "AnyDown")
 
 Trial.start = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
 Trial.start:SetSize(160, 28)
@@ -379,6 +375,7 @@ Trial.cancel:SetText("닫기")
 Trial.cancel:SetScript("OnClick", function()
   Trial:Hide()
 end)
+Trial.rewardButton:SetPoint("RIGHT", Trial.cancel, "LEFT", -10, 0)
 
 Trial.statusBox = CreatePanel(UIParent, 280, 118)
 Trial.statusBox:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 54)
@@ -439,6 +436,122 @@ Trial.returnButton:SetSize(140, 28)
 Trial.returnButton:SetPoint("BOTTOM", Trial.resultFrame, "BOTTOM", 0, 18)
 Trial.returnButton:SetText("복귀")
 
+Trial.rewardModal = CreatePanel(Trial.rightPane, 534, 452)
+Trial.rewardModal:SetAllPoints(Trial.rightPane)
+Trial.rewardModal:SetClampedToScreen(true)
+Trial.rewardModal:SetFrameStrata("DIALOG")
+Trial.rewardModal:SetFrameLevel(Trial.rightPane:GetFrameLevel() + 100)
+Trial.rewardModal:EnableMouse(true)
+Trial.rewardModal:Hide()
+
+Trial.rewardModalTitle = CreateLabel(
+  Trial.rewardModal, "GameFontHighlightLarge", 18, 1.0, 0.84, 0.25, "CENTER")
+Trial.rewardModalTitle:SetPoint("TOP", Trial.rewardModal, "TOP", 0, -18)
+Trial.rewardModalTitle:SetText("보상 목록")
+
+Trial.rewardModalStage = CreateLabel(
+  Trial.rewardModal, "GameFontHighlight", 14, 0.96, 0.92, 0.86, "CENTER")
+Trial.rewardModalStage:SetPoint("TOP", Trial.rewardModalTitle, "BOTTOM", 0, -8)
+Trial.rewardModalStage:SetWidth(420)
+
+Trial.rewardModalClose = CreateFrame(
+  "Button", nil, Trial.rewardModal, "UIPanelCloseButton")
+Trial.rewardModalClose:SetPoint("TOPRIGHT", Trial.rewardModal, "TOPRIGHT", -8, -8)
+
+Trial.rewardTable = CreatePanel(Trial.rewardModal, 470, 280)
+Trial.rewardTable:SetPoint("TOP", Trial.rewardModalStage, "BOTTOM", 0, -12)
+
+local rewardHeaderTexts = {
+  { key = "rank", text = "랭크", width = 58, offset = 16, justify = "CENTER" },
+  { key = "icon", text = "아이콘", width = 52, offset = 82, justify = "CENTER" },
+  { key = "name", text = "이름", width = 214, offset = 148, justify = "LEFT" },
+  { key = "count", text = "개수", width = 64, offset = 378, justify = "CENTER" },
+}
+
+Trial.rewardHeaders = {}
+for _, header in ipairs(rewardHeaderTexts) do
+  local fs = CreateLabel(
+    Trial.rewardTable, "GameFontHighlight", 12, 1.0, 0.84, 0.25,
+    header.justify)
+  fs:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", header.offset, -14)
+  fs:SetWidth(header.width)
+  fs:SetText(header.text)
+  Trial.rewardHeaders[header.key] = fs
+end
+
+Trial.rewardHeaderDivider = Trial.rewardTable:CreateTexture(nil, "ARTWORK")
+Trial.rewardHeaderDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
+Trial.rewardHeaderDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
+Trial.rewardHeaderDivider:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", 10, -34)
+Trial.rewardHeaderDivider:SetPoint("TOPRIGHT", Trial.rewardTable, "TOPRIGHT", -10, -34)
+Trial.rewardHeaderDivider:SetHeight(8)
+
+Trial.rewardRows = {}
+for i = 1, 8 do
+  local row = CreateFrame("Frame", nil, Trial.rewardTable)
+  row:SetSize(446, 24)
+  row:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", 10, -44 - ((i - 1) * 25))
+
+  row.bg = row:CreateTexture(nil, "BACKGROUND")
+  row.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
+  row.bg:SetAllPoints(row)
+  if math.fmod(i, 2) == 0 then
+    row.bg:SetVertexColor(0.10, 0.06, 0.04, 0.42)
+  else
+    row.bg:SetVertexColor(0.06, 0.03, 0.02, 0.30)
+  end
+
+  row.rank = CreateLabel(row, "GameFontNormal", 12, 0.95, 0.82, 0.24, "CENTER")
+  row.rank:SetPoint("LEFT", row, "LEFT", 6, 0)
+  row.rank:SetWidth(58)
+
+  row.iconBg = CreatePanel(row, 20, 20)
+  row.iconBg:SetPoint("LEFT", row, "LEFT", 80, 0)
+  row.iconBg.itemEntry = nil
+  row.iconBg:EnableMouse(true)
+  row.iconBg:SetScript("OnEnter", function(self)
+    if not self.itemEntry or self.itemEntry <= 0 then
+      return
+    end
+
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetHyperlink("item:" .. tostring(self.itemEntry))
+    GameTooltip:Show()
+  end)
+  row.iconBg:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+
+  row.icon = row.iconBg:CreateTexture(nil, "ARTWORK")
+  row.icon:SetPoint("TOPLEFT", row.iconBg, "TOPLEFT", 4, -4)
+  row.icon:SetPoint("BOTTOMRIGHT", row.iconBg, "BOTTOMRIGHT", -4, 4)
+
+  row.name = CreateLabel(row, "GameFontNormal", 12, 0.96, 0.92, 0.86, "LEFT")
+  row.name:SetPoint("LEFT", row, "LEFT", 118, 0)
+  row.name:SetWidth(214)
+
+  row.count = CreateLabel(row, "GameFontNormal", 12, 0.95, 0.82, 0.24, "CENTER")
+  row.count:SetPoint("LEFT", row, "LEFT", 368, 0)
+  row.count:SetWidth(52)
+
+  Trial.rewardRows[i] = row
+end
+
+Trial.rewardEmpty = CreateLabel(
+  Trial.rewardTable, "GameFontNormal", 13, 0.82, 0.82, 0.82, "CENTER")
+Trial.rewardEmpty:SetPoint("CENTER", Trial.rewardTable, "CENTER", 0, -6)
+Trial.rewardEmpty:SetWidth(400)
+Trial.rewardEmpty:SetText("설정된 보상이 없습니다.")
+
+Trial.rewardModalDismiss = CreateFrame(
+  "Button", nil, Trial.rewardModal, "UIPanelButtonTemplate")
+Trial.rewardModalDismiss:SetSize(120, 28)
+Trial.rewardModalDismiss:SetPoint("BOTTOM", Trial.rewardModal, "BOTTOM", 0, 18)
+Trial.rewardModalDismiss:SetText("뒤로가기")
+Trial.rewardModalDismiss:SetScript("OnClick", function() end)
+
+Trial.rewardViewOpen = false
+
 local function GetStageDescription(stage)
   if not stage then
     return ""
@@ -468,6 +581,33 @@ local function GetBestRankText(stage)
     stage.bestRankLabel,
     FormatDuration(stage.bestTimeSec)
   )
+end
+
+local function GetSortedStageRewards(stage)
+  if not stage or not stage.rewards then
+    return {}
+  end
+
+  local rewards = {}
+  for _, reward in ipairs(stage.rewards) do
+    table.insert(rewards, reward)
+  end
+
+  table.sort(rewards, function(a, b)
+    local rankA = RANK_SORT_ORDER[a.rankLabel or ""] or 99
+    local rankB = RANK_SORT_ORDER[b.rankLabel or ""] or 99
+    if rankA ~= rankB then
+      return rankA < rankB
+    end
+
+    if (a.itemEntry or 0) ~= (b.itemEntry or 0) then
+      return (a.itemEntry or 0) < (b.itemEntry or 0)
+    end
+
+    return (a.itemCount or 0) > (b.itemCount or 0)
+  end)
+
+  return rewards
 end
 
 local function GetStageReward(stage)
@@ -553,9 +693,8 @@ local function RefreshSelection()
     Trial.requirementIcon:SetTexture(GetItemIcon(TRIAL_TICKET_ITEM)
       or "Interface\\Icons\\INV_Misc_QuestionMark")
     Trial.requirementText:SetText(GetRequirementText())
-    Trial.rewardIcon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
-    Trial.rewardText:SetText("설정된 보상이 없습니다.")
-    Trial.rewardIconBg.itemEntry = nil
+    Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
+    Trial.rewardButton:Disable()
     Trial.start:Disable()
     return
   end
@@ -568,16 +707,77 @@ local function RefreshSelection()
     or "Interface\\Icons\\INV_Misc_QuestionMark")
   Trial.requirementText:SetText(GetRequirementText())
 
-  local reward = GetStageReward(stage)
-  Trial.rewardIcon:SetTexture(reward.icon)
-  Trial.rewardText:SetText(reward.text)
-  Trial.rewardIconBg.itemEntry = reward.itemEntry
+  Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
+  Trial.rewardButton:Enable()
 
   if Trial.state.inProgress or Trial.state.pendingArena then
     Trial.start:Disable()
   else
     Trial.start:Enable()
   end
+end
+
+local function RefreshRewardModal()
+  local stage = Trial.state.stages[Trial.state.selected]
+  if not stage then
+    return
+  end
+
+  Trial.rewardModalStage:SetText(stage.name)
+  local rewards = GetSortedStageRewards(stage)
+  Trial.rewardEmpty:SetShown(#rewards == 0)
+
+  for i, row in ipairs(Trial.rewardRows) do
+    local reward = rewards[i]
+    if reward then
+      local itemName = GetItemInfo(reward.itemEntry)
+        or ("아이템 " .. tostring(reward.itemEntry))
+      row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
+      row.icon:SetTexture(GetItemIcon(reward.itemEntry)
+        or "Interface\\Icons\\INV_Misc_QuestionMark")
+      row.iconBg.itemEntry = reward.itemEntry
+      row.name:SetText(itemName)
+      row.count:SetText(tostring(reward.itemCount or 1))
+      row:Show()
+    else
+      row.iconBg.itemEntry = nil
+      row:Hide()
+    end
+  end
+end
+
+local function OpenRewardModal()
+  local stage = Trial.state.stages[Trial.state.selected]
+  if not stage then
+    return
+  end
+
+  Trial.rewardViewOpen = true
+  RefreshRewardModal()
+  Trial.stageBadgeText:SetText("R")
+  Trial.stageTitle:SetText("보상 목록")
+  Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
+  Trial.contentPane:Hide()
+  Trial.start:Hide()
+  Trial.cancel:Hide()
+  Trial.rewardTitle:Hide()
+  Trial.rewardHint:Hide()
+  Trial.rewardModal:Show()
+  Trial.rewardButton:SetText("뒤로가기")
+  Trial.rewardButton:Show()
+end
+
+local function CloseRewardModal()
+  Trial.rewardViewOpen = false
+  Trial.rewardModal:Hide()
+  Trial.contentPane:Show()
+  Trial.start:Show()
+  Trial.cancel:Show()
+  Trial.rewardTitle:Show()
+  Trial.rewardHint:Show()
+  Trial.rewardButton:SetText("보상확인")
+  Trial.rewardButton:Show()
+  RefreshSelection()
 end
 
 local function SelectStage(index)
@@ -782,12 +982,35 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
 end
 
 Trial:SetScript("OnShow", function()
+  Trial.rewardViewOpen = false
+  Trial.rewardModal:Hide()
+  Trial.rewardButton:SetText("보상확인")
+  Trial.rewardTitle:Show()
+  Trial.rewardHint:Show()
+  Trial.contentPane:Show()
+  Trial.start:Show()
+  Trial.cancel:Show()
   RefreshList()
 end)
 
 local function ApplyOpen(parts)
   ApplyOpenPayload(parts[2], parts[3], parts[4], parts[5], parts[7], parts[9])
 end
+
+Trial.rewardButton:SetScript("OnClick", function()
+  if Trial.rewardViewOpen then
+    CloseRewardModal()
+  else
+    OpenRewardModal()
+  end
+end)
+
+Trial.rewardModalClose:SetScript("OnClick", function()
+  CloseRewardModal()
+end)
+Trial.rewardModalDismiss:SetScript("OnClick", function()
+  CloseRewardModal()
+end)
 
 Trial.start:SetScript("OnClick", function()
   local stage = Trial.state.stages[Trial.state.selected]
