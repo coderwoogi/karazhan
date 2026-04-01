@@ -763,29 +763,69 @@ local function RefreshRewardModal()
   end
 end
 
+local function BuildRewardListText(stage)
+  if not stage then
+    return "설정된 보상이 없습니다."
+  end
+
+  local rewards = GetSortedStageRewards(stage)
+  if #rewards == 0 then
+    return "설정된 보상이 없습니다."
+  end
+
+  local lines = {
+    "랭크   이름 x 개수",
+    "--------------------",
+  }
+
+  for _, reward in ipairs(rewards) do
+    local itemName = GetItemInfo(reward.itemEntry)
+      or ("아이템 " .. tostring(reward.itemEntry))
+    table.insert(
+      lines,
+      string.format(
+        "%s   %s x %d",
+        reward.rankLabel ~= "" and reward.rankLabel or "-",
+        itemName,
+        reward.itemCount or 1
+      )
+    )
+  end
+
+  return table.concat(lines, "\n")
+end
+
 local function OpenRewardModal()
   local stage = Trial.state.stages[Trial.state.selected]
   if not stage then
     return
   end
 
-  Trial.rewardViewOpen = true
-  RefreshRewardModal()
-  Trial.stageBadgeText:SetText("R")
-  Trial.stageTitle:SetText("보상 목록")
-  Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
-  Trial.modelPane:Hide()
-  Trial.stageDesc:Hide()
-  Trial.requirementTitle:Hide()
-  Trial.requirementIconBg:Hide()
-  Trial.requirementText:Hide()
-  Trial.rewardTitle:Hide()
-  Trial.rewardHint:Hide()
-  Trial.rewardListText:Show()
-  Trial.start:Hide()
-  Trial.cancel:Hide()
-  Trial.rewardButton:SetText("뒤로가기")
-  Trial.rewardButton:Show()
+  local ok, err = pcall(function()
+    Trial.rewardViewOpen = true
+    Trial.stageBadgeText:SetText("R")
+    Trial.stageTitle:SetText("보상 목록")
+    Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
+    Trial.modelPane:Hide()
+    Trial.stageDesc:Hide()
+    Trial.requirementTitle:Hide()
+    Trial.requirementIconBg:Hide()
+    Trial.requirementText:Hide()
+    Trial.rewardTitle:Hide()
+    Trial.rewardHint:Hide()
+    Trial.rewardListText:SetText(BuildRewardListText(stage))
+    Trial.rewardListText:Show()
+    Trial.start:Hide()
+    Trial.cancel:Hide()
+    Trial.rewardButton:SetText("뒤로가기")
+    Trial.rewardButton:Show()
+  end)
+
+  if not ok then
+    DebugChat("보상 화면 오류: " .. tostring(err))
+  else
+    DebugChat("보상 목록 표시")
+  end
 end
 
 local function CloseRewardModal()
