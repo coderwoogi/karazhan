@@ -774,7 +774,7 @@ local function BuildRewardListText(stage)
 
   local lines = {
     "랭크 | 이름 | 개수",
-    "--------------------",
+    "------------------------------",
   }
 
   for _, reward in ipairs(rewards) do
@@ -805,26 +805,25 @@ local function OpenRewardModal()
   Trial.stageTitle:SetText("보상 목록")
   Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
   Trial.modelPane:Hide()
-  Trial.infoPane:Hide()
   Trial.requirementTitle:Hide()
   Trial.requirementIconBg:Hide()
   Trial.requirementText:Hide()
   Trial.rewardTitle:Hide()
   Trial.rewardHint:Hide()
   Trial.stageDesc:Hide()
-  Trial.rewardListText:Hide()
-  RefreshRewardModal()
-  Trial.rewardView:Show()
+  Trial.rewardView:Hide()
+  Trial.rewardListText:SetText(BuildRewardListText(stage))
+  Trial.rewardListText:Show()
   Trial.start:Hide()
   Trial.cancel:Hide()
-  Trial.rewardButton:Hide()
-  Trial.rewardModalDismiss:Show()
+  Trial.rewardButton:SetText("뒤로가기")
+  Trial.rewardButton:Show()
+  Trial.rewardModalDismiss:Hide()
 end
 
 local function CloseRewardModal()
   Trial.rewardViewOpen = false
   Trial.modelPane:Show()
-  Trial.infoPane:Show()
   Trial.stageDesc:Show()
   Trial.requirementTitle:Show()
   Trial.requirementIconBg:Show()
