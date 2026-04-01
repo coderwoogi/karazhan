@@ -360,6 +360,11 @@ if Trial.rewardHint.SetWordWrap then
 end
 Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
 
+Trial.rewardView = CreatePanel(Trial.contentPane, 494, 330)
+Trial.rewardView:SetPoint("TOPLEFT", Trial.contentPane, "TOPLEFT", 0, 0)
+Trial.rewardView:SetPoint("BOTTOMRIGHT", Trial.contentPane, "BOTTOMRIGHT", 0, 0)
+Trial.rewardView:Hide()
+
 Trial.rewardButton = CreateFrame(
   "Button", nil, Trial, "UIPanelButtonTemplate")
 Trial.rewardButton:SetSize(120, 28)
@@ -442,30 +447,8 @@ Trial.returnButton:SetSize(140, 28)
 Trial.returnButton:SetPoint("BOTTOM", Trial.resultFrame, "BOTTOM", 0, 18)
 Trial.returnButton:SetText("복귀")
 
-Trial.rewardModal = CreatePanel(Trial.rightPane, 534, 452)
-Trial.rewardModal:SetAllPoints(Trial.rightPane)
-Trial.rewardModal:SetClampedToScreen(true)
-Trial.rewardModal:SetFrameStrata("DIALOG")
-Trial.rewardModal:SetFrameLevel(Trial.rightPane:GetFrameLevel() + 100)
-Trial.rewardModal:EnableMouse(true)
-Trial.rewardModal:Hide()
-
-Trial.rewardModalTitle = CreateLabel(
-  Trial.rewardModal, "GameFontHighlightLarge", 18, 1.0, 0.84, 0.25, "CENTER")
-Trial.rewardModalTitle:SetPoint("TOP", Trial.rewardModal, "TOP", 0, -18)
-Trial.rewardModalTitle:SetText("보상 목록")
-
-Trial.rewardModalStage = CreateLabel(
-  Trial.rewardModal, "GameFontHighlight", 14, 0.96, 0.92, 0.86, "CENTER")
-Trial.rewardModalStage:SetPoint("TOP", Trial.rewardModalTitle, "BOTTOM", 0, -8)
-Trial.rewardModalStage:SetWidth(420)
-
-Trial.rewardModalClose = CreateFrame(
-  "Button", nil, Trial.rewardModal, "UIPanelCloseButton")
-Trial.rewardModalClose:SetPoint("TOPRIGHT", Trial.rewardModal, "TOPRIGHT", -8, -8)
-
-Trial.rewardTable = CreatePanel(Trial.rewardModal, 470, 280)
-Trial.rewardTable:SetPoint("TOP", Trial.rewardModalStage, "BOTTOM", 0, -12)
+Trial.rewardTable = CreatePanel(Trial.rewardView, 470, 280)
+Trial.rewardTable:SetPoint("TOP", Trial.rewardView, "TOP", 0, -20)
 
 local rewardHeaderTexts = {
   { key = "rank", text = "랭크", width = 58, offset = 16, justify = "CENTER" },
@@ -550,9 +533,9 @@ Trial.rewardEmpty:SetWidth(400)
 Trial.rewardEmpty:SetText("설정된 보상이 없습니다.")
 
 Trial.rewardModalDismiss = CreateFrame(
-  "Button", nil, Trial.rewardModal, "UIPanelButtonTemplate")
+  "Button", nil, Trial.rewardView, "UIPanelButtonTemplate")
 Trial.rewardModalDismiss:SetSize(120, 28)
-Trial.rewardModalDismiss:SetPoint("BOTTOM", Trial.rewardModal, "BOTTOM", 0, 18)
+Trial.rewardModalDismiss:SetPoint("BOTTOM", Trial.rewardView, "BOTTOM", 0, 18)
 Trial.rewardModalDismiss:SetText("뒤로가기")
 Trial.rewardModalDismiss:SetScript("OnClick", function() end)
 
@@ -729,7 +712,6 @@ local function RefreshRewardModal()
     return
   end
 
-  Trial.rewardModalStage:SetText(stage.name)
   local rewards = GetSortedStageRewards(stage)
   Trial.rewardEmpty:SetShown(#rewards == 0)
 
@@ -763,24 +745,22 @@ local function OpenRewardModal()
   Trial.stageBadgeText:SetText("R")
   Trial.stageTitle:SetText("보상 목록")
   Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
-  Trial.contentPane:Hide()
+  Trial.modelPane:Hide()
+  Trial.infoPane:Hide()
+  Trial.rewardView:Show()
   Trial.start:Hide()
   Trial.cancel:Hide()
-  Trial.rewardTitle:Hide()
-  Trial.rewardHint:Hide()
-  Trial.rewardModal:Show()
   Trial.rewardButton:SetText("뒤로가기")
   Trial.rewardButton:Show()
 end
 
 local function CloseRewardModal()
   Trial.rewardViewOpen = false
-  Trial.rewardModal:Hide()
-  Trial.contentPane:Show()
+  Trial.rewardView:Hide()
+  Trial.modelPane:Show()
+  Trial.infoPane:Show()
   Trial.start:Show()
   Trial.cancel:Show()
-  Trial.rewardTitle:Show()
-  Trial.rewardHint:Show()
   Trial.rewardButton:SetText("보상확인")
   Trial.rewardButton:Show()
   RefreshSelection()
@@ -989,11 +969,11 @@ end
 
 Trial:SetScript("OnShow", function()
   Trial.rewardViewOpen = false
-  Trial.rewardModal:Hide()
+  Trial.rewardView:Hide()
   Trial.rewardButton:SetText("보상확인")
-  Trial.rewardTitle:Show()
-  Trial.rewardHint:Show()
   Trial.contentPane:Show()
+  Trial.modelPane:Show()
+  Trial.infoPane:Show()
   Trial.start:Show()
   Trial.cancel:Show()
   RefreshList()
@@ -1018,9 +998,6 @@ Trial.rewardButton:SetScript("OnMouseUp", function()
   DebugChat("보상 버튼 뗌")
 end)
 
-Trial.rewardModalClose:SetScript("OnClick", function()
-  CloseRewardModal()
-end)
 Trial.rewardModalDismiss:SetScript("OnClick", function()
   CloseRewardModal()
 end)
