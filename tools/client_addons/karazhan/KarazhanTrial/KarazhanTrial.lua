@@ -385,7 +385,7 @@ Trial.rewardButton:SetText("보상확인")
 Trial.rewardButton:SetFrameStrata("FULLSCREEN_DIALOG")
 Trial.rewardButton:SetFrameLevel(Trial:GetFrameLevel() + 200)
 Trial.rewardButton:EnableMouse(true)
-Trial.rewardButton:RegisterForClicks("AnyUp", "AnyDown")
+Trial.rewardButton:RegisterForClicks("LeftButtonUp")
 
 Trial.start = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
 Trial.start:SetSize(160, 28)
@@ -1063,18 +1063,11 @@ local function ApplyOpen(parts)
 end
 
 Trial.rewardButton:SetScript("OnClick", function()
-  DebugChat("보상 버튼 클릭")
   if Trial.rewardViewOpen then
     CloseRewardModal()
   else
     OpenRewardModal()
   end
-end)
-Trial.rewardButton:SetScript("OnMouseDown", function()
-  DebugChat("보상 버튼 누름")
-end)
-Trial.rewardButton:SetScript("OnMouseUp", function()
-  DebugChat("보상 버튼 뗌")
 end)
 
 Trial.rewardModalDismiss:SetScript("OnClick", function()
