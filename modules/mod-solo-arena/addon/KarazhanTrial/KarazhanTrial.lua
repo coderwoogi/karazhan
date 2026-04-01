@@ -365,7 +365,7 @@ Trial.rewardListScroll = CreateFrame(
   "ScrollFrame", "KarazhanTrialRewardScroll", Trial.rewardListPane,
   "FauxScrollFrameTemplate")
 Trial.rewardListScroll:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", -2, -34)
-Trial.rewardListScroll:SetPoint("BOTTOMRIGHT", Trial.rewardListPane, "BOTTOMRIGHT", -28, 36)
+Trial.rewardListScroll:SetPoint("BOTTOMRIGHT", Trial.rewardListPane, "BOTTOMRIGHT", -28, 78)
 Trial.rewardListScroll.offset = 0
 
 Trial.rewardListEmpty = CreateLabel(
@@ -376,7 +376,7 @@ Trial.rewardListEmpty:SetText("설정된 보상이 없습니다.")
 Trial.rewardListEmpty:Hide()
 
 Trial.rewardListRows = {}
-for i = 1, 8 do
+for i = 1, 6 do
   local row = CreateFrame("Frame", nil, Trial.rewardListPane)
   row:SetSize(494, 36)
   row:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, -34 - ((i - 1) * 40))
