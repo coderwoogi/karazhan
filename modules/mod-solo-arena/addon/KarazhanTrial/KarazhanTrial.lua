@@ -321,45 +321,44 @@ if Trial.rewardListText.SetSpacing then
 end
 Trial.rewardListText:Hide()
 
-Trial.rewardListPane = CreateFrame("Frame", nil, Trial.infoPane)
-Trial.rewardListPane:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, 0)
-Trial.rewardListPane:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, 0)
-Trial.rewardListPane:SetHeight(340)
+Trial.rewardListPane = CreateFrame("Frame", nil, Trial.contentPane)
+Trial.rewardListPane:SetPoint("TOPLEFT", Trial.contentPane, "TOPLEFT", 0, 0)
+Trial.rewardListPane:SetPoint("BOTTOMRIGHT", Trial.contentPane, "BOTTOMRIGHT", 0, 0)
 Trial.rewardListPane:Hide()
 
 Trial.rewardListHeader = CreateFrame("Frame", nil, Trial.rewardListPane)
 Trial.rewardListHeader:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, 0)
-Trial.rewardListHeader:SetSize(258, 24)
+Trial.rewardListHeader:SetSize(494, 28)
 
 Trial.rewardListHeaderRank = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
 Trial.rewardListHeaderRank:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 10, -2)
-Trial.rewardListHeaderRank:SetWidth(38)
+Trial.rewardListHeaderRank:SetWidth(56)
 Trial.rewardListHeaderRank:SetText("랭크")
 
 Trial.rewardListHeaderIcon = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
-Trial.rewardListHeaderIcon:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 58, -2)
-Trial.rewardListHeaderIcon:SetWidth(36)
+Trial.rewardListHeaderIcon:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 84, -2)
+Trial.rewardListHeaderIcon:SetWidth(48)
 Trial.rewardListHeaderIcon:SetText("")
 
 Trial.rewardListHeaderName = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
-Trial.rewardListHeaderName:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 94, -2)
-Trial.rewardListHeaderName:SetWidth(128)
+Trial.rewardListHeaderName:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 140, -2)
+Trial.rewardListHeaderName:SetWidth(250)
 Trial.rewardListHeaderName:SetText("아이템 이름")
 
 Trial.rewardListHeaderCount = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
-Trial.rewardListHeaderCount:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 224, -2)
-Trial.rewardListHeaderCount:SetWidth(28)
+Trial.rewardListHeaderCount:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 416, -2)
+Trial.rewardListHeaderCount:SetWidth(48)
 Trial.rewardListHeaderCount:SetText("개수")
 
 Trial.rewardListRows = {}
 for i = 1, 8 do
   local row = CreateFrame("Frame", nil, Trial.rewardListPane)
-  row:SetSize(258, 34)
-  row:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, -28 - ((i - 1) * 38))
+  row:SetSize(494, 36)
+  row:SetPoint("TOPLEFT", Trial.rewardListPane, "TOPLEFT", 0, -34 - ((i - 1) * 40))
 
   row.bg = row:CreateTexture(nil, "BACKGROUND")
   row.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
@@ -400,20 +399,20 @@ for i = 1, 8 do
 
   row.rank = CreateLabel(row, "GameFontNormal", 14, 1.0, 0.88, 0.32, "LEFT")
   row.rank:SetPoint("LEFT", row, "LEFT", 10, 0)
-  row.rank:SetWidth(38)
+  row.rank:SetWidth(56)
 
   row.iconSlot = CreateLabel(row, "GameFontNormal", 14, 0.65, 0.55, 0.28, "LEFT")
-  row.iconSlot:SetPoint("LEFT", row, "LEFT", 58, 0)
-  row.iconSlot:SetWidth(30)
+  row.iconSlot:SetPoint("LEFT", row, "LEFT", 84, 0)
+  row.iconSlot:SetWidth(48)
   row.iconSlot:SetText("")
 
   row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
-  row.name:SetPoint("LEFT", row, "LEFT", 94, 0)
-  row.name:SetWidth(126)
+  row.name:SetPoint("LEFT", row, "LEFT", 140, 0)
+  row.name:SetWidth(250)
 
   row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "LEFT")
-  row.count:SetPoint("LEFT", row, "LEFT", 224, 0)
-  row.count:SetWidth(24)
+  row.count:SetPoint("LEFT", row, "LEFT", 416, 0)
+  row.count:SetWidth(48)
 
   row:Hide()
   Trial.rewardListRows[i] = row
