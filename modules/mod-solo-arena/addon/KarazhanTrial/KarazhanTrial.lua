@@ -355,12 +355,12 @@ end
 Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
 
 Trial.rewardButton = CreateFrame(
-  "Button", nil, Trial.infoPane, "UIPanelButtonTemplate")
-Trial.rewardButton:SetSize(120, 26)
-Trial.rewardButton:SetPoint("TOPLEFT", Trial.rewardHint, "BOTTOMLEFT", 0, -10)
+  "Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
+Trial.rewardButton:SetSize(120, 28)
+Trial.rewardButton:SetPoint("BOTTOMLEFT", Trial.rightPane, "BOTTOMLEFT", 18, 16)
 Trial.rewardButton:SetText("보상확인")
 Trial.rewardButton:SetFrameStrata("DIALOG")
-Trial.rewardButton:SetFrameLevel(Trial.infoPane:GetFrameLevel() + 20)
+Trial.rewardButton:SetFrameLevel(Trial.rightPane:GetFrameLevel() + 30)
 Trial.rewardButton:EnableMouse(true)
 Trial.rewardButton:RegisterForClicks("AnyUp", "AnyDown")
 
@@ -751,11 +751,27 @@ local function OpenRewardModal()
   end
 
   RefreshRewardModal()
+  Trial.stageBadge:Hide()
+  Trial.stageTitle:Hide()
+  Trial.stageMeta:Hide()
+  Trial.stageDivider:Hide()
+  Trial.contentPane:Hide()
+  Trial.start:Hide()
+  Trial.cancel:Hide()
+  Trial.rewardButton:Hide()
   Trial.rewardModal:Show()
 end
 
 local function CloseRewardModal()
   Trial.rewardModal:Hide()
+  Trial.stageBadge:Show()
+  Trial.stageTitle:Show()
+  Trial.stageMeta:Show()
+  Trial.stageDivider:Show()
+  Trial.contentPane:Show()
+  Trial.start:Show()
+  Trial.cancel:Show()
+  Trial.rewardButton:Show()
 end
 
 Trial.rewardModalClose:SetScript("OnClick", function()
