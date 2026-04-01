@@ -354,9 +354,11 @@ if Trial.rewardHint.SetWordWrap then
 end
 Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
 
-Trial.rewardInline = CreateFrame("Frame", nil, Trial.infoPane)
+Trial.rewardInline = CreatePanel(Trial.infoPane, 250, 320)
 Trial.rewardInline:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -4)
 Trial.rewardInline:SetPoint("BOTTOMRIGHT", Trial.infoPane, "BOTTOMRIGHT", 0, 0)
+Trial.rewardInline:SetFrameStrata("DIALOG")
+Trial.rewardInline:SetFrameLevel(Trial.infoPane:GetFrameLevel() + 40)
 Trial.rewardInline:Hide()
 
 Trial.rewardInlineTitle = CreateLabel(
