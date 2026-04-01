@@ -359,6 +359,10 @@ Trial.rewardButton = CreateFrame(
 Trial.rewardButton:SetSize(120, 26)
 Trial.rewardButton:SetPoint("TOPLEFT", Trial.rewardHint, "BOTTOMLEFT", 0, -10)
 Trial.rewardButton:SetText("보상확인")
+Trial.rewardButton:SetFrameStrata("DIALOG")
+Trial.rewardButton:SetFrameLevel(Trial.infoPane:GetFrameLevel() + 20)
+Trial.rewardButton:EnableMouse(true)
+Trial.rewardButton:RegisterForClicks("AnyUp", "AnyDown")
 
 Trial.start = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
 Trial.start:SetSize(160, 28)
@@ -971,6 +975,9 @@ local function ApplyOpen(parts)
 end
 
 Trial.rewardButton:SetScript("OnClick", function()
+  OpenRewardModal()
+end)
+Trial.rewardButton:SetScript("OnMouseDown", function()
   OpenRewardModal()
 end)
 Trial.rewardButton:SetScript("OnMouseUp", function()
