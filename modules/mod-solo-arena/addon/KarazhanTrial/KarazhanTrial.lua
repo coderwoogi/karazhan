@@ -544,9 +544,7 @@ Trial.rewardModalDismiss = CreateFrame(
 Trial.rewardModalDismiss:SetSize(120, 28)
 Trial.rewardModalDismiss:SetPoint("BOTTOM", Trial.rewardModal, "BOTTOM", 0, 18)
 Trial.rewardModalDismiss:SetText("닫기")
-Trial.rewardModalDismiss:SetScript("OnClick", function()
-  Trial.rewardModal:Hide()
-end)
+Trial.rewardModalDismiss:SetScript("OnClick", function() end)
 
 local function GetStageDescription(stage)
   if not stage then
@@ -741,6 +739,33 @@ local function RefreshRewardModal()
     end
   end
 end
+
+local function OpenRewardModal()
+  local stage = Trial.state.stages[Trial.state.selected]
+  if not stage then
+    return
+  end
+
+  RefreshRewardModal()
+  Trial.rewardModal:ClearAllPoints()
+  Trial.rewardModal:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+  Trial.rewardModal:Show()
+  Trial:Hide()
+end
+
+local function CloseRewardModal()
+  Trial.rewardModal:Hide()
+  if not Trial.resultFrame:IsShown() then
+    Trial:Show()
+  end
+end
+
+Trial.rewardModalClose:SetScript("OnClick", function()
+  CloseRewardModal()
+end)
+Trial.rewardModalDismiss:SetScript("OnClick", function()
+  CloseRewardModal()
+end)
 
 local function SelectStage(index)
   Trial.state.selected = index
@@ -952,13 +977,10 @@ local function ApplyOpen(parts)
 end
 
 Trial.rewardButton:SetScript("OnClick", function()
-  local stage = Trial.state.stages[Trial.state.selected]
-  if not stage then
-    return
-  end
-
-  RefreshRewardModal()
-  Trial.rewardModal:Show()
+  OpenRewardModal()
+end)
+Trial.rewardButton:SetScript("OnMouseUp", function()
+  OpenRewardModal()
 end)
 
 Trial.start:SetScript("OnClick", function()
