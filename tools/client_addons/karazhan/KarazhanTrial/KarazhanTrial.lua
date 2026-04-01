@@ -1,4 +1,4 @@
-local addonName = ...
+﻿local addonName = ...
 
 local ARENA_INSTANCE_TYPE = "arena"
 local SESSION_PENDING_SPAWN = 0
@@ -137,6 +137,12 @@ end
 
 local function SendCommand(payload)
   SendAddonMessage("TRIAL_CMD", payload, "WHISPER", UnitName("player"))
+end
+
+local function DebugChat(message)
+  if DEFAULT_CHAT_FRAME and message then
+    DEFAULT_CHAT_FRAME:AddMessage("|cffd7b35d[시련]|r " .. tostring(message))
+  end
 end
 
 StaticPopupDialogs["KARAZHAN_TRIAL_ABANDON_CONFIRM"] = {
@@ -301,6 +307,19 @@ if Trial.stageDesc.SetWordWrap then
   Trial.stageDesc:SetWordWrap(true)
 end
 
+Trial.rewardListText = CreateLabel(
+  Trial.infoPane, "GameFontNormal", 12, 0.96, 0.92, 0.86)
+Trial.rewardListText:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -4)
+Trial.rewardListText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -4)
+Trial.rewardListText:SetWidth(250)
+Trial.rewardListText:SetHeight(320)
+Trial.rewardListText:SetJustifyH("LEFT")
+Trial.rewardListText:SetJustifyV("TOP")
+if Trial.rewardListText.SetWordWrap then
+  Trial.rewardListText:SetWordWrap(true)
+end
+Trial.rewardListText:Hide()
+
 Trial.requirementTitle = CreateLabel(
   Trial.infoPane, "GameFontHighlight", 13, 1.0, 0.84, 0.25)
 Trial.requirementTitle:SetPoint("TOPLEFT", Trial.stageDesc, "BOTTOMLEFT", 0, -12)
@@ -354,94 +373,10 @@ if Trial.rewardHint.SetWordWrap then
 end
 Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
 
-Trial.rewardInline = CreatePanel(Trial.infoPane, 250, 320)
-Trial.rewardInline:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -4)
-Trial.rewardInline:SetPoint("BOTTOMRIGHT", Trial.infoPane, "BOTTOMRIGHT", 0, 0)
-Trial.rewardInline:SetFrameStrata("DIALOG")
-Trial.rewardInline:SetFrameLevel(Trial.infoPane:GetFrameLevel() + 40)
-Trial.rewardInline:Hide()
-
-Trial.rewardInlineTitle = CreateLabel(
-  Trial.rewardInline, "GameFontHighlightLarge", 16, 1.0, 0.84, 0.25, "CENTER")
-Trial.rewardInlineTitle:SetPoint("TOP", Trial.rewardInline, "TOP", 0, 0)
-Trial.rewardInlineTitle:SetText("랭크 보상 목록")
-
-local inlineHeaders = {
-  { text = "랭크", x = 0, width = 46, justify = "CENTER" },
-  { text = "이름", x = 56, width = 134, justify = "LEFT" },
-  { text = "개수", x = 194, width = 34, justify = "CENTER" },
-}
-
-Trial.rewardInlineHeaderFrame = CreatePanel(Trial.rewardInline, 236, 28)
-Trial.rewardInlineHeaderFrame:SetPoint("TOPLEFT", Trial.rewardInlineTitle, "BOTTOMLEFT", -118, -12)
-Trial.rewardInlineHeaders = {}
-for _, header in ipairs(inlineHeaders) do
-  local fs = CreateLabel(
-    Trial.rewardInlineHeaderFrame, "GameFontHighlight", 13, 1.0, 0.84, 0.25,
-    header.justify)
-  fs:SetPoint("TOPLEFT", Trial.rewardInlineHeaderFrame, "TOPLEFT", header.x, -6)
-  fs:SetWidth(header.width)
-  fs:SetText(header.text)
-  table.insert(Trial.rewardInlineHeaders, fs)
-end
-
-Trial.rewardInlineRows = {}
-for i = 1, 6 do
-  local row = CreateFrame("Frame", nil, Trial.rewardInline)
-  row:SetSize(236, 34)
-  row:SetPoint("TOPLEFT", Trial.rewardInlineHeaderFrame, "BOTTOMLEFT", 0, -6 - ((i - 1) * 36))
-
-  row.bg = row:CreateTexture(nil, "BACKGROUND")
-  row.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
-  row.bg:SetAllPoints(row)
-  if math.fmod(i, 2) == 0 then
-    row.bg:SetVertexColor(0.10, 0.06, 0.04, 0.42)
-  else
-    row.bg:SetVertexColor(0.06, 0.03, 0.02, 0.30)
-  end
-
-  row.rank = CreateLabel(row, "GameFontNormal", 13, 0.95, 0.82, 0.24, "CENTER")
-  row.rank:SetPoint("LEFT", row, "LEFT", 0, 0)
-  row.rank:SetWidth(46)
-
-  row.name = CreateLabel(row, "GameFontNormal", 13, 0.96, 0.92, 0.86, "LEFT")
-  row.name:SetPoint("LEFT", row, "LEFT", 56, 0)
-  row.name:SetWidth(134)
-  if row.name.SetWordWrap then
-    row.name:SetWordWrap(true)
-  end
-
-  row.count = CreateLabel(row, "GameFontNormal", 13, 0.95, 0.82, 0.24, "CENTER")
-  row.count:SetPoint("LEFT", row, "LEFT", 194, 0)
-  row.count:SetWidth(34)
-
-  Trial.rewardInlineRows[i] = row
-end
-
-Trial.rewardInlineEmpty = CreateLabel(
-  Trial.rewardInline, "GameFontNormal", 13, 0.82, 0.82, 0.82, "CENTER")
-Trial.rewardInlineEmpty:SetPoint("CENTER", Trial.rewardInline, "CENTER", 0, 10)
-Trial.rewardInlineEmpty:SetWidth(220)
-Trial.rewardInlineEmpty:SetText("설정된 보상이 없습니다.")
-
-Trial.rewardView = CreatePanel(Trial.infoPane, 250, 320)
-Trial.rewardView:SetParent(Trial.infoPane)
-Trial.rewardView:ClearAllPoints()
-Trial.rewardView:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -2)
-Trial.rewardView:SetPoint("BOTTOMRIGHT", Trial.infoPane, "BOTTOMRIGHT", 0, 0)
-Trial.rewardView:SetFrameStrata("DIALOG")
-Trial.rewardView:SetFrameLevel(Trial.infoPane:GetFrameLevel() + 30)
+Trial.rewardView = CreatePanel(Trial.contentPane, 494, 330)
+Trial.rewardView:SetPoint("TOPLEFT", Trial.contentPane, "TOPLEFT", 0, 0)
+Trial.rewardView:SetPoint("BOTTOMRIGHT", Trial.contentPane, "BOTTOMRIGHT", 0, 0)
 Trial.rewardView:Hide()
-
-Trial.rewardViewTitle = CreateLabel(
-  Trial.rewardView, "GameFontHighlightLarge", 18, 1.0, 0.84, 0.25, "CENTER")
-Trial.rewardViewTitle:SetPoint("TOP", Trial.rewardView, "TOP", 0, -14)
-Trial.rewardViewTitle:SetText("랭크 보상 목록")
-
-Trial.rewardViewSubtitle = CreateLabel(
-  Trial.rewardView, "GameFontNormal", 13, 0.90, 0.90, 0.90, "CENTER")
-Trial.rewardViewSubtitle:SetPoint("TOP", Trial.rewardViewTitle, "BOTTOM", 0, -6)
-Trial.rewardViewSubtitle:SetWidth(230)
 
 Trial.rewardButton = CreateFrame(
   "Button", nil, Trial, "UIPanelButtonTemplate")
@@ -525,20 +460,20 @@ Trial.returnButton:SetSize(140, 28)
 Trial.returnButton:SetPoint("BOTTOM", Trial.resultFrame, "BOTTOM", 0, 18)
 Trial.returnButton:SetText("복귀")
 
-Trial.rewardTable = CreatePanel(Trial.rewardView, 230, 226)
-Trial.rewardTable:SetPoint("TOP", Trial.rewardViewSubtitle, "BOTTOM", 0, -12)
+Trial.rewardTable = CreatePanel(Trial.rewardView, 470, 280)
+Trial.rewardTable:SetPoint("TOP", Trial.rewardView, "TOP", 0, -20)
 
 local rewardHeaderTexts = {
-  { key = "rank", text = "랭크", width = 34, offset = 8, justify = "CENTER" },
-  { key = "icon", text = "", width = 28, offset = 50, justify = "CENTER" },
-  { key = "name", text = "아이템", width = 106, offset = 86, justify = "LEFT" },
-  { key = "count", text = "개수", width = 36, offset = 192, justify = "CENTER" },
+  { key = "rank", text = "랭크", width = 58, offset = 16, justify = "CENTER" },
+  { key = "icon", text = "아이콘", width = 52, offset = 82, justify = "CENTER" },
+  { key = "name", text = "이름", width = 214, offset = 148, justify = "LEFT" },
+  { key = "count", text = "개수", width = 64, offset = 378, justify = "CENTER" },
 }
 
 Trial.rewardHeaders = {}
 for _, header in ipairs(rewardHeaderTexts) do
   local fs = CreateLabel(
-    Trial.rewardTable, "GameFontHighlight", 13, 1.0, 0.84, 0.25,
+    Trial.rewardTable, "GameFontHighlight", 12, 1.0, 0.84, 0.25,
     header.justify)
   fs:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", header.offset, -14)
   fs:SetWidth(header.width)
@@ -549,15 +484,15 @@ end
 Trial.rewardHeaderDivider = Trial.rewardTable:CreateTexture(nil, "ARTWORK")
 Trial.rewardHeaderDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
 Trial.rewardHeaderDivider:SetVertexColor(0.85, 0.72, 0.24, 0.85)
-Trial.rewardHeaderDivider:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", 6, -34)
-Trial.rewardHeaderDivider:SetPoint("TOPRIGHT", Trial.rewardTable, "TOPRIGHT", -6, -34)
+Trial.rewardHeaderDivider:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", 10, -34)
+Trial.rewardHeaderDivider:SetPoint("TOPRIGHT", Trial.rewardTable, "TOPRIGHT", -10, -34)
 Trial.rewardHeaderDivider:SetHeight(8)
 
 Trial.rewardRows = {}
-for i = 1, 6 do
+for i = 1, 8 do
   local row = CreateFrame("Frame", nil, Trial.rewardTable)
-  row:SetSize(214, 32)
-  row:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", 8, -44 - ((i - 1) * 33))
+  row:SetSize(446, 24)
+  row:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", 10, -44 - ((i - 1) * 25))
 
   row.bg = row:CreateTexture(nil, "BACKGROUND")
   row.bg:SetTexture("Interface\\Buttons\\WHITE8x8")
@@ -568,12 +503,12 @@ for i = 1, 6 do
     row.bg:SetVertexColor(0.06, 0.03, 0.02, 0.30)
   end
 
-  row.rank = CreateLabel(row, "GameFontNormal", 13, 0.95, 0.82, 0.24, "CENTER")
+  row.rank = CreateLabel(row, "GameFontNormal", 12, 0.95, 0.82, 0.24, "CENTER")
   row.rank:SetPoint("LEFT", row, "LEFT", 6, 0)
-  row.rank:SetWidth(34)
+  row.rank:SetWidth(58)
 
-  row.iconBg = CreatePanel(row, 24, 24)
-  row.iconBg:SetPoint("LEFT", row, "LEFT", 46, 0)
+  row.iconBg = CreatePanel(row, 20, 20)
+  row.iconBg:SetPoint("LEFT", row, "LEFT", 80, 0)
   row.iconBg.itemEntry = nil
   row.iconBg:EnableMouse(true)
   row.iconBg:SetScript("OnEnter", function(self)
@@ -593,16 +528,13 @@ for i = 1, 6 do
   row.icon:SetPoint("TOPLEFT", row.iconBg, "TOPLEFT", 4, -4)
   row.icon:SetPoint("BOTTOMRIGHT", row.iconBg, "BOTTOMRIGHT", -4, 4)
 
-  row.name = CreateLabel(row, "GameFontNormal", 13, 0.96, 0.92, 0.86, "LEFT")
-  row.name:SetPoint("LEFT", row, "LEFT", 82, 0)
-  row.name:SetWidth(92)
-  if row.name.SetWordWrap then
-    row.name:SetWordWrap(true)
-  end
+  row.name = CreateLabel(row, "GameFontNormal", 12, 0.96, 0.92, 0.86, "LEFT")
+  row.name:SetPoint("LEFT", row, "LEFT", 118, 0)
+  row.name:SetWidth(214)
 
-  row.count = CreateLabel(row, "GameFontNormal", 13, 0.95, 0.82, 0.24, "CENTER")
-  row.count:SetPoint("LEFT", row, "LEFT", 180, 0)
-  row.count:SetWidth(28)
+  row.count = CreateLabel(row, "GameFontNormal", 12, 0.95, 0.82, 0.24, "CENTER")
+  row.count:SetPoint("LEFT", row, "LEFT", 368, 0)
+  row.count:SetWidth(52)
 
   Trial.rewardRows[i] = row
 end
@@ -610,7 +542,7 @@ end
 Trial.rewardEmpty = CreateLabel(
   Trial.rewardTable, "GameFontNormal", 13, 0.82, 0.82, 0.82, "CENTER")
 Trial.rewardEmpty:SetPoint("CENTER", Trial.rewardTable, "CENTER", 0, -6)
-Trial.rewardEmpty:SetWidth(200)
+Trial.rewardEmpty:SetWidth(400)
 Trial.rewardEmpty:SetText("설정된 보상이 없습니다.")
 
 Trial.rewardModalDismiss = CreateFrame(
@@ -619,7 +551,6 @@ Trial.rewardModalDismiss:SetSize(120, 28)
 Trial.rewardModalDismiss:SetPoint("BOTTOM", Trial.rewardView, "BOTTOM", 0, 18)
 Trial.rewardModalDismiss:SetText("뒤로가기")
 Trial.rewardModalDismiss:SetScript("OnClick", function() end)
-Trial.rewardModalDismiss:Hide()
 
 Trial.rewardViewOpen = false
 
@@ -795,7 +726,7 @@ local function RefreshRewardModal()
   end
 
   local rewards = GetSortedStageRewards(stage)
-  Trial.rewardViewSubtitle:SetText(stage.name .. "의 랭크별 보상")
+  local lines = { "랭크   이름 x 개수" }
   Trial.rewardEmpty:SetShown(#rewards == 0)
 
   for i, row in ipairs(Trial.rewardRows) do
@@ -803,6 +734,15 @@ local function RefreshRewardModal()
     if reward then
       local itemName = GetItemInfo(reward.itemEntry)
         or ("아이템 " .. tostring(reward.itemEntry))
+      table.insert(
+        lines,
+        string.format(
+          "%s   %s x %d",
+          reward.rankLabel ~= "" and reward.rankLabel or "-",
+          itemName,
+          reward.itemCount or 1
+        )
+      )
       row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
       row.icon:SetTexture(GetItemIcon(reward.itemEntry)
         or "Interface\\Icons\\INV_Misc_QuestionMark")
@@ -816,20 +756,43 @@ local function RefreshRewardModal()
     end
   end
 
-  Trial.rewardInlineEmpty:SetShown(#rewards == 0)
-  for i, row in ipairs(Trial.rewardInlineRows) do
-    local reward = rewards[i]
-    if reward then
-      local itemName = GetItemInfo(reward.itemEntry)
-        or ("아이템 " .. tostring(reward.itemEntry))
-      row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
-      row.name:SetText(itemName)
-      row.count:SetText(tostring(reward.itemCount or 1))
-      row:Show()
-    else
-      row:Hide()
-    end
+  if #rewards == 0 then
+    Trial.rewardListText:SetText("설정된 보상이 없습니다.")
+  else
+    Trial.rewardListText:SetText(table.concat(lines, "\n"))
   end
+end
+
+local function BuildRewardListText(stage)
+  if not stage then
+    return "설정된 보상이 없습니다."
+  end
+
+  local rewards = GetSortedStageRewards(stage)
+  if #rewards == 0 then
+    return "설정된 보상이 없습니다."
+  end
+
+  local lines = {
+    "랭크   이름 x 개수",
+    "--------------------",
+  }
+
+  for _, reward in ipairs(rewards) do
+    local itemName = GetItemInfo(reward.itemEntry)
+      or ("아이템 " .. tostring(reward.itemEntry))
+    table.insert(
+      lines,
+      string.format(
+        "%s   %s x %d",
+        reward.rankLabel ~= "" and reward.rankLabel or "-",
+        itemName,
+        reward.itemCount or 1
+      )
+    )
+  end
+
+  return table.concat(lines, "\n")
 end
 
 local function OpenRewardModal()
@@ -838,29 +801,35 @@ local function OpenRewardModal()
     return
   end
 
-  Trial.rewardViewOpen = true
-  RefreshRewardModal()
-  Trial.stageBadgeText:SetText("R")
-  Trial.stageTitle:SetText("보상 목록")
-  Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
-  Trial.modelPane:Hide()
-  Trial.stageDesc:Hide()
-  Trial.requirementTitle:Hide()
-  Trial.requirementIconBg:Hide()
-  Trial.requirementText:Hide()
-  Trial.rewardTitle:Hide()
-  Trial.rewardHint:Hide()
-  Trial.rewardInline:Show()
-  Trial.start:Hide()
-  Trial.cancel:Hide()
-  Trial.rewardButton:SetText("뒤로가기")
-  Trial.rewardButton:Show()
-  Trial.rewardModalDismiss:Hide()
+  local ok, err = pcall(function()
+    Trial.rewardViewOpen = true
+    Trial.stageBadgeText:SetText("R")
+    Trial.stageTitle:SetText("보상 목록")
+    Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
+    Trial.modelPane:Hide()
+    Trial.stageDesc:Hide()
+    Trial.requirementTitle:Hide()
+    Trial.requirementIconBg:Hide()
+    Trial.requirementText:Hide()
+    Trial.rewardTitle:Hide()
+    Trial.rewardHint:Hide()
+    Trial.rewardListText:SetText(BuildRewardListText(stage))
+    Trial.rewardListText:Show()
+    Trial.start:Hide()
+    Trial.cancel:Hide()
+    Trial.rewardButton:SetText("뒤로가기")
+    Trial.rewardButton:Show()
+  end)
+
+  if not ok then
+    DebugChat("보상 화면 오류: " .. tostring(err))
+  else
+    DebugChat("보상 목록 표시")
+  end
 end
 
 local function CloseRewardModal()
   Trial.rewardViewOpen = false
-  Trial.rewardInline:Hide()
   Trial.modelPane:Show()
   Trial.stageDesc:Show()
   Trial.requirementTitle:Show()
@@ -868,10 +837,11 @@ local function CloseRewardModal()
   Trial.requirementText:Show()
   Trial.rewardTitle:Show()
   Trial.rewardHint:Show()
+  Trial.rewardListText:Hide()
   Trial.start:Show()
   Trial.cancel:Show()
-  Trial.rewardButton:Show()
   Trial.rewardButton:SetText("보상확인")
+  Trial.rewardButton:Show()
   RefreshSelection()
 end
 
@@ -1078,11 +1048,11 @@ end
 
 Trial:SetScript("OnShow", function()
   Trial.rewardViewOpen = false
-  Trial.rewardInline:Hide()
   Trial.rewardButton:SetText("보상확인")
   Trial.contentPane:Show()
   Trial.modelPane:Show()
   Trial.infoPane:Show()
+  Trial.rewardListText:Hide()
   Trial.start:Show()
   Trial.cancel:Show()
   RefreshList()
