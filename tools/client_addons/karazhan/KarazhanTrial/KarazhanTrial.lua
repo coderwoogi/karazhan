@@ -140,9 +140,7 @@ local function SendCommand(payload)
 end
 
 local function DebugChat(message)
-  if DEFAULT_CHAT_FRAME and message then
-    DEFAULT_CHAT_FRAME:AddMessage("|cffd7b35d[시련]|r " .. tostring(message))
-  end
+  return
 end
 
 StaticPopupDialogs["KARAZHAN_TRIAL_ABANDON_CONFIRM"] = {
@@ -308,11 +306,11 @@ if Trial.stageDesc.SetWordWrap then
 end
 
 Trial.rewardListText = CreateLabel(
-  Trial.infoPane, "GameFontNormal", 12, 0.96, 0.92, 0.86)
+  Trial.infoPane, "GameFontNormal", 15, 0.96, 0.92, 0.86)
 Trial.rewardListText:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -4)
 Trial.rewardListText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -4)
 Trial.rewardListText:SetWidth(250)
-Trial.rewardListText:SetHeight(320)
+Trial.rewardListText:SetHeight(340)
 Trial.rewardListText:SetJustifyH("LEFT")
 Trial.rewardListText:SetJustifyV("TOP")
 if Trial.rewardListText.SetWordWrap then
@@ -774,8 +772,8 @@ local function BuildRewardListText(stage)
   end
 
   local lines = {
-    "랭크   이름 x 개수",
-    "--------------------",
+    "랭크        이름                           개수",
+    "------------------------------------------------",
   }
 
   for _, reward in ipairs(rewards) do
@@ -784,7 +782,7 @@ local function BuildRewardListText(stage)
     table.insert(
       lines,
       string.format(
-        "%s   %s x %d",
+        "%-4s        %-28s %3d",
         reward.rankLabel ~= "" and reward.rankLabel or "-",
         itemName,
         reward.itemCount or 1
@@ -801,31 +799,24 @@ local function OpenRewardModal()
     return
   end
 
-  local ok, err = pcall(function()
-    Trial.rewardViewOpen = true
-    Trial.stageBadgeText:SetText("R")
-    Trial.stageTitle:SetText("보상 목록")
-    Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
-    Trial.modelPane:Hide()
-    Trial.stageDesc:Hide()
-    Trial.requirementTitle:Hide()
-    Trial.requirementIconBg:Hide()
-    Trial.requirementText:Hide()
-    Trial.rewardTitle:Hide()
-    Trial.rewardHint:Hide()
-    Trial.rewardListText:SetText(BuildRewardListText(stage))
-    Trial.rewardListText:Show()
-    Trial.start:Hide()
-    Trial.cancel:Hide()
-    Trial.rewardButton:SetText("뒤로가기")
-    Trial.rewardButton:Show()
-  end)
-
-  if not ok then
-    DebugChat("보상 화면 오류: " .. tostring(err))
-  else
-    DebugChat("보상 목록 표시")
-  end
+  Trial.rewardViewOpen = true
+  Trial.stageBadgeText:SetText("R")
+  Trial.stageTitle:SetText("보상 목록")
+  Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
+  Trial.modelPane:Hide()
+  Trial.stageDesc:Hide()
+  Trial.requirementTitle:Hide()
+  Trial.requirementIconBg:Hide()
+  Trial.requirementText:Hide()
+  Trial.rewardTitle:Hide()
+  Trial.rewardHint:Hide()
+  Trial.rewardView:Hide()
+  Trial.rewardListText:SetText(BuildRewardListText(stage))
+  Trial.rewardListText:Show()
+  Trial.start:Hide()
+  Trial.cancel:Hide()
+  Trial.rewardButton:SetText("뒤로가기")
+  Trial.rewardButton:Show()
 end
 
 local function CloseRewardModal()
@@ -837,6 +828,7 @@ local function CloseRewardModal()
   Trial.requirementText:Show()
   Trial.rewardTitle:Show()
   Trial.rewardHint:Show()
+  Trial.rewardView:Hide()
   Trial.rewardListText:Hide()
   Trial.start:Show()
   Trial.cancel:Show()
