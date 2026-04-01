@@ -379,7 +379,7 @@ Trial.rewardListEmpty:SetText("설정된 보상이 없습니다.")
 Trial.rewardListEmpty:Hide()
 
 Trial.rewardListRows = {}
-for i = 1, 16 do
+for i = 1, 12 do
   local row = CreateFrame("Frame", nil, Trial.rewardListScrollChild)
   row:SetSize(494, 36)
   row:SetPoint("TOPLEFT", Trial.rewardListScrollChild, "TOPLEFT", 0, -((i - 1) * 40))
@@ -425,7 +425,8 @@ for i = 1, 16 do
   row.rank:SetPoint("LEFT", row, "LEFT", 10, 0)
   row.rank:SetWidth(56)
 
-  row.iconBg = CreatePanel(row, 24, 24)
+  row.iconBg = CreateFrame("Frame", nil, row)
+  row.iconBg:SetSize(24, 24)
   row.iconBg:SetPoint("LEFT", row, "LEFT", 92, 0)
   row.iconBg.itemEntry = nil
   row.iconBg:EnableMouse(true)
@@ -443,8 +444,13 @@ for i = 1, 16 do
   end)
 
   row.icon = row.iconBg:CreateTexture(nil, "ARTWORK")
+  row.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
   row.icon:SetPoint("TOPLEFT", row.iconBg, "TOPLEFT", 4, -4)
   row.icon:SetPoint("BOTTOMRIGHT", row.iconBg, "BOTTOMRIGHT", -4, 4)
+
+  row.iconBorder = row.iconBg:CreateTexture(nil, "BORDER")
+  row.iconBorder:SetTexture("Interface\\Buttons\\UI-Quickslot2")
+  row.iconBorder:SetAllPoints(row.iconBg)
 
   row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
   row.name:SetPoint("LEFT", row, "LEFT", 132, 0)
@@ -936,7 +942,8 @@ local function RefreshRewardListRows(stage)
   for i, row in ipairs(Trial.rewardListRows) do
     local reward = rewards[i]
     if reward then
-      local itemName = GetItemInfo(reward.itemEntry) or "이름 로딩 중"
+      local itemName = reward.itemName or GetItemInfo(reward.itemEntry)
+        or "이름 로딩 중"
       row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
       row.icon:SetTexture(GetItemIcon(reward.itemEntry)
         or "Interface\\Icons\\INV_Misc_QuestionMark")
@@ -1188,6 +1195,7 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
               itemCount = tonumber(rewardParts[2]) or 1,
               chance = tonumber(rewardParts[3]) or 100,
               rankLabel = rewardParts[4] or "",
+              itemName = rewardParts[5] or nil,
             })
           end
         end

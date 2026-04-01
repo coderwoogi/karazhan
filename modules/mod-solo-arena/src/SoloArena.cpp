@@ -2544,13 +2544,27 @@ std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
         uint32 itemCount = std::max<uint32>(1, fields[1].Get<uint32>());
         float chance = fields[2].Get<float>();
         std::string rewardRankLabel = fields[3].Get<std::string>();
+        std::string rewardItemName = "이름 로딩 중";
+
+        if (ItemTemplate const* itemTemplate = sObjectMgr->GetItemTemplate(itemEntry))
+        {
+            rewardItemName = itemTemplate->Name1;
+
+            if (ItemLocale const* itemLocale = sObjectMgr->GetItemLocale(itemEntry))
+            {
+                if (itemLocale->Name.size() > std::size_t(LOCALE_koKR) &&
+                    !itemLocale->Name[LOCALE_koKR].empty())
+                    rewardItemName = itemLocale->Name[LOCALE_koKR];
+            }
+        }
 
         if (!first)
             rewards << ",";
 
         first = false;
         rewards << itemEntry << "^" << itemCount << "^" << chance
-                << "^" << SanitizeAddonField(rewardRankLabel, 8);
+                << "^" << SanitizeAddonField(rewardRankLabel, 8)
+                << "^" << SanitizeAddonField(rewardItemName, 64);
     } while (result->NextRow());
 
     return rewards.str();
