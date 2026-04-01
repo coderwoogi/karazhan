@@ -740,6 +740,38 @@ local function RefreshRewardModal()
   end
 end
 
+local function BuildRewardSummary(stage)
+  if not stage then
+    return "설정된 보상이 없습니다."
+  end
+
+  local rewards = GetSortedStageRewards(stage)
+  if #rewards == 0 then
+    return "설정된 보상이 없습니다."
+  end
+
+  local lines = {
+    "랭크   이름 x 개수",
+    "",
+  }
+
+  for _, reward in ipairs(rewards) do
+    local itemName = GetItemInfo(reward.itemEntry)
+      or ("아이템 " .. tostring(reward.itemEntry))
+    table.insert(
+      lines,
+      string.format(
+        "%s   %s x %d",
+        reward.rankLabel ~= "" and reward.rankLabel or "-",
+        itemName,
+        reward.itemCount or 1
+      )
+    )
+  end
+
+  return table.concat(lines, "\n")
+end
+
 local function OpenRewardModal()
   local stage = Trial.state.stages[Trial.state.selected]
   if not stage then
@@ -747,24 +779,35 @@ local function OpenRewardModal()
   end
 
   Trial.rewardViewOpen = true
-  RefreshRewardModal()
   Trial.stageBadgeText:SetText("R")
   Trial.stageTitle:SetText("보상 목록")
   Trial.stageMeta:SetText(stage.name .. " 랭크별 보상")
   Trial.modelPane:Hide()
-  Trial.infoPane:Hide()
-  Trial.rewardView:Show()
+  Trial.infoPane:Show()
+  Trial.stageDesc:SetText(BuildRewardSummary(stage))
+  Trial.stageDesc:SetHeight(260)
+  Trial.requirementTitle:Hide()
+  Trial.requirementIconBg:Hide()
+  Trial.requirementText:Hide()
+  Trial.rewardTitle:Hide()
+  Trial.rewardHint:Hide()
   Trial.start:Hide()
   Trial.cancel:Hide()
-  Trial.rewardButton:Hide()
-  Trial.rewardModalDismiss:Show()
+  Trial.rewardButton:SetText("뒤로가기")
+  Trial.rewardButton:Show()
+  Trial.rewardModalDismiss:Hide()
 end
 
 local function CloseRewardModal()
   Trial.rewardViewOpen = false
-  Trial.rewardView:Hide()
   Trial.modelPane:Show()
   Trial.infoPane:Show()
+  Trial.stageDesc:SetHeight(108)
+  Trial.requirementTitle:Show()
+  Trial.requirementIconBg:Show()
+  Trial.requirementText:Show()
+  Trial.rewardTitle:Show()
+  Trial.rewardHint:Show()
   Trial.start:Show()
   Trial.cancel:Show()
   Trial.rewardButton:Show()
@@ -975,7 +1018,6 @@ end
 
 Trial:SetScript("OnShow", function()
   Trial.rewardViewOpen = false
-  Trial.rewardView:Hide()
   Trial.rewardModalDismiss:Hide()
   Trial.rewardButton:SetText("보상확인")
   Trial.contentPane:Show()
