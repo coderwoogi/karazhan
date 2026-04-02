@@ -1419,6 +1419,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     Trial.state.sessionState = tonumber(parts[6]) or SESSION_PENDING_SPAWN
     Trial.state.inProgress = Trial.state.sessionState == SESSION_ACTIVE
       or Trial.state.sessionState == SESSION_WAITING_FOR_START
+    Trial.state.pendingArena = Trial.state.sessionState == SESSION_PENDING_SPAWN
+      or Trial.state.sessionState == SESSION_WAITING_FOR_START
     if Trial.state.sessionState == SESSION_ACTIVE then
       Trial.state.pendingArena = false
     end
