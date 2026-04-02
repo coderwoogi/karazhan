@@ -1,5 +1,4 @@
 ﻿#include "ArenaScript.h"
-#include "AllBattlegroundScript.h"
 #include "AllSpellScript.h"
 #include "Battleground.h"
 #include "BattlegroundAB.h"
@@ -57,6 +56,9 @@ namespace
     constexpr uint32 TRIAL_MECHANIC_BUFF_AURA = 32182;
     constexpr uint32 TRIAL_TICKET_ITEM = 600022;
     constexpr uint32 TRIAL_DAILY_LIMIT = 5;
+    constexpr uint8 OBJECTIVE_NODE_NONE = 255;
+    constexpr float OBJECTIVE_NODE_CAPTURE_RADIUS = 18.0f;
+    constexpr uint32 OBJECTIVE_NODE_CAPTURE_MS = 4000;
 
     enum class StageMechanicType : uint8
     {
@@ -161,6 +163,12 @@ namespace
         uint64 NextMovementNormalizeAt = 0;
         bool ObjectiveReadyAnnounced = false;
         bool ObjectiveLinkNotified = false;
+        bool ObjectiveIntroSent = false;
+        bool ObjectiveAllNodesCaptured = false;
+        uint8 ObjectiveActiveNode = OBJECTIVE_NODE_NONE;
+        uint64 ObjectiveCaptureStartedAt = 0;
+        uint8 ObjectiveCapturedCount = 0;
+        std::array<bool, BG_AB_DYNAMIC_NODES_COUNT> ObjectiveCapturedNodes = {};
         uint32 PetEntry = 0;
         uint32 PetDisplayId = 0;
         ObjectGuid MechanicGuid = ObjectGuid::Empty;
@@ -278,6 +286,25 @@ namespace
     bool IsObjectiveTrialStage(uint8 stageId)
     {
         return stageId >= 4 && stageId <= 6;
+    }
+
+    std::string GetObjectiveNodeName(uint8 nodeId)
+    {
+        switch (nodeId)
+        {
+            case BG_AB_NODE_STABLES:
+                return "마굿간";
+            case BG_AB_NODE_BLACKSMITH:
+                return "대장간";
+            case BG_AB_NODE_FARM:
+                return "농장";
+            case BG_AB_NODE_LUMBER_MILL:
+                return "제재소";
+            case BG_AB_NODE_GOLD_MINE:
+                return "금광";
+            default:
+                return "거점";
+        }
     }
 
     void GetObjectiveStartLocation(TeamId teamId, float& x, float& y,
@@ -634,7 +661,6 @@ namespace
         void UnregisterShadow(ObjectGuid const& creatureGuid);
         bool IsManagedShadow(Creature const* creature) const;
         bool IsManagedArenaInstance(uint32 instanceId) const;
-        bool IsManagedObjectiveInstance(uint32 instanceId) const;
 
     private:
         bool SpawnShadow(Player* player, ArenaSession& session);
@@ -675,6 +701,9 @@ namespace
         void SendResultPayload(Player* player, ArenaSession const& session);
         void NotifyObjectiveFinishReason(Player* player,
             char const* reason) const;
+        uint8 GetNearbyObjectiveNode(Player* player) const;
+        bool AreAllObjectiveNodesCaptured(
+            ArenaSession const& session) const;
         void LoadDefaultStages();
         void LoadDefaultMechanics();
         void UpdateMechanics(Player* player, ArenaSession& session);
@@ -1329,46 +1358,38 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     bool const objectiveTrial = IsObjectiveTrialStage(stageId);
     BattlegroundTypeId const bgTypeId = objectiveTrial ?
         DEFAULT_OBJECTIVE_BG_TYPE : DEFAULT_ARENA_BG_TYPE;
-    BattlegroundTypeId const templateType = objectiveTrial ?
-        DEFAULT_OBJECTIVE_BG_TYPE : BATTLEGROUND_AA;
-    Battleground* battlegroundTemplate =
-        sBattlegroundMgr->GetBattlegroundTemplate(templateType);
-    if (!battlegroundTemplate)
-    {
-        SendSystem(player, objectiveTrial ?
-            "시련 전장 템플릿을 찾지 못했습니다." :
-            "솔로 투기장 템플릿을 찾지 못했습니다.");
-        return false;
-    }
 
-    PvPDifficultyEntry const* bracketEntry = GetBattlegroundBracketById(
-        battlegroundTemplate->GetMapId(),
-        battlegroundTemplate->GetBracketId());
-    if (!bracketEntry)
+    Battleground* battleground = nullptr;
+    if (!objectiveTrial)
     {
-        SendSystem(player, objectiveTrial ?
-            "시련 전장 등급 정보를 찾지 못했습니다." :
-            "솔로 투기장 등급 정보를 찾지 못했습니다.");
-        return false;
-    }
+        Battleground* battlegroundTemplate =
+            sBattlegroundMgr->GetBattlegroundTemplate(BATTLEGROUND_AA);
+        if (!battlegroundTemplate)
+        {
+            SendSystem(player, "솔로 투기장 템플릿을 찾지 못했습니다.");
+            return false;
+        }
 
-    Battleground* battleground = sBattlegroundMgr->CreateNewBattleground(
-        bgTypeId, bracketEntry, objectiveTrial ? 0 : ARENA_TYPE_2v2, false);
-    if (!battleground)
-    {
-        SendSystem(player, objectiveTrial ?
-            "시련 전장 인스턴스를 만들지 못했습니다." :
-            "투기장 인스턴스를 만들지 못했습니다.");
-        return false;
-    }
+        PvPDifficultyEntry const* bracketEntry = GetBattlegroundBracketById(
+            battlegroundTemplate->GetMapId(),
+            battlegroundTemplate->GetBracketId());
+        if (!bracketEntry)
+        {
+            SendSystem(player, "솔로 투기장 등급 정보를 찾지 못했습니다.");
+            return false;
+        }
 
-    if (objectiveTrial)
-    {
-        battleground->SetMinPlayersPerTeam(0);
-        battleground->SetMaxPlayersPerTeam(1);
-    }
+        battleground = sBattlegroundMgr->CreateNewBattleground(
+            bgTypeId, bracketEntry, ARENA_TYPE_2v2, false);
+        if (!battleground)
+        {
+            SendSystem(player,
+                "투기장 인스턴스를 만들지 못했습니다.");
+            return false;
+        }
 
-    battleground->StartBattleground();
+        battleground->StartBattleground();
+    }
 
     ArenaSession session;
     session.RunUid = GenerateRunUid();
@@ -1380,7 +1401,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     session.Team = Player::TeamIdForRace(player->getRace());
     session.ArenaMapId = objectiveTrial ?
         DEFAULT_OBJECTIVE_MAP_ID : stage->ArenaMapId;
-    session.ArenaInstanceId = battleground->GetInstanceID();
+    session.ArenaInstanceId = battleground ? battleground->GetInstanceID() : 0;
     session.ReturnMapId = player->GetMapId();
     session.ReturnX = player->GetPositionX();
     session.ReturnY = player->GetPositionY();
@@ -1395,56 +1416,42 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         session.SpawnDelayMs = 10000;
 
     _sessions[player->GetGUID().GetCounter()] = session;
-    _managedArenaInstances.insert(session.ArenaInstanceId);
+    if (session.ArenaInstanceId != 0)
+        _managedArenaInstances.insert(session.ArenaInstanceId);
     LogEvent(player, _sessions[player->GetGUID().GetCounter()],
         "RUN_CREATED");
 
     TeamId teamId = session.Team;
-    BattlegroundQueueTypeId queueTypeId =
-        BattlegroundMgr::BGQueueTypeId(bgTypeId,
-            objectiveTrial ? 0 : ARENA_TYPE_2v2);
-    uint32 queueSlot = player->AddBattlegroundQueueId(queueTypeId);
-    if (queueSlot >= PLAYER_MAX_BATTLEGROUND_QUEUES)
+    BattlegroundQueueTypeId queueTypeId{};
+    uint32 queueSlot = PLAYER_MAX_BATTLEGROUND_QUEUES;
+    if (!objectiveTrial)
     {
-        _sessions.erase(player->GetGUID().GetCounter());
-        _managedArenaInstances.erase(session.ArenaInstanceId);
-        SendSystem(player, objectiveTrial ?
-            "시련 전장 대기열을 만들지 못했습니다." :
-            "시련 투기장 대기열을 만들지 못했습니다.");
-        return false;
-    }
+        queueTypeId = BattlegroundMgr::BGQueueTypeId(bgTypeId, ARENA_TYPE_2v2);
+        queueSlot = player->AddBattlegroundQueueId(queueTypeId);
+        if (queueSlot >= PLAYER_MAX_BATTLEGROUND_QUEUES)
+        {
+            _sessions.erase(player->GetGUID().GetCounter());
+            _managedArenaInstances.erase(session.ArenaInstanceId);
+            SendSystem(player, "시련 투기장 대기열을 만들지 못했습니다.");
+            return false;
+        }
 
-    player->SetEntryPoint();
-    player->SetInviteForBattlegroundQueueType(queueTypeId,
-        battleground->GetInstanceID());
+        player->SetEntryPoint();
+        player->SetInviteForBattlegroundQueueType(queueTypeId,
+            battleground->GetInstanceID());
 
-    WorldPacket data;
-    sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, battleground,
-        queueSlot,
-        STATUS_WAIT_JOIN, INVITE_ACCEPT_WAIT_TIME, 0,
-        battleground->GetArenaType(), teamId);
-    player->SendDirectMessage(&data);
+        WorldPacket data;
+        sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, battleground,
+            queueSlot,
+            STATUS_WAIT_JOIN, INVITE_ACCEPT_WAIT_TIME, 0,
+            battleground->GetArenaType(), teamId);
+        player->SendDirectMessage(&data);
 
-    sLFGMgr->LeaveAllLfgQueues(player->GetGUID(), false);
+        sLFGMgr->LeaveAllLfgQueues(player->GetGUID(), false);
 
-    player->SetBattlegroundId(battleground->GetInstanceID(),
-        battleground->GetBgTypeID(),
-        queueSlot, true, false, teamId);
-
-    if (objectiveTrial)
-    {
-        sBattlegroundMgr->SendToBattleground(player,
-            battleground->GetInstanceID(), bgTypeId);
-        player->DestroyItemCount(TRIAL_TICKET_ITEM, 1, true, false);
-        LogEvent(player, _sessions[player->GetGUID().GetCounter()],
-            "TICKET_CONSUMED", Acore::StringFormat(
-                "item={} remaining={}", TRIAL_TICKET_ITEM,
-                player->GetItemCount(TRIAL_TICKET_ITEM, false)));
-        SendSystem(player, Acore::StringFormat(
-            "{} 시작. {}로 이동합니다.", stage->Name, "아라시 분지"));
-        LogEvent(player, _sessions[player->GetGUID().GetCounter()],
-            "PLAYER_TELEPORTED");
-        return true;
+        player->SetBattlegroundId(battleground->GetInstanceID(),
+            battleground->GetBgTypeID(),
+            queueSlot, true, false, teamId);
     }
 
     if (Battleground* playerBg = player->GetBattleground())
@@ -1477,9 +1484,12 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     {
         _sessions.erase(player->GetGUID().GetCounter());
         _managedArenaInstances.erase(session.ArenaInstanceId);
-        player->RemoveBattlegroundQueueId(queueTypeId);
-        player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
-            PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
+        if (!objectiveTrial)
+        {
+            player->RemoveBattlegroundQueueId(queueTypeId);
+            player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
+                PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
+        }
         SendSystem(player, objectiveTrial ?
             "시련 전장으로 이동하지 못했습니다." :
             "투기장으로 이동하지 못했습니다.");
@@ -1630,6 +1640,26 @@ void SoloArenaMgr::NotifyObjectiveFinishReason(Player* player,
 
     SendSystem(player, Acore::StringFormat(
         "시련 종료 원인: {}", reason));
+}
+
+uint8 SoloArenaMgr::GetNearbyObjectiveNode(Player* player) const
+{
+    if (!player)
+        return OBJECTIVE_NODE_NONE;
+
+    for (uint8 nodeId = 0; nodeId < BG_AB_DYNAMIC_NODES_COUNT; ++nodeId)
+        if (player->GetDistance2d(BG_AB_NodePositions[nodeId][0],
+                BG_AB_NodePositions[nodeId][1]) <=
+            OBJECTIVE_NODE_CAPTURE_RADIUS)
+            return nodeId;
+
+    return OBJECTIVE_NODE_NONE;
+}
+
+bool SoloArenaMgr::AreAllObjectiveNodesCaptured(
+    ArenaSession const& session) const
+{
+    return session.ObjectiveCapturedCount >= BG_AB_DYNAMIC_NODES_COUNT;
 }
 
 void SoloArenaMgr::Update(uint32 diff)
@@ -1957,43 +1987,22 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         return false;
     }
 
-    Battleground* bg = player->GetBattleground();
-    if (!bg || bg->GetBgTypeID() != DEFAULT_OBJECTIVE_BG_TYPE)
-    {
-        if (!session.ObjectiveLinkNotified)
-        {
-            SendSystem(player, Acore::StringFormat(
-                "시련 전장 연결 대기 중입니다. map={} bg={} type={}",
-                player->GetMapId(),
-                bg ? bg->GetInstanceID() : 0,
-                bg ? uint32(bg->GetBgTypeID()) : 0));
-            session.ObjectiveLinkNotified = true;
-        }
-        return false;
-    }
+    uint64 now = std::time(nullptr);
+    if (session.PreparationEndsAt == 0)
+        session.PreparationEndsAt = now + (SOLO_ARENA_PREPARATION_MS / 1000);
 
-    if (bg->GetStatus() == STATUS_WAIT_JOIN &&
-        bg->GetStartDelayTime() > int32(SOLO_ARENA_PREPARATION_MS))
+    if (now < session.PreparationEndsAt)
     {
-        bg->SetStartDelayTime(SOLO_ARENA_PREPARATION_MS);
-    }
-
-    if (bg->GetStatus() == STATUS_WAIT_JOIN)
-    {
-        session.PreparationEndsAt = std::time(nullptr) +
-            std::max<int32>(0, bg->GetStartDelayTime()) / 1000;
         SendTrialTimePayload(player, session);
         return true;
     }
 
-    if (bg->GetStatus() != STATUS_IN_PROGRESS)
-        return true;
-
     if (session.CombatStartedAt == 0)
     {
-        session.CombatStartedAt = std::time(nullptr);
+        session.CombatStartedAt = now;
         session.CombatEndsAt = session.CombatStartedAt +
             (DEFAULT_OBJECTIVE_LIMIT_MS / 1000);
+        LogEvent(player, session, "OBJECTIVE_STARTED");
         SendTrialTimePayload(player, session);
     }
 
@@ -2005,11 +2014,11 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     }
 
     if (session.CombatEndsAt != 0 &&
-        std::time(nullptr) >= time_t(session.CombatEndsAt))
+        now >= time_t(session.CombatEndsAt))
     {
         session.Result = ArenaResult::Failure;
         session.State = SessionState::PendingFinish;
-        session.FailedAt = std::time(nullptr);
+        session.FailedAt = now;
         session.EndedAt = session.FailedAt;
         session.FinishDelayMs = 1;
         LogEvent(player, session, "OBJECTIVE_TIMEOUT");
@@ -2021,16 +2030,54 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     if (!session.BotGuid.IsEmpty())
         return true;
 
-    BattlegroundAB* ab = static_cast<BattlegroundAB*>(bg);
-    if (!ab->AllNodesConrolledByTeam(session.Team))
+    uint8 nodeId = GetNearbyObjectiveNode(player);
+    if (nodeId != OBJECTIVE_NODE_NONE &&
+        !session.ObjectiveCapturedNodes[nodeId])
+    {
+        if (session.ObjectiveActiveNode != nodeId)
+        {
+            session.ObjectiveActiveNode = nodeId;
+            session.ObjectiveCaptureStartedAt = now;
+            SendSystem(player, Acore::StringFormat(
+                "{} 점령을 시작합니다.", GetObjectiveNodeName(nodeId)));
+        }
+        else
+        {
+            uint64 captureMs =
+                (now - session.ObjectiveCaptureStartedAt) * 1000;
+            if (captureMs >= OBJECTIVE_NODE_CAPTURE_MS)
+            {
+                session.ObjectiveCapturedNodes[nodeId] = true;
+                ++session.ObjectiveCapturedCount;
+                session.ObjectiveActiveNode = OBJECTIVE_NODE_NONE;
+                session.ObjectiveCaptureStartedAt = 0;
+                LogEvent(player, session, "OBJECTIVE_NODE_CAPTURED",
+                    GetObjectiveNodeName(nodeId));
+                SendSystem(player, Acore::StringFormat(
+                    "{} 점령 완료 ({}/5)", GetObjectiveNodeName(nodeId),
+                    session.ObjectiveCapturedCount));
+            }
+        }
+    }
+    else
+    {
+        session.ObjectiveActiveNode = OBJECTIVE_NODE_NONE;
+        session.ObjectiveCaptureStartedAt = 0;
+    }
+
+    if (!AreAllObjectiveNodesCaptured(session))
         return true;
 
-    LogEvent(player, session, "OBJECTIVES_COMPLETED");
+    if (!session.ObjectiveAllNodesCaptured)
+    {
+        session.ObjectiveAllNodesCaptured = true;
+        LogEvent(player, session, "OBJECTIVES_COMPLETED");
+    }
     if (!SpawnShadow(player, session))
     {
         session.Result = ArenaResult::Failure;
         session.State = SessionState::PendingFinish;
-        session.FailedAt = std::time(nullptr);
+        session.FailedAt = now;
         session.EndedAt = session.FailedAt;
         session.FinishDelayMs = 1;
         LogEvent(player, session, "OBJECTIVE_SHADOW_SPAWN_FAILED");
@@ -2155,22 +2202,6 @@ bool SoloArenaMgr::IsManagedArenaInstance(uint32 instanceId) const
 {
     return _managedArenaInstances.find(instanceId) !=
         _managedArenaInstances.end();
-}
-
-bool SoloArenaMgr::IsManagedObjectiveInstance(uint32 instanceId) const
-{
-    if (instanceId == 0)
-        return false;
-
-    for (auto const& [playerKey, session] : _sessions)
-    {
-        (void)playerKey;
-        if (session.Scenario == TrialScenario::Objective &&
-            session.ArenaInstanceId == instanceId)
-            return true;
-    }
-
-    return false;
 }
 
 bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
@@ -4638,29 +4669,6 @@ namespace
         }
     };
 
-    class SoloArenaBattlegroundScript : public AllBattlegroundScript
-    {
-    public:
-        SoloArenaBattlegroundScript() : AllBattlegroundScript(
-            "SoloArenaBattlegroundScript",
-            { ALLBATTLEGROUNDHOOK_ON_BEFORE_BATTLEGROUND_END })
-        {
-        }
-
-        bool OnBeforeBattlegroundEnd(Battleground* bg,
-            TeamId /*winnerTeamId*/) override
-        {
-            if (!bg)
-                return true;
-
-            if (!SoloArenaMgr::Instance().IsManagedObjectiveInstance(
-                    bg->GetInstanceID()))
-                return true;
-
-            return false;
-        }
-    };
-
     class SoloArenaServerScript : public ServerScript
     {
     public:
@@ -4799,7 +4807,6 @@ void AddSoloArenaScripts()
     new SoloArenaWorldScript();
     new SoloArenaPlayerScript();
     new SoloArenaArenaScript();
-    new SoloArenaBattlegroundScript();
     new SoloArenaServerScript();
     new SoloArenaAllSpellScript();
     new SoloArenaUnitScript();
