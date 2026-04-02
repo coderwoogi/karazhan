@@ -59,13 +59,17 @@ namespace
     constexpr uint8 OBJECTIVE_NODE_NONE = 255;
     constexpr float OBJECTIVE_NODE_CAPTURE_RADIUS = 18.0f;
     constexpr uint32 OBJECTIVE_NODE_CAPTURE_MS = 4000;
+    constexpr uint8 MAX_STAGE_MECHANIC_SLOTS = 16;
 
     enum class StageMechanicType : uint8
     {
         None = 0,
         HealingSurge = 1,
         ShadowBurnHazard = 2,
-        GuardianSummon = 3
+        GuardianSummon = 3,
+        SpeedBoost = 4,
+        ReturnToStart = 5,
+        LaunchAway = 6
     };
 
     enum class ArenaResult : uint8
@@ -171,13 +175,12 @@ namespace
         std::array<bool, BG_AB_DYNAMIC_NODES_COUNT> ObjectiveCapturedNodes = {};
         uint32 PetEntry = 0;
         uint32 PetDisplayId = 0;
-        ObjectGuid MechanicGuid = ObjectGuid::Empty;
+        std::array<ObjectGuid, MAX_STAGE_MECHANIC_SLOTS> MechanicGuids = {};
         ObjectGuid HelperGuid = ObjectGuid::Empty;
         ObjectGuid HazardGuid = ObjectGuid::Empty;
-        uint8 MechanicSlot = 0;
-        StageMechanicType MechanicType = StageMechanicType::None;
-        uint64 NextMechanicAt = 0;
+        std::array<uint64, MAX_STAGE_MECHANIC_SLOTS> NextMechanicSpawnAt = {};
         uint64 PlayerDamageBuffEndsAt = 0;
+        uint64 ObjectiveSpeedBuffEndsAt = 0;
         uint8 RankValue = 0;
         std::string RankLabel;
         ArenaResult Result = ArenaResult::None;
@@ -1443,7 +1446,6 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     session.PreparationEndsAt = session.StartedAt +
         (SOLO_ARENA_PREPARATION_MS / 1000);
     session.NextMovementNormalizeAt = session.StartedAt;
-    session.NextMechanicAt = 0;
     if (objectiveTrial)
         session.SpawnDelayMs = 10000;
 
@@ -1839,9 +1841,6 @@ void SoloArenaMgr::Update(uint32 diff)
                         session.CombatStartedAt = std::time(nullptr);
                         session.CombatEndsAt = session.CombatStartedAt +
                             (DEFAULT_COMBAT_LIMIT_MS / 1000);
-                        if (session.StageId >= 1 && session.StageId <= 3)
-                            session.NextMechanicAt =
-                                session.CombatStartedAt + 8;
                         session.EndedAt = 0;
                         LogEvent(player, session, "COMBAT_STARTED");
                         SendTrialTimePayload(player, session);
@@ -1865,6 +1864,15 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.PlayerDamageBuffEndsAt = 0;
                     SendSystem(player,
                         "시련의 숨결 효과가 사라졌습니다.");
+                }
+
+                if (session.ObjectiveSpeedBuffEndsAt != 0 &&
+                    uint64(std::time(nullptr)) >= session.ObjectiveSpeedBuffEndsAt)
+                {
+                    session.ObjectiveSpeedBuffEndsAt = 0;
+                    if (session.Scenario == TrialScenario::Objective)
+                        SendSystem(player,
+                            "질주의 상자 효과가 사라졌습니다.");
                 }
 
                 if (player->GetMapId() != session.ArenaMapId)
@@ -2009,9 +2017,14 @@ void SoloArenaMgr::NormalizeObjectiveMovement(Player* player,
     player->RemoveAurasByType(SPELL_AURA_MOD_FLIGHT_SPEED_NOT_STACKING);
     player->RemoveAurasByType(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED_NOT_STACKING);
 
-    player->SetSpeed(MOVE_RUN, 1.0f, true);
-    player->SetSpeed(MOVE_RUN_BACK, 1.0f, true);
-    player->SetSpeed(MOVE_SWIM, 1.0f, true);
+    float runRate = 1.0f;
+    if (session.ObjectiveSpeedBuffEndsAt != 0 &&
+        uint64(std::time(nullptr)) < session.ObjectiveSpeedBuffEndsAt)
+        runRate = 1.6f;
+
+    player->SetSpeed(MOVE_RUN, runRate, true);
+    player->SetSpeed(MOVE_RUN_BACK, runRate, true);
+    player->SetSpeed(MOVE_SWIM, runRate, true);
 }
 
 bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
@@ -3091,21 +3104,23 @@ std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
 
 void SoloArenaMgr::ClearMechanicObject(ArenaSession& session)
 {
-    if (session.MechanicGuid.IsEmpty())
-        return;
+    Player* player = ObjectAccessor::FindConnectedPlayer(session.PlayerGuid);
+    for (uint8 slot = 0; slot < MAX_STAGE_MECHANIC_SLOTS; ++slot)
+    {
+        if (session.MechanicGuids[slot].IsEmpty())
+            continue;
 
-    if (Player* player = ObjectAccessor::FindConnectedPlayer(
-            session.PlayerGuid))
-        if (GameObject* go = ObjectAccessor::GetGameObject(*player,
-                session.MechanicGuid))
-        {
-            go->SetRespawnTime(0);
-            go->Delete();
-        }
+        if (player)
+            if (GameObject* go = ObjectAccessor::GetGameObject(*player,
+                    session.MechanicGuids[slot]))
+            {
+                go->SetRespawnTime(0);
+                go->Delete();
+            }
 
-    session.MechanicGuid = ObjectGuid::Empty;
-    session.MechanicSlot = 0;
-    session.MechanicType = StageMechanicType::None;
+        session.MechanicGuids[slot] = ObjectGuid::Empty;
+        session.NextMechanicSpawnAt[slot] = 0;
+    }
 }
 
 void SoloArenaMgr::ClearMechanicSummons(ArenaSession& session)
@@ -3147,9 +3162,13 @@ bool SoloArenaMgr::SpawnMechanicObject(Player* player,
     if (!go)
         return false;
 
-    session.MechanicGuid = go->GetGUID();
-    session.MechanicSlot = mechanic.SlotId;
-    session.MechanicType = mechanic.MechanicType;
+    if (mechanic.SlotId == 0 || mechanic.SlotId > MAX_STAGE_MECHANIC_SLOTS)
+    {
+        go->Delete();
+        return false;
+    }
+
+    session.MechanicGuids[mechanic.SlotId - 1] = go->GetGUID();
     LogEvent(player, session, "MECHANIC_SPAWNED", mechanic.Name);
     return true;
 }
@@ -3294,6 +3313,43 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
                 "균열의 제단");
             break;
         }
+        case StageMechanicType::SpeedBoost:
+        {
+            session.ObjectiveSpeedBuffEndsAt = std::time(nullptr) +
+                uint64(std::max<uint32>(3u, uint32(mechanic.EffectValue1)));
+            SendSystem(player,
+                "질주의 상자가 발동했습니다. 잠시 이동 속도가 빨라집니다.");
+            LogEvent(player, session, "MECHANIC_TRIGGERED",
+                "질주의 상자");
+            break;
+        }
+        case StageMechanicType::ReturnToStart:
+        {
+            float x = 0.0f;
+            float y = 0.0f;
+            float z = 0.0f;
+            float o = 0.0f;
+            GetObjectiveStartLocation(session.Team, x, y, z, o);
+            z = ResolveArenaGroundZ(player->GetMap(), x, y, z);
+            player->TeleportTo(session.ArenaMapId, x, y, z, o,
+                TELE_TO_GM_MODE);
+            SendSystem(player,
+                "복귀의 상자가 발동했습니다. 시작 지점으로 되돌아갑니다.");
+            LogEvent(player, session, "MECHANIC_TRIGGERED",
+                "복귀의 상자");
+            break;
+        }
+        case StageMechanicType::LaunchAway:
+        {
+            player->KnockbackFrom(mechanic.SpawnX, mechanic.SpawnY,
+                std::max(10.0f, mechanic.EffectValue1),
+                std::max(8.0f, mechanic.EffectValue2));
+            SendSystem(player,
+                "광폭의 상자가 폭주합니다. 거센 충격에 멀리 날아갑니다.");
+            LogEvent(player, session, "MECHANIC_TRIGGERED",
+                "광폭의 상자");
+            break;
+        }
         default:
             break;
     }
@@ -3309,46 +3365,44 @@ void SoloArenaMgr::UpdateMechanics(Player* player, ArenaSession& session)
         return;
 
     uint64 now = std::time(nullptr);
-
-    if (!session.MechanicGuid.IsEmpty())
+    for (StageMechanicConfig const& mechanic : mechanics)
     {
-        GameObject* go = ObjectAccessor::GetGameObject(*player,
-            session.MechanicGuid);
-        StageMechanicConfig const* activeMechanic = nullptr;
-        for (StageMechanicConfig const& mechanic : mechanics)
-            if (mechanic.SlotId == session.MechanicSlot)
+        if (mechanic.SlotId == 0 || mechanic.SlotId > MAX_STAGE_MECHANIC_SLOTS)
+            continue;
+
+        uint8 slotIndex = mechanic.SlotId - 1;
+        if (!session.MechanicGuids[slotIndex].IsEmpty())
+        {
+            GameObject* go = ObjectAccessor::GetGameObject(*player,
+                session.MechanicGuids[slotIndex]);
+            if (!go)
             {
-                activeMechanic = &mechanic;
-                break;
+                session.MechanicGuids[slotIndex] = ObjectGuid::Empty;
+                if (session.NextMechanicSpawnAt[slotIndex] == 0)
+                    session.NextMechanicSpawnAt[slotIndex] = now +
+                        (mechanic.SpawnIntervalMs / 1000);
+            }
+            else if (player->GetDistance(go) <= 3.0f)
+            {
+                ApplyMechanicEffect(player, session, mechanic);
+                go->SetRespawnTime(0);
+                go->Delete();
+                session.MechanicGuids[slotIndex] = ObjectGuid::Empty;
+                session.NextMechanicSpawnAt[slotIndex] = now +
+                    (mechanic.SpawnIntervalMs / 1000);
             }
 
-        if (!go || !activeMechanic)
-        {
-            session.MechanicGuid = ObjectGuid::Empty;
-            session.MechanicSlot = 0;
-            session.MechanicType = StageMechanicType::None;
-        }
-        else if (player->GetDistance(go) <= 3.0f)
-        {
-            ApplyMechanicEffect(player, session, *activeMechanic);
-            ClearMechanicObject(session);
-            session.NextMechanicAt = now +
-                (activeMechanic->SpawnIntervalMs / 1000);
+            continue;
         }
 
-        return;
+        if (session.NextMechanicSpawnAt[slotIndex] != 0 &&
+            now < session.NextMechanicSpawnAt[slotIndex])
+            continue;
+
+        if (SpawnMechanicObject(player, session, mechanic))
+            session.NextMechanicSpawnAt[slotIndex] = now +
+                (mechanic.SpawnIntervalMs / 1000);
     }
-
-    if (session.NextMechanicAt == 0 || now < session.NextMechanicAt)
-        return;
-
-    size_t index = 0;
-    if (!mechanics.empty())
-        index = size_t(now % mechanics.size());
-
-    if (SpawnMechanicObject(player, session, mechanics[index]))
-        session.NextMechanicAt = now +
-            (mechanics[index].SpawnIntervalMs / 1000);
 }
 
 void SoloArenaMgr::LoadDefaultStages()
@@ -3437,51 +3491,165 @@ void SoloArenaMgr::LoadDefaultMechanics()
 {
     _mechanics.clear();
 
-    StageMechanicConfig stage4;
-    stage4.StageId = 1;
-    stage4.SlotId = 1;
-    stage4.MechanicType = StageMechanicType::HealingSurge;
-    stage4.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
-    stage4.SpawnX = 1281.90f;
-    stage4.SpawnY = 1667.30f;
-    stage4.SpawnZ = 39.96f;
-    stage4.SpawnIntervalMs = 20000;
-    stage4.DurationMs = 15000;
-    stage4.EffectValue1 = 0.20f;
-    stage4.EffectValue2 = 0.25f;
-    stage4.Name = "시련의 숨결";
-    _mechanics.emplace(stage4.StageId, stage4);
+    auto addMechanic = [this](uint8 stageId, uint8 slotId,
+        StageMechanicType type, uint32 objectEntry, float x, float y, float z,
+        float o, uint32 intervalMs, uint32 durationMs,
+        float value1, float value2, char const* name)
+    {
+        StageMechanicConfig mechanic;
+        mechanic.StageId = stageId;
+        mechanic.SlotId = slotId;
+        mechanic.MechanicType = type;
+        mechanic.ObjectEntry = objectEntry;
+        mechanic.SpawnX = x;
+        mechanic.SpawnY = y;
+        mechanic.SpawnZ = z;
+        mechanic.SpawnO = o;
+        mechanic.SpawnIntervalMs = intervalMs;
+        mechanic.DurationMs = durationMs;
+        mechanic.EffectValue1 = value1;
+        mechanic.EffectValue2 = value2;
+        mechanic.Name = name;
+        _mechanics.emplace(stageId, mechanic);
+    };
 
-    StageMechanicConfig stage5;
-    stage5.StageId = 2;
-    stage5.SlotId = 1;
-    stage5.MechanicType = StageMechanicType::ShadowBurnHazard;
-    stage5.ObjectEntry = TRIAL_MECHANIC_BAD_ENTRY;
-    stage5.SpawnX = 1289.60f;
-    stage5.SpawnY = 1668.10f;
-    stage5.SpawnZ = 39.96f;
-    stage5.SpawnIntervalMs = 22000;
-    stage5.DurationMs = 15000;
-    stage5.EffectValue1 = 0.10f;
-    stage5.EffectValue2 = 0.08f;
-    stage5.SummonEntry = TRIAL_HAZARD_ENTRY;
-    stage5.Name = "뒤틀린 파편";
-    _mechanics.emplace(stage5.StageId, stage5);
+    StageMechanicConfig stage1;
+    stage1.StageId = 1;
+    stage1.SlotId = 1;
+    stage1.MechanicType = StageMechanicType::HealingSurge;
+    stage1.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
+    stage1.SpawnX = 1281.90f;
+    stage1.SpawnY = 1667.30f;
+    stage1.SpawnZ = 39.96f;
+    stage1.SpawnIntervalMs = 20000;
+    stage1.DurationMs = 15000;
+    stage1.EffectValue1 = 0.20f;
+    stage1.EffectValue2 = 0.25f;
+    stage1.Name = "시련의 숨결";
+    _mechanics.emplace(stage1.StageId, stage1);
 
-    StageMechanicConfig stage6;
-    stage6.StageId = 3;
-    stage6.SlotId = 1;
-    stage6.MechanicType = StageMechanicType::GuardianSummon;
-    stage6.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
-    stage6.SpawnX = 1285.80f;
-    stage6.SpawnY = 1662.80f;
-    stage6.SpawnZ = 39.96f;
-    stage6.SpawnIntervalMs = 25000;
-    stage6.DurationMs = 15000;
-    stage6.EffectValue1 = 18.0f;
-    stage6.SummonEntry = TRIAL_HELPER_ENTRY;
-    stage6.Name = "균열의 제단";
-    _mechanics.emplace(stage6.StageId, stage6);
+    StageMechanicConfig stage2;
+    stage2.StageId = 2;
+    stage2.SlotId = 1;
+    stage2.MechanicType = StageMechanicType::ShadowBurnHazard;
+    stage2.ObjectEntry = TRIAL_MECHANIC_BAD_ENTRY;
+    stage2.SpawnX = 1289.60f;
+    stage2.SpawnY = 1668.10f;
+    stage2.SpawnZ = 39.96f;
+    stage2.SpawnIntervalMs = 22000;
+    stage2.DurationMs = 15000;
+    stage2.EffectValue1 = 0.10f;
+    stage2.EffectValue2 = 0.08f;
+    stage2.SummonEntry = TRIAL_HAZARD_ENTRY;
+    stage2.Name = "뒤틀린 파편";
+    _mechanics.emplace(stage2.StageId, stage2);
+
+    StageMechanicConfig stage3;
+    stage3.StageId = 3;
+    stage3.SlotId = 1;
+    stage3.MechanicType = StageMechanicType::GuardianSummon;
+    stage3.ObjectEntry = TRIAL_MECHANIC_GOOD_ENTRY;
+    stage3.SpawnX = 1285.80f;
+    stage3.SpawnY = 1662.80f;
+    stage3.SpawnZ = 39.96f;
+    stage3.SpawnIntervalMs = 25000;
+    stage3.DurationMs = 15000;
+    stage3.EffectValue1 = 18.0f;
+    stage3.SummonEntry = TRIAL_HELPER_ENTRY;
+    stage3.Name = "균열의 제단";
+    _mechanics.emplace(stage3.StageId, stage3);
+
+    for (uint8 nodeId = 0; nodeId < BG_AB_DYNAMIC_NODES_COUNT; ++nodeId)
+    {
+        addMechanic(4, nodeId + 1, StageMechanicType::SpeedBoost,
+            TRIAL_MECHANIC_GOOD_ENTRY,
+            BG_AB_BuffPositions[nodeId][0], BG_AB_BuffPositions[nodeId][1],
+            BG_AB_BuffPositions[nodeId][2], BG_AB_BuffPositions[nodeId][3],
+            25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+            "질주의 상자");
+    }
+
+    addMechanic(5, 1, StageMechanicType::SpeedBoost,
+        TRIAL_MECHANIC_GOOD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_STABLES][0],
+        BG_AB_BuffPositions[BG_AB_NODE_STABLES][1],
+        BG_AB_BuffPositions[BG_AB_NODE_STABLES][2],
+        BG_AB_BuffPositions[BG_AB_NODE_STABLES][3],
+        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+        "질주의 상자");
+    addMechanic(5, 2, StageMechanicType::SpeedBoost,
+        TRIAL_MECHANIC_GOOD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_FARM][0],
+        BG_AB_BuffPositions[BG_AB_NODE_FARM][1],
+        BG_AB_BuffPositions[BG_AB_NODE_FARM][2],
+        BG_AB_BuffPositions[BG_AB_NODE_FARM][3],
+        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+        "질주의 상자");
+    addMechanic(5, 3, StageMechanicType::ReturnToStart,
+        TRIAL_MECHANIC_BAD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_BLACKSMITH][0],
+        BG_AB_BuffPositions[BG_AB_NODE_BLACKSMITH][1],
+        BG_AB_BuffPositions[BG_AB_NODE_BLACKSMITH][2],
+        BG_AB_BuffPositions[BG_AB_NODE_BLACKSMITH][3],
+        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
+        "복귀의 상자");
+    addMechanic(5, 4, StageMechanicType::ReturnToStart,
+        TRIAL_MECHANIC_BAD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_GOLD_MINE][0],
+        BG_AB_BuffPositions[BG_AB_NODE_GOLD_MINE][1],
+        BG_AB_BuffPositions[BG_AB_NODE_GOLD_MINE][2],
+        BG_AB_BuffPositions[BG_AB_NODE_GOLD_MINE][3],
+        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
+        "복귀의 상자");
+    addMechanic(5, 5, StageMechanicType::SpeedBoost,
+        TRIAL_MECHANIC_GOOD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_LUMBER_MILL][0],
+        BG_AB_BuffPositions[BG_AB_NODE_LUMBER_MILL][1],
+        BG_AB_BuffPositions[BG_AB_NODE_LUMBER_MILL][2],
+        BG_AB_BuffPositions[BG_AB_NODE_LUMBER_MILL][3],
+        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+        "질주의 상자");
+
+    addMechanic(6, 1, StageMechanicType::SpeedBoost,
+        TRIAL_MECHANIC_GOOD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_STABLES][0],
+        BG_AB_BuffPositions[BG_AB_NODE_STABLES][1],
+        BG_AB_BuffPositions[BG_AB_NODE_STABLES][2],
+        BG_AB_BuffPositions[BG_AB_NODE_STABLES][3],
+        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+        "질주의 상자");
+    addMechanic(6, 2, StageMechanicType::ReturnToStart,
+        TRIAL_MECHANIC_BAD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_FARM][0],
+        BG_AB_BuffPositions[BG_AB_NODE_FARM][1],
+        BG_AB_BuffPositions[BG_AB_NODE_FARM][2],
+        BG_AB_BuffPositions[BG_AB_NODE_FARM][3],
+        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
+        "복귀의 상자");
+    addMechanic(6, 3, StageMechanicType::LaunchAway,
+        TRIAL_MECHANIC_BAD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_BLACKSMITH][0],
+        BG_AB_BuffPositions[BG_AB_NODE_BLACKSMITH][1],
+        BG_AB_BuffPositions[BG_AB_NODE_BLACKSMITH][2],
+        BG_AB_BuffPositions[BG_AB_NODE_BLACKSMITH][3],
+        35 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 18.0f, 10.0f,
+        "광폭의 상자");
+    addMechanic(6, 4, StageMechanicType::LaunchAway,
+        TRIAL_MECHANIC_BAD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_LUMBER_MILL][0],
+        BG_AB_BuffPositions[BG_AB_NODE_LUMBER_MILL][1],
+        BG_AB_BuffPositions[BG_AB_NODE_LUMBER_MILL][2],
+        BG_AB_BuffPositions[BG_AB_NODE_LUMBER_MILL][3],
+        35 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 22.0f, 12.0f,
+        "광폭의 상자");
+    addMechanic(6, 5, StageMechanicType::SpeedBoost,
+        TRIAL_MECHANIC_GOOD_ENTRY,
+        BG_AB_BuffPositions[BG_AB_NODE_GOLD_MINE][0],
+        BG_AB_BuffPositions[BG_AB_NODE_GOLD_MINE][1],
+        BG_AB_BuffPositions[BG_AB_NODE_GOLD_MINE][2],
+        BG_AB_BuffPositions[BG_AB_NODE_GOLD_MINE][3],
+        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+        "질주의 상자");
 }
 
 namespace

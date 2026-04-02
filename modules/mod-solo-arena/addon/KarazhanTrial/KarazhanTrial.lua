@@ -110,8 +110,16 @@ local function GetMechanicNameByStage(stageId)
 end
 
 local function IsInArenaInstance()
-  local _, instanceType = GetInstanceInfo()
-  return instanceType == ARENA_INSTANCE_TYPE
+  local _, instanceType, _, _, _, _, _, instanceMapId = GetInstanceInfo()
+  if instanceType == ARENA_INSTANCE_TYPE then
+    return true
+  end
+
+  if instanceType == "pvp" and tonumber(instanceMapId) == 529 then
+    return true
+  end
+
+  return false
 end
 
 local function NewState()
