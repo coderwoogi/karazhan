@@ -1345,11 +1345,8 @@ Trial.start:SetScript("OnClick", function()
     return
   end
 
-  Trial.state.pendingArena = true
   SendCommand("START\t" .. tostring(stage.stageId))
   Trial:Hide()
-  RefreshStatusTimes()
-  Trial.statusBox:Show()
   RefreshStatusBox()
 end)
 
