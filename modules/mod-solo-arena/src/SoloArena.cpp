@@ -1360,7 +1360,39 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         DEFAULT_OBJECTIVE_BG_TYPE : DEFAULT_ARENA_BG_TYPE;
 
     Battleground* battleground = nullptr;
-    if (!objectiveTrial)
+    if (objectiveTrial)
+    {
+        Battleground* battlegroundTemplate =
+            sBattlegroundMgr->GetBattlegroundTemplate(
+                DEFAULT_OBJECTIVE_BG_TYPE);
+        if (!battlegroundTemplate)
+        {
+            SendSystem(player, "시련 전장 템플릿을 찾지 못했습니다.");
+            return false;
+        }
+
+        PvPDifficultyEntry const* bracketEntry = GetBattlegroundBracketById(
+            battlegroundTemplate->GetMapId(),
+            battlegroundTemplate->GetBracketId());
+        if (!bracketEntry)
+        {
+            SendSystem(player, "시련 전장 등급 정보를 찾지 못했습니다.");
+            return false;
+        }
+
+        battleground = sBattlegroundMgr->CreateNewBattleground(
+            bgTypeId, bracketEntry, 0, false);
+        if (!battleground)
+        {
+            SendSystem(player, "시련 전장 인스턴스를 만들지 못했습니다.");
+            return false;
+        }
+
+        battleground->SetMinPlayersPerTeam(0);
+        battleground->SetMaxPlayersPerTeam(1);
+        battleground->StartBattleground();
+    }
+    else
     {
         Battleground* battlegroundTemplate =
             sBattlegroundMgr->GetBattlegroundTemplate(BATTLEGROUND_AA);
@@ -1424,7 +1456,13 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     TeamId teamId = session.Team;
     BattlegroundQueueTypeId queueTypeId{};
     uint32 queueSlot = PLAYER_MAX_BATTLEGROUND_QUEUES;
-    if (!objectiveTrial)
+    if (objectiveTrial)
+    {
+        player->SetEntryPoint();
+        player->SetBattlegroundId(session.ArenaInstanceId,
+            bgTypeId, PLAYER_MAX_BATTLEGROUND_QUEUES, true, false, teamId);
+    }
+    else
     {
         queueTypeId = BattlegroundMgr::BGQueueTypeId(bgTypeId, ARENA_TYPE_2v2);
         queueSlot = player->AddBattlegroundQueueId(queueTypeId);
@@ -1484,7 +1522,12 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     {
         _sessions.erase(player->GetGUID().GetCounter());
         _managedArenaInstances.erase(session.ArenaInstanceId);
-        if (!objectiveTrial)
+        if (objectiveTrial)
+        {
+            player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
+                PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
+        }
+        else
         {
             player->RemoveBattlegroundQueueId(queueTypeId);
             player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
@@ -1533,6 +1576,9 @@ bool SoloArenaMgr::ReturnPlayer(Player* player)
         GrantDeserterImmunity(player);
     player->TeleportTo(session.ReturnMapId, session.ReturnX, session.ReturnY,
         session.ReturnZ, session.ReturnO);
+    if (session.Scenario == TrialScenario::Objective)
+        player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
+            PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
     if (session.Scenario == TrialScenario::Objective)
         player->RemoveAura(26013);
     _sessions.erase(itr);
