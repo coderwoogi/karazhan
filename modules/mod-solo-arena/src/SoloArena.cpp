@@ -1447,7 +1447,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         (SOLO_ARENA_PREPARATION_MS / 1000);
     session.NextMovementNormalizeAt = session.StartedAt;
     if (objectiveTrial)
-        session.SpawnDelayMs = 10000;
+        session.SpawnDelayMs = 1500;
 
     _sessions[player->GetGUID().GetCounter()] = session;
     if (session.ArenaInstanceId != 0)
