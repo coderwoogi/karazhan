@@ -159,6 +159,7 @@ namespace
         uint32 FinishDelayMs = 3000;
         uint64 NextMovementNormalizeAt = 0;
         bool ObjectiveReadyAnnounced = false;
+        bool ObjectiveLinkNotified = false;
         uint32 PetEntry = 0;
         uint32 PetDisplayId = 0;
         ObjectGuid MechanicGuid = ObjectGuid::Empty;
@@ -1835,7 +1836,18 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 
     Battleground* bg = player->GetBattleground();
     if (!bg || bg->GetBgTypeID() != DEFAULT_OBJECTIVE_BG_TYPE)
+    {
+        if (!session.ObjectiveLinkNotified)
+        {
+            SendSystem(player, Acore::StringFormat(
+                "시련 전장 연결 대기 중입니다. map={} bg={} type={}",
+                player->GetMapId(),
+                bg ? bg->GetInstanceID() : 0,
+                bg ? uint32(bg->GetBgTypeID()) : 0));
+            session.ObjectiveLinkNotified = true;
+        }
         return false;
+    }
 
     if (bg->GetStatus() == STATUS_WAIT_JOIN &&
         bg->GetStartDelayTime() > int32(SOLO_ARENA_PREPARATION_MS))
@@ -2661,15 +2673,17 @@ void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
         return;
 
     CharacterDatabase.Execute(
-        "INSERT INTO solo_arena_run_log "
-        "(run_uid, guid, account_id, player_name, stage_id, stage_name, "
+        "INSERT INTO solo_arena_run_log ("
+        "run_uid, guid, account_id, player_name, stage_id, stage_name, "
         "result, result_label, session_state, started_at, "
         "preparation_ends_at, combat_started_at, combat_ended_at, "
         "ended_at, completed_at, failed_at, abandoned_at, duration_sec, "
         "rank_value, rank_label, combat_duration_sec, arena_map_id, "
-        "arena_instance_id, return_map_id) "
-        "VALUES ({}, {}, {}, '{}', {}, '{}', {}, '{}', {}, {}, {}, {}, "
-        "{}, {}, {}, {}, {}, {}, '{}', {}, {}, {}, {})",
+        "arena_instance_id, return_map_id"
+        ") VALUES ("
+        "{}, {}, {}, '{}', {}, '{}', {}, '{}', {}, {}, {}, {}, "
+        "{}, {}, {}, {}, {}, {}, {}, '{}', {}, {}, {}, {}"
+        ")",
         session.RunUid,
         player->GetGUID().GetCounter(),
         player->GetSession() ? player->GetSession()->GetAccountId() : 0,
