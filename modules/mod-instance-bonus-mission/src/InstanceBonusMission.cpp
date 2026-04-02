@@ -562,7 +562,6 @@ namespace
                     "reward_profile_id "
                     "FROM instance_bonus_mission "
                     "WHERE enabled = 1 "
-                    "  AND CAST(publish_status AS CHAR) IN ('2', 'published') "
                     "ORDER BY map_id, mission_id");
 
                 if (result)

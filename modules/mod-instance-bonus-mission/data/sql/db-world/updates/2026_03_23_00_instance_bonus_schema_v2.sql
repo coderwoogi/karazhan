@@ -15,13 +15,12 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_map_config` (
     `theme_selection_mode` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `mission_selection_mode` TINYINT UNSIGNED NOT NULL DEFAULT 1,
     `max_active_missions` TINYINT UNSIGNED NOT NULL DEFAULT 1,
-    `publish_status` TINYINT UNSIGNED NOT NULL DEFAULT 2,
     `created_by` INT UNSIGNED NOT NULL DEFAULT 0,
     `updated_by` INT UNSIGNED NOT NULL DEFAULT 0,
     `created_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
     PRIMARY KEY (`map_id`),
-    KEY `idx_instance_bonus_map_enabled` (`enabled`, `publish_status`)
+    KEY `idx_instance_bonus_map_enabled` (`enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `instance_bonus_player_daily_usage` (
@@ -63,7 +62,6 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_mission` (
     `required_tank` TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `required_healer` TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
-    `publish_status` TINYINT UNSIGNED NOT NULL DEFAULT 2,
     `version` INT UNSIGNED NOT NULL DEFAULT 1,
     `created_by` INT UNSIGNED NOT NULL DEFAULT 0,
     `updated_by` INT UNSIGNED NOT NULL DEFAULT 0,
@@ -73,7 +71,7 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_mission` (
     UNIQUE KEY `idx_instance_bonus_mission_key`
         (`map_id`, `mission_key`),
     KEY `idx_instance_bonus_mission_map`
-        (`map_id`, `enabled`, `publish_status`)
+        (`map_id`, `enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `instance_bonus_theme` (
@@ -92,7 +90,6 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_theme` (
     `required_healer` TINYINT UNSIGNED NOT NULL DEFAULT 0,
     `weight` INT UNSIGNED NOT NULL DEFAULT 100,
     `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
-    `publish_status` TINYINT UNSIGNED NOT NULL DEFAULT 2,
     `version` INT UNSIGNED NOT NULL DEFAULT 1,
     `created_by` INT UNSIGNED NOT NULL DEFAULT 0,
     `updated_by` INT UNSIGNED NOT NULL DEFAULT 0,
@@ -102,7 +99,7 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_theme` (
     UNIQUE KEY `idx_instance_bonus_theme_v2_key`
         (`map_id`, `theme_key`),
     KEY `idx_instance_bonus_theme_v2_map`
-        (`map_id`, `enabled`, `publish_status`)
+        (`map_id`, `enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `instance_bonus_theme_mission_link` (
@@ -124,7 +121,6 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_reward_profile` (
     `name` VARCHAR(120) NOT NULL DEFAULT '',
     `description` VARCHAR(255) NOT NULL DEFAULT '',
     `enabled` TINYINT UNSIGNED NOT NULL DEFAULT 1,
-    `publish_status` TINYINT UNSIGNED NOT NULL DEFAULT 2,
     `version` INT UNSIGNED NOT NULL DEFAULT 1,
     `created_by` INT UNSIGNED NOT NULL DEFAULT 0,
     `updated_by` INT UNSIGNED NOT NULL DEFAULT 0,
@@ -133,7 +129,7 @@ CREATE TABLE IF NOT EXISTS `instance_bonus_reward_profile` (
     PRIMARY KEY (`reward_profile_id`),
     UNIQUE KEY `idx_instance_bonus_reward_profile_key` (`profile_key`),
     KEY `idx_instance_bonus_reward_profile_enabled`
-        (`enabled`, `publish_status`)
+        (`enabled`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS `instance_bonus_reward_profile_item` (
@@ -294,20 +290,19 @@ INSERT IGNORE INTO `instance_bonus_map_config` (
     `map_id`, `map_name`, `enabled`, `allow_llm`, `allow_vote`,
     `daily_limit_per_player`, `vote_timeout_sec`, `default_time_limit_sec`, `min_party_size`,
     `max_party_size`, `theme_selection_mode`, `mission_selection_mode`,
-    `max_active_missions`, `publish_status`
+    `max_active_missions`
 ) VALUES
 (
     557, '마나 무덤', 1, 1, 1, 0,
     30, 900, 1,
     5, 1, 1,
-    1, 2
+    1
 );
 
 INSERT IGNORE INTO `instance_bonus_reward_profile` (
-    `reward_profile_id`, `name`, `description`, `enabled`,
-    `publish_status`
+    `reward_profile_id`, `name`, `description`, `enabled`
 ) VALUES
-(1001, '마나 무덤 공통 보상', '마나 무덤 기본 보상 프로파일', 1, 2);
+(1001, '마나 무덤 공통 보상', '마나 무덤 기본 보상 프로파일', 1);
 
 INSERT IGNORE INTO `instance_bonus_reward_profile_item` (
     `reward_profile_id`, `grade`, `slot`, `item_entry`, `item_count`,
@@ -325,7 +320,7 @@ INSERT IGNORE INTO `instance_bonus_mission` (
     `briefing_text`, `mission_type`, `objective_type`, `target_entry`,
     `target_label`, `target_count`, `time_limit_sec`,
     `failure_condition_type`, `reward_profile_id`,
-    `min_party_size`, `max_party_size`, `enabled`, `publish_status`
+    `min_party_size`, `max_party_size`, `enabled`
 ) VALUES
 (
     1, 557, 'mana_tombs_sorcerer_hunt', '에테리얼 사술사 토벌',
@@ -334,7 +329,7 @@ INSERT IGNORE INTO `instance_bonus_mission` (
     1, 1, 18315,
     '에테리얼 사술사', 4, 600,
     1, 1001,
-    1, 5, 1, 2
+    1, 5, 1
 ),
 (
     2, 557, 'mana_tombs_magus_hunt', '에테리얼 마술사 제압',
@@ -343,7 +338,7 @@ INSERT IGNORE INTO `instance_bonus_mission` (
     1, 1, 18313,
     '에테리얼 마술사', 8, 720,
     1, 1001,
-    1, 5, 1, 2
+    1, 5, 1
 ),
 (
     3, 557, 'mana_tombs_priest_hunt', '에테리얼 사제 축출',
@@ -352,7 +347,7 @@ INSERT IGNORE INTO `instance_bonus_mission` (
     1, 1, 18317,
     '에테리얼 사제', 6, 540,
     1, 1001,
-    1, 5, 1, 2
+    1, 5, 1
 ),
 (
     4, 557, 'mana_tombs_pandemonius', '팬더모니우스 격파',
@@ -361,7 +356,7 @@ INSERT IGNORE INTO `instance_bonus_mission` (
     4, 2, 18341,
     '팬더모니우스', 1, 900,
     1, 1001,
-    1, 5, 1, 2
+    1, 5, 1
 ),
 (
     5, 557, 'mana_tombs_clean_run', '무사고 돌파',
@@ -370,42 +365,42 @@ INSERT IGNORE INTO `instance_bonus_mission` (
     2, 3, 18341,
     '팬더모니우스', 1, 0,
     2, 1001,
-    1, 5, 1, 2
+    1, 5, 1
 );
 
 INSERT IGNORE INTO `instance_bonus_theme` (
     `theme_id`, `map_id`, `theme_key`, `name`, `description`,
     `briefing_style`, `min_party_size`, `max_party_size`,
     `min_avg_item_level`, `max_avg_item_level`, `required_tank`,
-    `required_healer`, `weight`, `enabled`, `publish_status`
+    `required_healer`, `weight`, `enabled`
 ) VALUES
 (
     1, 557, 'slaughter', '학살형',
     '광역 사냥과 다수 처치에 유리한 파티에 적합한 테마',
     1, 1, 5,
     0, 9999, 0,
-    0, 100, 1, 2
+    0, 100, 1
 ),
 (
     2, 557, 'clean_run', '무사고 클리어형',
     '생존력과 안정성이 높은 파티에 적합한 테마',
     1, 1, 5,
     0, 9999, 1,
-    1, 100, 1, 2
+    1, 100, 1
 ),
 (
     3, 557, 'speed_run', '속전속결형',
     '아이템 레벨과 화력이 높은 파티에 적합한 시간 압박 테마',
     1, 1, 5,
     200, 9999, 0,
-    0, 100, 1, 2
+    0, 100, 1
 ),
 (
     4, 557, 'boss_focus', '보스 집중형',
     '핵심 보스 처치에 초점을 맞춘 테마',
     1, 1, 5,
     0, 9999, 0,
-    0, 100, 1, 2
+    0, 100, 1
 );
 
 INSERT IGNORE INTO `instance_bonus_theme_mission_link` (
