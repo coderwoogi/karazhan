@@ -1393,7 +1393,10 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   end
 
   if event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
-    if not IsInArenaInstance() and not Trial.state.resultShown then
+    if not IsInArenaInstance()
+      and not Trial.state.resultShown
+      and not Trial.state.pendingArena
+      and not Trial.state.inProgress then
       Trial.state.pendingArena = false
       Trial.state.inProgress = false
       Trial.state.sessionState = SESSION_PENDING_SPAWN
