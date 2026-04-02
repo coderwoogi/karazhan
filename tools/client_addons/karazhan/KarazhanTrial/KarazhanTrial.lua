@@ -122,6 +122,34 @@ local function IsInArenaInstance()
   return false
 end
 
+local function IsObjectiveStageSelected()
+  local selected = Trial and Trial.state and Trial.state.selected or 0
+  local stage = Trial and Trial.state and Trial.state.stages
+    and Trial.state.stages[selected] or nil
+  local stageId = stage and tonumber(stage.stageId) or 0
+  return stageId >= 4 and stageId <= 6
+end
+
+local function ShouldShowStatusBox()
+  if Trial.state.resultShown or Trial:IsShown() then
+    return false
+  end
+
+  if not (Trial.state.inProgress or Trial.state.pendingArena) then
+    return false
+  end
+
+  if IsInArenaInstance() then
+    return true
+  end
+
+  if IsObjectiveStageSelected() then
+    return true
+  end
+
+  return false
+end
+
 local function NewState()
   return {
     highestCleared = 0,
@@ -834,14 +862,7 @@ local function RefreshStatusTimes()
 end
 
 local function RefreshStatusBox()
-  if Trial.state.resultShown then
-    Trial.statusBox:Hide()
-    return
-  end
-
-  if (Trial.state.inProgress or Trial.state.pendingArena)
-    and IsInArenaInstance()
-    and not Trial:IsShown() then
+  if ShouldShowStatusBox() then
     RefreshStatusTimes()
     Trial.statusBox:Show()
   else
