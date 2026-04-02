@@ -1460,9 +1460,30 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     uint32 queueSlot = PLAYER_MAX_BATTLEGROUND_QUEUES;
     if (objectiveTrial)
     {
+        queueTypeId = BattlegroundMgr::BGQueueTypeId(bgTypeId, 0);
+        queueSlot = player->AddBattlegroundQueueId(queueTypeId);
+        if (queueSlot >= PLAYER_MAX_BATTLEGROUND_QUEUES)
+        {
+            _sessions.erase(player->GetGUID().GetCounter());
+            _managedArenaInstances.erase(session.ArenaInstanceId);
+            SendSystem(player, "시련 전장 대기열을 만들지 못했습니다.");
+            return false;
+        }
+
         player->SetEntryPoint();
+        player->SetInviteForBattlegroundQueueType(queueTypeId,
+            battleground->GetInstanceID());
+
+        WorldPacket data;
+        sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, battleground,
+            queueSlot, STATUS_WAIT_JOIN, INVITE_ACCEPT_WAIT_TIME, 0, 0,
+            teamId);
+        player->SendDirectMessage(&data);
+
+        sLFGMgr->LeaveAllLfgQueues(player->GetGUID(), false);
+
         player->SetBattlegroundId(session.ArenaInstanceId,
-            bgTypeId, PLAYER_MAX_BATTLEGROUND_QUEUES, true, false, teamId);
+            bgTypeId, queueSlot, true, false, teamId);
     }
     else
     {
@@ -1526,6 +1547,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         _managedArenaInstances.erase(session.ArenaInstanceId);
         if (objectiveTrial)
         {
+            player->RemoveBattlegroundQueueId(queueTypeId);
             player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
                 PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
         }
@@ -1579,8 +1601,12 @@ bool SoloArenaMgr::ReturnPlayer(Player* player)
     player->TeleportTo(session.ReturnMapId, session.ReturnX, session.ReturnY,
         session.ReturnZ, session.ReturnO);
     if (session.Scenario == TrialScenario::Objective)
+    {
+        player->RemoveBattlegroundQueueId(
+            BattlegroundMgr::BGQueueTypeId(session.BgTypeId, 0));
         player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
             PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
+    }
     if (session.Scenario == TrialScenario::Objective)
         player->RemoveAura(26013);
     _sessions.erase(itr);

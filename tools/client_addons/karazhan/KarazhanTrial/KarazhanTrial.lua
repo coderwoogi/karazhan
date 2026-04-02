@@ -135,19 +135,7 @@ local function ShouldShowStatusBox()
     return false
   end
 
-  if not (Trial.state.inProgress or Trial.state.pendingArena) then
-    return false
-  end
-
-  if IsInArenaInstance() then
-    return true
-  end
-
-  if IsObjectiveStageSelected() then
-    return true
-  end
-
-  return false
+  return Trial.state.inProgress or Trial.state.pendingArena
 end
 
 local function NewState()
