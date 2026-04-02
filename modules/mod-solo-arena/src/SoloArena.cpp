@@ -1403,6 +1403,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         battleground->SetMinPlayersPerTeam(0);
         battleground->SetMaxPlayersPerTeam(1);
         battleground->StartBattleground();
+        battleground->SetStartDelayTime(SOLO_ARENA_PREPARATION_MS);
     }
     else
     {
@@ -2077,13 +2078,40 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     }
 
     uint64 now = std::time(nullptr);
-    if (session.PreparationEndsAt == 0)
-        session.PreparationEndsAt = now + (SOLO_ARENA_PREPARATION_MS / 1000);
-
-    if (now < session.PreparationEndsAt)
+    if (Battleground* bg = player->GetBattleground())
     {
-        SendTrialTimePayload(player, session);
-        return true;
+        if (bg->GetStatus() == STATUS_WAIT_JOIN &&
+            bg->GetStartDelayTime() > int32(SOLO_ARENA_PREPARATION_MS))
+        {
+            bg->SetStartDelayTime(SOLO_ARENA_PREPARATION_MS);
+        }
+
+        if (bg->GetStatus() == STATUS_WAIT_JOIN)
+        {
+            session.PreparationEndsAt = now +
+                (std::max<int32>(0, bg->GetStartDelayTime()) / 1000);
+            SendTrialTimePayload(player, session);
+            return true;
+        }
+
+        if (bg->GetStatus() != STATUS_IN_PROGRESS)
+        {
+            session.PreparationEndsAt = now + (SOLO_ARENA_PREPARATION_MS / 1000);
+            SendTrialTimePayload(player, session);
+            return true;
+        }
+    }
+    else
+    {
+        if (session.PreparationEndsAt == 0)
+            session.PreparationEndsAt = now +
+                (SOLO_ARENA_PREPARATION_MS / 1000);
+
+        if (now < session.PreparationEndsAt)
+        {
+            SendTrialTimePayload(player, session);
+            return true;
+        }
     }
 
     if (session.CombatStartedAt == 0)
