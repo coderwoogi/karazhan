@@ -1396,9 +1396,23 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         "RUN_CREATED");
 
     TeamId teamId = session.Team;
-    uint32 queueSlot = 0;
+    BattlegroundQueueTypeId queueTypeId =
+        BattlegroundMgr::BGQueueTypeId(bgTypeId,
+            objectiveTrial ? 0 : ARENA_TYPE_2v2);
+    uint32 queueSlot = player->AddBattlegroundQueueId(queueTypeId);
+    if (queueSlot >= PLAYER_MAX_BATTLEGROUND_QUEUES)
+    {
+        _sessions.erase(player->GetGUID().GetCounter());
+        _managedArenaInstances.erase(session.ArenaInstanceId);
+        SendSystem(player, objectiveTrial ?
+            "시련 전장 대기열을 만들지 못했습니다." :
+            "시련 투기장 대기열을 만들지 못했습니다.");
+        return false;
+    }
 
     player->SetEntryPoint();
+    player->SetInviteForBattlegroundQueueType(queueTypeId,
+        battleground->GetInstanceID());
 
     WorldPacket data;
     sBattlegroundMgr->BuildBattlegroundStatusPacket(&data, battleground,
@@ -1412,6 +1426,22 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     player->SetBattlegroundId(battleground->GetInstanceID(),
         battleground->GetBgTypeID(),
         queueSlot, true, false, teamId);
+
+    if (objectiveTrial)
+    {
+        sBattlegroundMgr->SendToBattleground(player,
+            battleground->GetInstanceID(), bgTypeId);
+        player->DestroyItemCount(TRIAL_TICKET_ITEM, 1, true, false);
+        LogEvent(player, _sessions[player->GetGUID().GetCounter()],
+            "TICKET_CONSUMED", Acore::StringFormat(
+                "item={} remaining={}", TRIAL_TICKET_ITEM,
+                player->GetItemCount(TRIAL_TICKET_ITEM, false)));
+        SendSystem(player, Acore::StringFormat(
+            "{} 시작. {}로 이동합니다.", stage->Name, "아라시 분지"));
+        LogEvent(player, _sessions[player->GetGUID().GetCounter()],
+            "PLAYER_TELEPORTED");
+        return true;
+    }
 
     if (Battleground* playerBg = player->GetBattleground())
     {
@@ -1443,6 +1473,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     {
         _sessions.erase(player->GetGUID().GetCounter());
         _managedArenaInstances.erase(session.ArenaInstanceId);
+        player->RemoveBattlegroundQueueId(queueTypeId);
         player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
             PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
         SendSystem(player, objectiveTrial ?
