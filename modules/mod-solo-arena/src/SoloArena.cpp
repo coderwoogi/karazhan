@@ -158,6 +158,7 @@ namespace
         uint64 CombatStartedAt = 0;
         uint64 CombatEndsAt = 0;
         uint64 EndedAt = 0;
+        uint64 NextTimePayloadAt = 0;
         uint64 CompletedAt = 0;
         uint64 FailedAt = 0;
         uint64 AbandonedAt = 0;
@@ -1030,10 +1031,18 @@ namespace
                 playerName, stageLabel));
     }
 
-    void SendTrialTimePayload(Player* player, ArenaSession const& session)
+    void SendTrialTimePayload(Player* player, ArenaSession& session,
+        bool force = false)
     {
         if (!player)
             return;
+
+        uint64 now = std::time(nullptr);
+        if (!force && session.NextTimePayloadAt != 0 &&
+            now < session.NextTimePayloadAt)
+            return;
+
+        session.NextTimePayloadAt = now + 1;
 
         std::ostringstream payload;
         payload << "TIME\t";
@@ -1520,14 +1529,14 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         ArenaSession& activeSession = _sessions[player->GetGUID().GetCounter()];
         activeSession.PreparationEndsAt = std::time(nullptr) +
             (SOLO_ARENA_PREPARATION_MS / 1000);
-        SendTrialTimePayload(player, activeSession);
+        SendTrialTimePayload(player, activeSession, true);
     }
     else
     {
         ArenaSession& activeSession = _sessions[player->GetGUID().GetCounter()];
         activeSession.PreparationEndsAt = std::time(nullptr) +
             (SOLO_ARENA_PREPARATION_MS / 1000);
-        SendTrialTimePayload(player, activeSession);
+        SendTrialTimePayload(player, activeSession, true);
     }
 
     if (objectiveTrial)
@@ -1864,7 +1873,7 @@ void SoloArenaMgr::Update(uint32 diff)
                             (DEFAULT_COMBAT_LIMIT_MS / 1000);
                         session.EndedAt = 0;
                         LogEvent(player, session, "COMBAT_STARTED");
-                        SendTrialTimePayload(player, session);
+                        SendTrialTimePayload(player, session, true);
                         SpeakTrialTaunt(player, session, "combat_start");
                         SendSystem(player,
                             "문이 열렸습니다. 그림자와의 결투가 시작됩니다.");
@@ -1919,7 +1928,7 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.EndedAt = std::time(nullptr);
                     session.FinishDelayMs = 1;
                     LogEvent(player, session, "COMBAT_TIMEOUT");
-                    SendTrialTimePayload(player, session);
+                    SendTrialTimePayload(player, session, true);
                     if (session.Scenario == TrialScenario::Objective)
                         NotifyObjectiveFinishReason(player,
                             "시련 제한 시간 초과");
@@ -2083,7 +2092,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         session.CombatEndsAt = session.CombatStartedAt +
             (DEFAULT_OBJECTIVE_LIMIT_MS / 1000);
         LogEvent(player, session, "OBJECTIVE_STARTED");
-        SendTrialTimePayload(player, session);
+        SendTrialTimePayload(player, session, true);
     }
 
     if (!session.ObjectiveReadyAnnounced)
@@ -2102,7 +2111,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         session.EndedAt = session.FailedAt;
         session.FinishDelayMs = 1;
         LogEvent(player, session, "OBJECTIVE_TIMEOUT");
-        SendTrialTimePayload(player, session);
+        SendTrialTimePayload(player, session, true);
         NotifyObjectiveFinishReason(player, "거점 점령 시간 초과");
         return false;
     }
@@ -2196,7 +2205,7 @@ void SoloArenaMgr::MarkVictory(ObjectGuid const& playerGuid)
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
     {
         LogEvent(player, itr->second, "VICTORY");
-        SendTrialTimePayload(player, itr->second);
+        SendTrialTimePayload(player, itr->second, true);
         SpeakTrialTaunt(player, itr->second, "victory");
     }
 }
@@ -2224,7 +2233,7 @@ void SoloArenaMgr::MarkFailure(ObjectGuid const& playerGuid)
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
     {
         LogEvent(player, itr->second, "FAILURE");
-        SendTrialTimePayload(player, itr->second);
+        SendTrialTimePayload(player, itr->second, true);
         SpeakTrialTaunt(player, itr->second, "failure");
     }
 }
@@ -2249,7 +2258,7 @@ void SoloArenaMgr::MarkAbandoned(ObjectGuid const& playerGuid)
     if (Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid))
     {
         LogEvent(player, itr->second, "ABANDONED");
-        SendTrialTimePayload(player, itr->second);
+        SendTrialTimePayload(player, itr->second, true);
         SpeakTrialTaunt(player, itr->second, "abandoned");
     }
 }
@@ -2491,7 +2500,7 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
     LogRun(player, session);
     LogEvent(player, session, "RUN_FINISHED");
     session.State = SessionState::AwaitingReturn;
-    SendTrialTimePayload(player, session);
+    SendTrialTimePayload(player, session, true);
     SendResultPayload(player, session);
 }
 
