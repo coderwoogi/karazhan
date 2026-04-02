@@ -662,6 +662,8 @@ namespace
         void LogReward(Player* player, ArenaSession const& session,
             uint32 itemEntry, uint32 itemCount, float chance,
             std::string const& status);
+        void GrantDeserterImmunity(Player* player);
+        void UpdateDeserterImmunity();
         std::string GetStageName(uint8 stageId) const;
         std::string BuildStageRewardPayload(uint8 stageId) const;
         std::string BuildStageRankPayload(Player* player, uint8 stageId) const;
@@ -702,6 +704,7 @@ namespace
         std::unordered_multimap<uint8, StageMechanicConfig> _mechanics;
         std::unordered_map<uint64, ArenaSession> _sessions;
         std::unordered_map<uint64, ShadowProfile> _shadowProfiles;
+        std::unordered_map<uint64, uint64> _deserterImmuneUntil;
         std::unordered_set<uint32> _managedArenaInstances;
     };
 
@@ -1481,8 +1484,12 @@ bool SoloArenaMgr::ReturnPlayer(Player* player)
             arena->RemovePlayerAtLeave(player);
 
     _managedArenaInstances.erase(session.ArenaInstanceId);
+    if (session.Scenario == TrialScenario::Objective)
+        GrantDeserterImmunity(player);
     player->TeleportTo(session.ReturnMapId, session.ReturnX, session.ReturnY,
         session.ReturnZ, session.ReturnO);
+    if (session.Scenario == TrialScenario::Objective)
+        player->RemoveAura(26013);
     _sessions.erase(itr);
     return true;
 }
@@ -1582,6 +1589,8 @@ void SoloArenaMgr::SendResultPayload(Player* player,
 
 void SoloArenaMgr::Update(uint32 diff)
 {
+    UpdateDeserterImmunity();
+
     std::vector<uint64> toErase;
 
     for (auto& [playerKey, session] : _sessions)
@@ -1783,6 +1792,39 @@ void SoloArenaMgr::OnPlayerMapChanged(Player* player)
             return;
         }
     }
+}
+
+void SoloArenaMgr::GrantDeserterImmunity(Player* player)
+{
+    if (!player)
+        return;
+
+    _deserterImmuneUntil[player->GetGUID().GetCounter()] =
+        uint64(std::time(nullptr)) + 15;
+    player->RemoveAura(26013);
+}
+
+void SoloArenaMgr::UpdateDeserterImmunity()
+{
+    uint64 now = std::time(nullptr);
+    std::vector<uint64> expired;
+
+    for (auto const& [playerKey, until] : _deserterImmuneUntil)
+    {
+        Player* player = ObjectAccessor::FindConnectedPlayer(
+            ObjectGuid::Create<HighGuid::Player>(playerKey));
+        if (!player || now >= until)
+        {
+            expired.push_back(playerKey);
+            continue;
+        }
+
+        if (player->HasAura(26013))
+            player->RemoveAura(26013);
+    }
+
+    for (uint64 playerKey : expired)
+        _deserterImmuneUntil.erase(playerKey);
 }
 
 void SoloArenaMgr::NormalizeObjectiveMovement(Player* player,
