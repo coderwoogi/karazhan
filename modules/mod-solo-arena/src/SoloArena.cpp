@@ -671,6 +671,8 @@ namespace
         std::pair<uint8, std::string> ComputeTrialRank(
             ArenaSession const& session) const;
         void SendResultPayload(Player* player, ArenaSession const& session);
+        void NotifyObjectiveFinishReason(Player* player,
+            char const* reason) const;
         void LoadDefaultStages();
         void LoadDefaultMechanics();
         void UpdateMechanics(Player* player, ArenaSession& session);
@@ -1618,6 +1620,16 @@ void SoloArenaMgr::SendResultPayload(Player* player,
     SendAddonPayload(player, "TRIAL_UI", payload.str());
 }
 
+void SoloArenaMgr::NotifyObjectiveFinishReason(Player* player,
+    char const* reason) const
+{
+    if (!player || !reason)
+        return;
+
+    SendSystem(player, Acore::StringFormat(
+        "시련 종료 원인: {}", reason));
+}
+
 void SoloArenaMgr::Update(uint32 diff)
 {
     UpdateDeserterImmunity();
@@ -1662,6 +1674,9 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.EndedAt = session.AbandonedAt;
                     session.FinishDelayMs = 1;
                     LogEvent(player, session, "SHADOW_SPAWN_FAILED");
+                    if (session.Scenario == TrialScenario::Objective)
+                        NotifyObjectiveFinishReason(player,
+                            "그림자 소환 실패");
                 }
                 break;
             case SessionState::WaitingForStart:
@@ -1681,6 +1696,9 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.EndedAt = session.AbandonedAt;
                     session.FinishDelayMs = 1;
                     LogEvent(player, session, "LEFT_ARENA_BEFORE_START");
+                    if (session.Scenario == TrialScenario::Objective)
+                        NotifyObjectiveFinishReason(player,
+                            "시작 전 맵 이탈");
                     break;
                 }
 
@@ -1692,6 +1710,9 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.EndedAt = session.AbandonedAt;
                     session.FinishDelayMs = 1;
                     LogEvent(player, session, "BOT_MISSING_BEFORE_START");
+                    if (session.Scenario == TrialScenario::Objective)
+                        NotifyObjectiveFinishReason(player,
+                            "그림자 개체 없음");
                     break;
                 }
 
@@ -1756,6 +1777,9 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.EndedAt = session.AbandonedAt;
                     session.FinishDelayMs = 1;
                     LogEvent(player, session, "LEFT_ARENA");
+                    if (session.Scenario == TrialScenario::Objective)
+                        NotifyObjectiveFinishReason(player,
+                            "진행 중 맵 이탈");
                     break;
                 }
 
@@ -1769,6 +1793,9 @@ void SoloArenaMgr::Update(uint32 diff)
                     session.FinishDelayMs = 1;
                     LogEvent(player, session, "COMBAT_TIMEOUT");
                     SendTrialTimePayload(player, session);
+                    if (session.Scenario == TrialScenario::Objective)
+                        NotifyObjectiveFinishReason(player,
+                            "시련 제한 시간 초과");
                     break;
                 }
 
@@ -1904,6 +1931,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         session.EndedAt = session.AbandonedAt;
         session.FinishDelayMs = 1;
         LogEvent(player, session, "LEFT_OBJECTIVE_TRIAL");
+        NotifyObjectiveFinishReason(player, "아라시 분지 맵 이탈");
         return false;
     }
 
@@ -1964,6 +1992,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         session.FinishDelayMs = 1;
         LogEvent(player, session, "OBJECTIVE_TIMEOUT");
         SendTrialTimePayload(player, session);
+        NotifyObjectiveFinishReason(player, "거점 점령 시간 초과");
         return false;
     }
 
@@ -1983,6 +2012,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         session.EndedAt = session.FailedAt;
         session.FinishDelayMs = 1;
         LogEvent(player, session, "OBJECTIVE_SHADOW_SPAWN_FAILED");
+        NotifyObjectiveFinishReason(player, "최종 그림자 소환 실패");
         return false;
     }
 
