@@ -1354,6 +1354,12 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         return false;
     }
 
+    if (objectiveTrial)
+    {
+        battleground->SetMinPlayersPerTeam(0);
+        battleground->SetMaxPlayersPerTeam(1);
+    }
+
     battleground->StartBattleground();
 
     ArenaSession session;
