@@ -1424,6 +1424,11 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     if Trial.state.sessionState == SESSION_ACTIVE then
       Trial.state.pendingArena = false
     end
+    if not Trial.state.resultShown then
+      Trial:Hide()
+      RefreshStatusTimes()
+      Trial.statusBox:Show()
+    end
     RefreshStatusBox()
     return
   end
