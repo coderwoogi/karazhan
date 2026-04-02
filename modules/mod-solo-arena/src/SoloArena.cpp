@@ -2651,6 +2651,9 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
 
 void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
 {
+    if (!player)
+        return;
+
     CharacterDatabase.Execute(
         "INSERT INTO solo_arena_run_log "
         "(run_uid, guid, account_id, player_name, stage_id, stage_name, "
@@ -2660,7 +2663,7 @@ void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
         "rank_value, rank_label, combat_duration_sec, arena_map_id, "
         "arena_instance_id, return_map_id) "
         "VALUES ({}, {}, {}, '{}', {}, '{}', {}, '{}', {}, {}, {}, {}, "
-        "{}, {}, {}, {}, '{}', {}, {}, {}, {})",
+        "{}, {}, {}, {}, {}, {}, '{}', {}, {}, {}, {})",
         session.RunUid,
         player->GetGUID().GetCounter(),
         player->GetSession() ? player->GetSession()->GetAccountId() : 0,
