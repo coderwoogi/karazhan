@@ -89,6 +89,12 @@ bool ScriptMgr::OnBeforeSendExitMessageArenaQueue(BattlegroundQueue* queue, Grou
     CALL_ENABLED_BOOLEAN_HOOKS(AllBattlegroundScript, ALLBATTLEGROUNDHOOK_ON_BEFORE_SEND_EXIT_MESSAGE_ARENA_QUEUE, !script->OnBeforeSendExitMessageArenaQueue(queue, ginfo));
 }
 
+bool ScriptMgr::OnBeforeBattlegroundEnd(Battleground* bg, TeamId winnerTeamId)
+{
+    CALL_ENABLED_BOOLEAN_HOOKS(AllBattlegroundScript, ALLBATTLEGROUNDHOOK_ON_BEFORE_BATTLEGROUND_END,
+        !script->OnBeforeBattlegroundEnd(bg, winnerTeamId));
+}
+
 void ScriptMgr::OnBattlegroundEnd(Battleground* bg, TeamId winnerTeam)
 {
     CALL_ENABLED_HOOKS(AllBattlegroundScript, ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_END, script->OnBattlegroundEnd(bg, winnerTeam));

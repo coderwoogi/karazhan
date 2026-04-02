@@ -37,6 +37,7 @@ enum AllBattlegroundHook
     ALLBATTLEGROUNDHOOK_CAN_SEND_MESSAGE_BG_QUEUE,
     ALLBATTLEGROUNDHOOK_ON_BEFORE_SEND_JOIN_MESSAGE_ARENA_QUEUE,
     ALLBATTLEGROUNDHOOK_ON_BEFORE_SEND_EXIT_MESSAGE_ARENA_QUEUE,
+    ALLBATTLEGROUNDHOOK_ON_BEFORE_BATTLEGROUND_END,
     ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_END,
     ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_DESTROY,
     ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_CREATE,
@@ -110,6 +111,12 @@ public:
      * @return True if you want to continue sending the message, false if you want to disable the message
      */
     [[nodiscard]] virtual bool OnBeforeSendExitMessageArenaQueue(BattlegroundQueue* /*queue*/, GroupQueueInfo* /*ginfo*/) { return true; }
+
+    [[nodiscard]] virtual bool OnBeforeBattlegroundEnd(
+        Battleground* /*bg*/, TeamId /*winnerTeamId*/)
+    {
+        return true;
+    }
 
     /**
      * @brief This hook runs after end Battleground

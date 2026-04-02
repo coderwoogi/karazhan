@@ -1,4 +1,5 @@
 ﻿#include "ArenaScript.h"
+#include "AllBattlegroundScript.h"
 #include "AllSpellScript.h"
 #include "Battleground.h"
 #include "BattlegroundAB.h"
@@ -633,6 +634,7 @@ namespace
         void UnregisterShadow(ObjectGuid const& creatureGuid);
         bool IsManagedShadow(Creature const* creature) const;
         bool IsManagedArenaInstance(uint32 instanceId) const;
+        bool IsManagedObjectiveInstance(uint32 instanceId) const;
 
     private:
         bool SpawnShadow(Player* player, ArenaSession& session);
@@ -2153,6 +2155,22 @@ bool SoloArenaMgr::IsManagedArenaInstance(uint32 instanceId) const
 {
     return _managedArenaInstances.find(instanceId) !=
         _managedArenaInstances.end();
+}
+
+bool SoloArenaMgr::IsManagedObjectiveInstance(uint32 instanceId) const
+{
+    if (instanceId == 0)
+        return false;
+
+    for (auto const& [playerKey, session] : _sessions)
+    {
+        (void)playerKey;
+        if (session.Scenario == TrialScenario::Objective &&
+            session.ArenaInstanceId == instanceId)
+            return true;
+    }
+
+    return false;
 }
 
 bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
@@ -4620,6 +4638,29 @@ namespace
         }
     };
 
+    class SoloArenaBattlegroundScript : public AllBattlegroundScript
+    {
+    public:
+        SoloArenaBattlegroundScript() : AllBattlegroundScript(
+            "SoloArenaBattlegroundScript",
+            { ALLBATTLEGROUNDHOOK_ON_BEFORE_BATTLEGROUND_END })
+        {
+        }
+
+        bool OnBeforeBattlegroundEnd(Battleground* bg,
+            TeamId /*winnerTeamId*/) override
+        {
+            if (!bg)
+                return true;
+
+            if (!SoloArenaMgr::Instance().IsManagedObjectiveInstance(
+                    bg->GetInstanceID()))
+                return true;
+
+            return false;
+        }
+    };
+
     class SoloArenaServerScript : public ServerScript
     {
     public:
@@ -4758,6 +4799,7 @@ void AddSoloArenaScripts()
     new SoloArenaWorldScript();
     new SoloArenaPlayerScript();
     new SoloArenaArenaScript();
+    new SoloArenaBattlegroundScript();
     new SoloArenaServerScript();
     new SoloArenaAllSpellScript();
     new SoloArenaUnitScript();
