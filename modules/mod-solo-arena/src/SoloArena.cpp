@@ -1530,37 +1530,32 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         SendTrialTimePayload(player, activeSession);
     }
 
-    float playerX = stage->PlayerX;
-    float playerY = stage->PlayerY;
-    float playerZ = stage->PlayerZ;
-    float playerO = stage->PlayerO;
     if (objectiveTrial)
-        GetObjectiveStartLocation(teamId, playerX, playerY, playerZ, playerO);
-
-    if (Map* map = sMapMgr->CreateBaseMap(session.ArenaMapId))
-        playerZ = ResolveArenaGroundZ(map, playerX, playerY, playerZ);
-
-    if (!player->TeleportTo(session.ArenaMapId, playerX, playerY,
-        playerZ, playerO, TELE_TO_GM_MODE))
     {
-        _sessions.erase(player->GetGUID().GetCounter());
-        _managedArenaInstances.erase(session.ArenaInstanceId);
-        if (objectiveTrial)
+        sBattlegroundMgr->SendToBattleground(player,
+            session.ArenaInstanceId, bgTypeId);
+    }
+    else
+    {
+        float playerX = stage->PlayerX;
+        float playerY = stage->PlayerY;
+        float playerZ = stage->PlayerZ;
+        float playerO = stage->PlayerO;
+
+        if (Map* map = sMapMgr->CreateBaseMap(session.ArenaMapId))
+            playerZ = ResolveArenaGroundZ(map, playerX, playerY, playerZ);
+
+        if (!player->TeleportTo(session.ArenaMapId, playerX, playerY,
+            playerZ, playerO, TELE_TO_GM_MODE))
         {
+            _sessions.erase(player->GetGUID().GetCounter());
+            _managedArenaInstances.erase(session.ArenaInstanceId);
             player->RemoveBattlegroundQueueId(queueTypeId);
             player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
                 PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
+            SendSystem(player, "투기장으로 이동하지 못했습니다.");
+            return false;
         }
-        else
-        {
-            player->RemoveBattlegroundQueueId(queueTypeId);
-            player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
-                PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
-        }
-        SendSystem(player, objectiveTrial ?
-            "시련 전장으로 이동하지 못했습니다." :
-            "투기장으로 이동하지 못했습니다.");
-        return false;
     }
 
     player->DestroyItemCount(TRIAL_TICKET_ITEM, 1, true, false);
