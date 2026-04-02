@@ -1390,7 +1390,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     session.NextMovementNormalizeAt = session.StartedAt;
     session.NextMechanicAt = 0;
     if (objectiveTrial)
-        session.SpawnDelayMs = 0;
+        session.SpawnDelayMs = 10000;
 
     _sessions[player->GetGUID().GetCounter()] = session;
     _managedArenaInstances.insert(session.ArenaInstanceId);
@@ -1652,7 +1652,27 @@ void SoloArenaMgr::Update(uint32 diff)
             case SessionState::PendingSpawn:
                 if (session.Scenario == TrialScenario::Objective)
                 {
-                    session.State = SessionState::WaitingForStart;
+                    if (player->GetMapId() == session.ArenaMapId)
+                    {
+                        session.State = SessionState::WaitingForStart;
+                        session.SpawnDelayMs = 0;
+                    }
+                    else if (session.SpawnDelayMs > diff)
+                    {
+                        session.SpawnDelayMs -= diff;
+                    }
+                    else
+                    {
+                        session.Result = ArenaResult::Abandoned;
+                        session.State = SessionState::PendingFinish;
+                        session.AbandonedAt = std::time(nullptr);
+                        session.EndedAt = session.AbandonedAt;
+                        session.FinishDelayMs = 1;
+                        LogEvent(player, session,
+                            "OBJECTIVE_JOIN_TIMEOUT");
+                        NotifyObjectiveFinishReason(player,
+                            "아라시 분지 입장 실패");
+                    }
                     break;
                 }
 
