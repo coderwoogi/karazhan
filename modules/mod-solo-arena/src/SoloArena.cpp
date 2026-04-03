@@ -3502,7 +3502,8 @@ void SoloArenaMgr::UpdateMechanics(Player* player, ArenaSession& session)
             externalMechanic.Name = "직접 배치한 시련 마법진";
 
             ApplyMechanicEffect(player, session, externalMechanic);
-            session.ExternalMechanicCooldowns[guid] = now + 8;
+            go->DespawnOrUnsummon(0ms, Seconds(30));
+            session.ExternalMechanicCooldowns[guid] = now + 30;
             break;
         }
 
@@ -3531,11 +3532,9 @@ void SoloArenaMgr::UpdateMechanics(Player* player, ArenaSession& session)
                 std::abs(player->GetPositionZ() - mechanic.SpawnZ) <= 8.0f)
             {
                 ApplyMechanicEffect(player, session, mechanic);
-                go->SetRespawnTime(0);
-                go->Delete();
+                go->DespawnOrUnsummon(0ms, Seconds(30));
                 session.MechanicGuids[slotIndex] = ObjectGuid::Empty;
-                session.NextMechanicSpawnAt[slotIndex] = now +
-                    (mechanic.SpawnIntervalMs / 1000);
+                session.NextMechanicSpawnAt[slotIndex] = now + 30;
             }
 
             continue;
