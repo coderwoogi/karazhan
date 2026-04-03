@@ -196,6 +196,7 @@ namespace
         uint32 PetEntry = 0;
         uint32 PetDisplayId = 0;
         std::array<ObjectGuid, MAX_STAGE_MECHANIC_SLOTS> MechanicGuids = {};
+        std::unordered_map<uint64, uint64> ExternalMechanicCooldowns;
         ObjectGuid HelperGuid = ObjectGuid::Empty;
         ObjectGuid HazardGuid = ObjectGuid::Empty;
         std::array<uint64, MAX_STAGE_MECHANIC_SLOTS> NextMechanicSpawnAt = {};
@@ -3458,10 +3459,56 @@ void SoloArenaMgr::UpdateMechanics(Player* player, ArenaSession& session)
         return;
 
     std::vector<StageMechanicConfig> mechanics = GetMechanics(session.StageId);
-    if (mechanics.empty())
-        return;
-
     uint64 now = std::time(nullptr);
+    if (mechanics.empty())
+    {
+        std::vector<uint64> expiredCooldowns;
+        for (auto const& pair : session.ExternalMechanicCooldowns)
+            if (pair.second <= now)
+                expiredCooldowns.push_back(pair.first);
+
+        for (uint64 guid : expiredCooldowns)
+            session.ExternalMechanicCooldowns.erase(guid);
+
+        std::list<GameObject*> externalCircles;
+        player->GetGameObjectListWithEntryInGrid(externalCircles,
+            std::vector<uint32>{ TRIAL_MECHANIC_GOOD_ENTRY,
+                TRIAL_MECHANIC_BAD_ENTRY }, 12.0f);
+
+        for (GameObject* go : externalCircles)
+        {
+            if (!go || go->GetMapId() != session.ArenaMapId)
+                continue;
+
+            uint64 guid = go->GetGUID().GetRawValue();
+            auto cooldown = session.ExternalMechanicCooldowns.find(guid);
+            if (cooldown != session.ExternalMechanicCooldowns.end() &&
+                cooldown->second > now)
+                continue;
+
+            if (player->GetDistance2d(go) > 6.0f)
+                continue;
+
+            if (std::abs(player->GetPositionZ() - go->GetPositionZ()) > 8.0f)
+                continue;
+
+            StageMechanicConfig externalMechanic;
+            externalMechanic.StageId = session.StageId;
+            externalMechanic.ObjectEntry = go->GetEntry();
+            externalMechanic.SpawnX = go->GetPositionX();
+            externalMechanic.SpawnY = go->GetPositionY();
+            externalMechanic.SpawnZ = go->GetPositionZ();
+            externalMechanic.SpawnO = go->GetOrientation();
+            externalMechanic.Name = "직접 배치한 시련 마법진";
+
+            ApplyMechanicEffect(player, session, externalMechanic);
+            session.ExternalMechanicCooldowns[guid] = now + 8;
+            break;
+        }
+
+        return;
+    }
+
     for (StageMechanicConfig const& mechanic : mechanics)
     {
         if (mechanic.SlotId == 0 || mechanic.SlotId > MAX_STAGE_MECHANIC_SLOTS)
