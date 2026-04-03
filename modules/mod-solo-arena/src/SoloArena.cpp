@@ -2135,6 +2135,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         return false;
     }
 
+    UpdateMechanics(player, session);
+
     if (!session.BotGuid.IsEmpty())
         return true;
 
