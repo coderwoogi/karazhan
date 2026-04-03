@@ -59,9 +59,6 @@ namespace
     constexpr uint32 TRIAL_MECHANIC_BUFF_AURA = 32182;
     constexpr uint32 TRIAL_TICKET_ITEM = 600022;
     constexpr uint32 TRIAL_DAILY_LIMIT = 5;
-    constexpr uint8 OBJECTIVE_NODE_NONE = 255;
-    constexpr float OBJECTIVE_NODE_CAPTURE_RADIUS = 18.0f;
-    constexpr uint32 OBJECTIVE_NODE_CAPTURE_MS = 4000;
     constexpr uint8 MAX_STAGE_MECHANIC_SLOTS = 16;
     constexpr std::array<std::array<float, 4>, BG_AB_DYNAMIC_NODES_COUNT>
         TRIAL_AB_MECHANIC_POSITIONS =
@@ -182,10 +179,6 @@ namespace
         bool ObjectiveLinkNotified = false;
         bool ObjectiveIntroSent = false;
         bool ObjectiveAllNodesCaptured = false;
-        uint8 ObjectiveActiveNode = OBJECTIVE_NODE_NONE;
-        uint64 ObjectiveCaptureStartedAt = 0;
-        uint8 ObjectiveCapturedCount = 0;
-        std::array<bool, BG_AB_DYNAMIC_NODES_COUNT> ObjectiveCapturedNodes = {};
         uint32 PetEntry = 0;
         uint32 PetDisplayId = 0;
         std::array<ObjectGuid, MAX_STAGE_MECHANIC_SLOTS> MechanicGuids = {};
@@ -717,9 +710,6 @@ namespace
         void SendResultPayload(Player* player, ArenaSession const& session);
         void NotifyObjectiveFinishReason(Player* player,
             char const* reason) const;
-        uint8 GetNearbyObjectiveNode(Player* player) const;
-        bool AreAllObjectiveNodesCaptured(
-            ArenaSession const& session) const;
         void LoadDefaultStages();
         void LoadDefaultMechanics();
         void UpdateMechanics(Player* player, ArenaSession& session);
@@ -1733,26 +1723,6 @@ void SoloArenaMgr::NotifyObjectiveFinishReason(Player* player,
         "시련 종료 원인: {}", reason));
 }
 
-uint8 SoloArenaMgr::GetNearbyObjectiveNode(Player* player) const
-{
-    if (!player)
-        return OBJECTIVE_NODE_NONE;
-
-    for (uint8 nodeId = 0; nodeId < BG_AB_DYNAMIC_NODES_COUNT; ++nodeId)
-        if (player->GetDistance2d(BG_AB_NodePositions[nodeId][0],
-                BG_AB_NodePositions[nodeId][1]) <=
-            OBJECTIVE_NODE_CAPTURE_RADIUS)
-            return nodeId;
-
-    return OBJECTIVE_NODE_NONE;
-}
-
-bool SoloArenaMgr::AreAllObjectiveNodesCaptured(
-    ArenaSession const& session) const
-{
-    return session.ObjectiveCapturedCount >= BG_AB_DYNAMIC_NODES_COUNT;
-}
-
 void SoloArenaMgr::Update(uint32 diff)
 {
     UpdateDeserterImmunity();
@@ -2129,11 +2099,15 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         SendTrialTimePayload(player, session, true);
     }
 
+    BattlegroundAB* objectiveBg = nullptr;
+    if (Battleground* bg = player->GetBattleground())
+        objectiveBg = dynamic_cast<BattlegroundAB*>(bg);
+
     if (!session.ObjectiveReadyAnnounced)
     {
         session.ObjectiveReadyAnnounced = true;
         SendSystem(player,
-            "모든 거점을 점령하고 마지막에 나타나는 그림자를 처치하십시오.");
+            "각 거점의 깃발을 직접 활성화해 모든 거점을 점령하십시오.");
     }
 
     if (session.CombatEndsAt != 0 &&
@@ -2153,42 +2127,10 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     if (!session.BotGuid.IsEmpty())
         return true;
 
-    uint8 nodeId = GetNearbyObjectiveNode(player);
-    if (nodeId != OBJECTIVE_NODE_NONE &&
-        !session.ObjectiveCapturedNodes[nodeId])
-    {
-        if (session.ObjectiveActiveNode != nodeId)
-        {
-            session.ObjectiveActiveNode = nodeId;
-            session.ObjectiveCaptureStartedAt = now;
-            SendSystem(player, Acore::StringFormat(
-                "{} 점령을 시작합니다.", GetObjectiveNodeName(nodeId)));
-        }
-        else
-        {
-            uint64 captureMs =
-                (now - session.ObjectiveCaptureStartedAt) * 1000;
-            if (captureMs >= OBJECTIVE_NODE_CAPTURE_MS)
-            {
-                session.ObjectiveCapturedNodes[nodeId] = true;
-                ++session.ObjectiveCapturedCount;
-                session.ObjectiveActiveNode = OBJECTIVE_NODE_NONE;
-                session.ObjectiveCaptureStartedAt = 0;
-                LogEvent(player, session, "OBJECTIVE_NODE_CAPTURED",
-                    GetObjectiveNodeName(nodeId));
-                SendSystem(player, Acore::StringFormat(
-                    "{} 점령 완료 ({}/5)", GetObjectiveNodeName(nodeId),
-                    session.ObjectiveCapturedCount));
-            }
-        }
-    }
-    else
-    {
-        session.ObjectiveActiveNode = OBJECTIVE_NODE_NONE;
-        session.ObjectiveCaptureStartedAt = 0;
-    }
+    if (!objectiveBg)
+        return true;
 
-    if (!AreAllObjectiveNodesCaptured(session))
+    if (!objectiveBg->AllNodesConrolledByTeam(player->GetTeamId()))
         return true;
 
     if (!session.ObjectiveAllNodesCaptured)
