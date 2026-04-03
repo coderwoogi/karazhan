@@ -57,6 +57,9 @@ namespace
     constexpr uint32 TRIAL_HELPER_ENTRY = 190023;
     constexpr uint32 TRIAL_HAZARD_ENTRY = 190024;
     constexpr uint32 TRIAL_MECHANIC_BUFF_AURA = 32182;
+    constexpr uint32 TRIAL_RANDOM_SPELL_KNOCK_AWAY = 36512;
+    constexpr uint32 TRIAL_RANDOM_SPELL_KICK = 75448;
+    constexpr uint32 TRIAL_RANDOM_SPELL_ROCKET_BOOTS = 51582;
     constexpr uint32 TRIAL_TICKET_ITEM = 600022;
     constexpr uint32 TRIAL_DAILY_LIMIT = 5;
     constexpr uint8 MAX_STAGE_MECHANIC_SLOTS = 16;
@@ -344,6 +347,15 @@ namespace
         y = BG_AB_NodePositions[BG_AB_NODE_BLACKSMITH][1];
         z = BG_AB_NodePositions[BG_AB_NODE_BLACKSMITH][2];
         o = BG_AB_NodePositions[BG_AB_NODE_BLACKSMITH][3];
+    }
+
+    void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
+    {
+        uint8 node = urand(0, BG_AB_DYNAMIC_NODES_COUNT - 1);
+        x = BG_AB_NodePositions[node][0];
+        y = BG_AB_NodePositions[node][1];
+        z = BG_AB_NodePositions[node][2];
+        o = BG_AB_NodePositions[node][3];
     }
 
     Unit* SelectShadowPetTarget(Player* player)
@@ -3277,6 +3289,77 @@ bool SoloArenaMgr::SummonMechanicHazard(Player* player,
 void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
     StageMechanicConfig const& mechanic)
 {
+    if (session.Scenario == TrialScenario::Objective &&
+        session.StageId >= 4 && session.StageId <= 6)
+    {
+        switch (urand(1, 5))
+        {
+            case 1:
+            {
+                player->CastSpell(player, TRIAL_RANDOM_SPELL_KNOCK_AWAY, true);
+                SendSystem(player,
+                    "마법진이 폭주합니다. 날려버리기가 발동했습니다.");
+                LogEvent(player, session, "MECHANIC_TRIGGERED",
+                    "랜덤 마법진: 날려버리기");
+                break;
+            }
+            case 2:
+            {
+                player->CastSpell(player, TRIAL_RANDOM_SPELL_KICK, true);
+                SendSystem(player,
+                    "마법진이 흔들립니다. 브원삼디의 발차기가 발동했습니다.");
+                LogEvent(player, session, "MECHANIC_TRIGGERED",
+                    "랜덤 마법진: 브원삼디의 발차기");
+                break;
+            }
+            case 3:
+            {
+                player->CastSpell(player, TRIAL_RANDOM_SPELL_ROCKET_BOOTS,
+                    true);
+                SendSystem(player,
+                    "마법진이 점화됩니다. 로켓 장화가 발동했습니다.");
+                LogEvent(player, session, "MECHANIC_TRIGGERED",
+                    "랜덤 마법진: 로켓 장화");
+                break;
+            }
+            case 4:
+            {
+                float x = 0.0f;
+                float y = 0.0f;
+                float z = 0.0f;
+                float o = 0.0f;
+                GetObjectiveStartLocation(session.Team, x, y, z, o);
+                z = ResolveArenaGroundZ(player->GetMap(), x, y, z);
+                player->TeleportTo(session.ArenaMapId, x, y, z, o,
+                    TELE_TO_GM_MODE);
+                SendSystem(player,
+                    "마법진이 뒤틀립니다. 시작 위치로 되돌아갑니다.");
+                LogEvent(player, session, "MECHANIC_TRIGGERED",
+                    "랜덤 마법진: 시작 위치 복귀");
+                break;
+            }
+            case 5:
+            default:
+            {
+                float x = 0.0f;
+                float y = 0.0f;
+                float z = 0.0f;
+                float o = 0.0f;
+                GetRandomObjectiveFlagLocation(x, y, z, o);
+                z = ResolveArenaGroundZ(player->GetMap(), x, y, z);
+                player->TeleportTo(session.ArenaMapId, x, y, z, o,
+                    TELE_TO_GM_MODE);
+                SendSystem(player,
+                    "마법진이 왜곡됩니다. 거점 깃발 위치로 이동합니다.");
+                LogEvent(player, session, "MECHANIC_TRIGGERED",
+                    "랜덤 마법진: 거점 깃발 이동");
+                break;
+            }
+        }
+
+        return;
+    }
+
     switch (mechanic.MechanicType)
     {
         case StageMechanicType::HealingSurge:
