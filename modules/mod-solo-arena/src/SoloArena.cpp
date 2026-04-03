@@ -69,6 +69,17 @@ namespace
         {{807.46f, 1189.16f, 11.92f, 5.44f}},
         {{1146.62f, 816.94f, -98.49f, 6.14f}}
     }};
+    constexpr std::array<std::array<float, 4>, 8> TRIAL_AB_ROUTE_POSITIONS =
+    {{
+        {{1095.00f, 1098.00f, -49.00f, 2.45f}}, // stables -> blacksmith
+        {{902.00f, 944.00f, -49.50f, 2.90f}},   // farm -> blacksmith
+        {{899.00f, 1098.00f, -15.00f, 4.90f}},  // lumber mill -> blacksmith
+        {{1068.00f, 915.00f, -70.00f, 5.85f}},  // gold mine -> blacksmith
+        {{1006.00f, 1188.00f, -36.00f, 3.65f}}, // stables -> lumber mill
+        {{988.00f, 852.00f, -73.00f, 5.75f}},   // farm -> gold mine
+        {{862.00f, 1018.00f, -24.00f, 4.55f}},  // farm -> lumber mill
+        {{1148.00f, 996.00f, -78.00f, 0.75f}}   // stables -> gold mine
+    }};
 
     enum class StageMechanicType : uint8
     {
@@ -3577,85 +3588,146 @@ void SoloArenaMgr::LoadDefaultMechanics()
             "질주의 상자");
     }
 
+    for (uint8 routeId = 0; routeId < TRIAL_AB_ROUTE_POSITIONS.size();
+         ++routeId)
+    {
+        addMechanic(4, BG_AB_DYNAMIC_NODES_COUNT + routeId + 1,
+            StageMechanicType::SpeedBoost, TRIAL_MECHANIC_GOOD_ENTRY,
+            TRIAL_AB_ROUTE_POSITIONS[routeId][0],
+            TRIAL_AB_ROUTE_POSITIONS[routeId][1],
+            TRIAL_AB_ROUTE_POSITIONS[routeId][2],
+            TRIAL_AB_ROUTE_POSITIONS[routeId][3],
+            25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+            "질주의 상자");
+    }
+
     addMechanic(5, 1, StageMechanicType::SpeedBoost,
         TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_STABLES][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_STABLES][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_STABLES][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_STABLES][3],
+        TRIAL_AB_ROUTE_POSITIONS[0][0],
+        TRIAL_AB_ROUTE_POSITIONS[0][1],
+        TRIAL_AB_ROUTE_POSITIONS[0][2],
+        TRIAL_AB_ROUTE_POSITIONS[0][3],
         25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
         "질주의 상자");
     addMechanic(5, 2, StageMechanicType::SpeedBoost,
         TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_FARM][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_FARM][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_FARM][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_FARM][3],
+        TRIAL_AB_ROUTE_POSITIONS[2][0],
+        TRIAL_AB_ROUTE_POSITIONS[2][1],
+        TRIAL_AB_ROUTE_POSITIONS[2][2],
+        TRIAL_AB_ROUTE_POSITIONS[2][3],
         25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
         "질주의 상자");
     addMechanic(5, 3, StageMechanicType::ReturnToStart,
         TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_BLACKSMITH][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_BLACKSMITH][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_BLACKSMITH][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_BLACKSMITH][3],
+        TRIAL_AB_ROUTE_POSITIONS[1][0],
+        TRIAL_AB_ROUTE_POSITIONS[1][1],
+        TRIAL_AB_ROUTE_POSITIONS[1][2],
+        TRIAL_AB_ROUTE_POSITIONS[1][3],
         30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
         "복귀의 상자");
     addMechanic(5, 4, StageMechanicType::ReturnToStart,
         TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_GOLD_MINE][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_GOLD_MINE][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_GOLD_MINE][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_GOLD_MINE][3],
+        TRIAL_AB_ROUTE_POSITIONS[5][0],
+        TRIAL_AB_ROUTE_POSITIONS[5][1],
+        TRIAL_AB_ROUTE_POSITIONS[5][2],
+        TRIAL_AB_ROUTE_POSITIONS[5][3],
         30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
         "복귀의 상자");
     addMechanic(5, 5, StageMechanicType::SpeedBoost,
         TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_LUMBER_MILL][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_LUMBER_MILL][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_LUMBER_MILL][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_LUMBER_MILL][3],
+        TRIAL_AB_ROUTE_POSITIONS[4][0],
+        TRIAL_AB_ROUTE_POSITIONS[4][1],
+        TRIAL_AB_ROUTE_POSITIONS[4][2],
+        TRIAL_AB_ROUTE_POSITIONS[4][3],
+        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+        "질주의 상자");
+    addMechanic(5, 6, StageMechanicType::SpeedBoost,
+        TRIAL_MECHANIC_GOOD_ENTRY,
+        TRIAL_AB_ROUTE_POSITIONS[7][0],
+        TRIAL_AB_ROUTE_POSITIONS[7][1],
+        TRIAL_AB_ROUTE_POSITIONS[7][2],
+        TRIAL_AB_ROUTE_POSITIONS[7][3],
+        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+        "질주의 상자");
+    addMechanic(5, 7, StageMechanicType::ReturnToStart,
+        TRIAL_MECHANIC_BAD_ENTRY,
+        TRIAL_AB_ROUTE_POSITIONS[3][0],
+        TRIAL_AB_ROUTE_POSITIONS[3][1],
+        TRIAL_AB_ROUTE_POSITIONS[3][2],
+        TRIAL_AB_ROUTE_POSITIONS[3][3],
+        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
+        "복귀의 상자");
+    addMechanic(5, 8, StageMechanicType::SpeedBoost,
+        TRIAL_MECHANIC_GOOD_ENTRY,
+        TRIAL_AB_ROUTE_POSITIONS[6][0],
+        TRIAL_AB_ROUTE_POSITIONS[6][1],
+        TRIAL_AB_ROUTE_POSITIONS[6][2],
+        TRIAL_AB_ROUTE_POSITIONS[6][3],
         25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
         "질주의 상자");
 
     addMechanic(6, 1, StageMechanicType::SpeedBoost,
         TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_STABLES][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_STABLES][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_STABLES][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_STABLES][3],
+        TRIAL_AB_ROUTE_POSITIONS[0][0],
+        TRIAL_AB_ROUTE_POSITIONS[0][1],
+        TRIAL_AB_ROUTE_POSITIONS[0][2],
+        TRIAL_AB_ROUTE_POSITIONS[0][3],
         25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
         "질주의 상자");
     addMechanic(6, 2, StageMechanicType::ReturnToStart,
         TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_FARM][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_FARM][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_FARM][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_FARM][3],
+        TRIAL_AB_ROUTE_POSITIONS[1][0],
+        TRIAL_AB_ROUTE_POSITIONS[1][1],
+        TRIAL_AB_ROUTE_POSITIONS[1][2],
+        TRIAL_AB_ROUTE_POSITIONS[1][3],
         30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
         "복귀의 상자");
     addMechanic(6, 3, StageMechanicType::LaunchAway,
         TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_BLACKSMITH][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_BLACKSMITH][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_BLACKSMITH][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_BLACKSMITH][3],
+        TRIAL_AB_ROUTE_POSITIONS[2][0],
+        TRIAL_AB_ROUTE_POSITIONS[2][1],
+        TRIAL_AB_ROUTE_POSITIONS[2][2],
+        TRIAL_AB_ROUTE_POSITIONS[2][3],
         35 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 18.0f, 10.0f,
         "광폭의 상자");
     addMechanic(6, 4, StageMechanicType::LaunchAway,
         TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_LUMBER_MILL][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_LUMBER_MILL][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_LUMBER_MILL][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_LUMBER_MILL][3],
+        TRIAL_AB_ROUTE_POSITIONS[3][0],
+        TRIAL_AB_ROUTE_POSITIONS[3][1],
+        TRIAL_AB_ROUTE_POSITIONS[3][2],
+        TRIAL_AB_ROUTE_POSITIONS[3][3],
         35 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 22.0f, 12.0f,
         "광폭의 상자");
     addMechanic(6, 5, StageMechanicType::SpeedBoost,
         TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_GOLD_MINE][0],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_GOLD_MINE][1],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_GOLD_MINE][2],
-        TRIAL_AB_MECHANIC_POSITIONS[BG_AB_NODE_GOLD_MINE][3],
+        TRIAL_AB_ROUTE_POSITIONS[4][0],
+        TRIAL_AB_ROUTE_POSITIONS[4][1],
+        TRIAL_AB_ROUTE_POSITIONS[4][2],
+        TRIAL_AB_ROUTE_POSITIONS[4][3],
+        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
+        "질주의 상자");
+    addMechanic(6, 6, StageMechanicType::ReturnToStart,
+        TRIAL_MECHANIC_BAD_ENTRY,
+        TRIAL_AB_ROUTE_POSITIONS[5][0],
+        TRIAL_AB_ROUTE_POSITIONS[5][1],
+        TRIAL_AB_ROUTE_POSITIONS[5][2],
+        TRIAL_AB_ROUTE_POSITIONS[5][3],
+        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
+        "복귀의 상자");
+    addMechanic(6, 7, StageMechanicType::LaunchAway,
+        TRIAL_MECHANIC_BAD_ENTRY,
+        TRIAL_AB_ROUTE_POSITIONS[6][0],
+        TRIAL_AB_ROUTE_POSITIONS[6][1],
+        TRIAL_AB_ROUTE_POSITIONS[6][2],
+        TRIAL_AB_ROUTE_POSITIONS[6][3],
+        35 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 20.0f, 11.0f,
+        "광폭의 상자");
+    addMechanic(6, 8, StageMechanicType::SpeedBoost,
+        TRIAL_MECHANIC_GOOD_ENTRY,
+        TRIAL_AB_ROUTE_POSITIONS[7][0],
+        TRIAL_AB_ROUTE_POSITIONS[7][1],
+        TRIAL_AB_ROUTE_POSITIONS[7][2],
+        TRIAL_AB_ROUTE_POSITIONS[7][3],
         25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
         "질주의 상자");
 }
