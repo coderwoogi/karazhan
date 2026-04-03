@@ -52,8 +52,8 @@ namespace
     constexpr float OBJECTIVE_BASE_RUN_RATE = 1.0f;
     constexpr float OBJECTIVE_MOUNT_RUN_RATE = 2.0f;
     constexpr float OBJECTIVE_SPEED_BOX_BONUS = 0.6f;
-    constexpr uint32 TRIAL_MECHANIC_GOOD_ENTRY = 184663;
-    constexpr uint32 TRIAL_MECHANIC_BAD_ENTRY = 184664;
+    constexpr uint32 TRIAL_MECHANIC_GOOD_ENTRY = 178187;
+    constexpr uint32 TRIAL_MECHANIC_BAD_ENTRY = 20352;
     constexpr uint32 TRIAL_HELPER_ENTRY = 190023;
     constexpr uint32 TRIAL_HAZARD_ENTRY = 190024;
     constexpr uint32 TRIAL_MECHANIC_BUFF_AURA = 32182;
@@ -3510,28 +3510,6 @@ void SoloArenaMgr::LoadDefaultMechanics()
 {
     _mechanics.clear();
 
-    auto addMechanic = [this](uint8 stageId, uint8 slotId,
-        StageMechanicType type, uint32 objectEntry, float x, float y, float z,
-        float o, uint32 intervalMs, uint32 durationMs,
-        float value1, float value2, char const* name)
-    {
-        StageMechanicConfig mechanic;
-        mechanic.StageId = stageId;
-        mechanic.SlotId = slotId;
-        mechanic.MechanicType = type;
-        mechanic.ObjectEntry = objectEntry;
-        mechanic.SpawnX = x;
-        mechanic.SpawnY = y;
-        mechanic.SpawnZ = z;
-        mechanic.SpawnO = o;
-        mechanic.SpawnIntervalMs = intervalMs;
-        mechanic.DurationMs = durationMs;
-        mechanic.EffectValue1 = value1;
-        mechanic.EffectValue2 = value2;
-        mechanic.Name = name;
-        _mechanics.emplace(stageId, mechanic);
-    };
-
     StageMechanicConfig stage1;
     stage1.StageId = 1;
     stage1.SlotId = 1;
@@ -3577,161 +3555,6 @@ void SoloArenaMgr::LoadDefaultMechanics()
     stage3.SummonEntry = TRIAL_HELPER_ENTRY;
     stage3.Name = "균열의 제단";
     _mechanics.emplace(stage3.StageId, stage3);
-
-    for (uint8 nodeId = 0; nodeId < BG_AB_DYNAMIC_NODES_COUNT; ++nodeId)
-    {
-        addMechanic(4, nodeId + 1, StageMechanicType::SpeedBoost,
-            TRIAL_MECHANIC_GOOD_ENTRY,
-            TRIAL_AB_MECHANIC_POSITIONS[nodeId][0],
-            TRIAL_AB_MECHANIC_POSITIONS[nodeId][1],
-            TRIAL_AB_MECHANIC_POSITIONS[nodeId][2],
-            TRIAL_AB_MECHANIC_POSITIONS[nodeId][3],
-            25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-            "질주의 상자");
-    }
-
-    for (uint8 routeId = 0; routeId < TRIAL_AB_ROUTE_POSITIONS.size();
-         ++routeId)
-    {
-        addMechanic(4, BG_AB_DYNAMIC_NODES_COUNT + routeId + 1,
-            StageMechanicType::SpeedBoost, TRIAL_MECHANIC_GOOD_ENTRY,
-            TRIAL_AB_ROUTE_POSITIONS[routeId][0],
-            TRIAL_AB_ROUTE_POSITIONS[routeId][1],
-            TRIAL_AB_ROUTE_POSITIONS[routeId][2],
-            TRIAL_AB_ROUTE_POSITIONS[routeId][3],
-            25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-            "질주의 상자");
-    }
-
-    addMechanic(5, 1, StageMechanicType::SpeedBoost,
-        TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[0][0],
-        TRIAL_AB_ROUTE_POSITIONS[0][1],
-        TRIAL_AB_ROUTE_POSITIONS[0][2],
-        TRIAL_AB_ROUTE_POSITIONS[0][3],
-        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-        "질주의 상자");
-    addMechanic(5, 2, StageMechanicType::SpeedBoost,
-        TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[2][0],
-        TRIAL_AB_ROUTE_POSITIONS[2][1],
-        TRIAL_AB_ROUTE_POSITIONS[2][2],
-        TRIAL_AB_ROUTE_POSITIONS[2][3],
-        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-        "질주의 상자");
-    addMechanic(5, 3, StageMechanicType::ReturnToStart,
-        TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[1][0],
-        TRIAL_AB_ROUTE_POSITIONS[1][1],
-        TRIAL_AB_ROUTE_POSITIONS[1][2],
-        TRIAL_AB_ROUTE_POSITIONS[1][3],
-        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
-        "복귀의 상자");
-    addMechanic(5, 4, StageMechanicType::ReturnToStart,
-        TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[5][0],
-        TRIAL_AB_ROUTE_POSITIONS[5][1],
-        TRIAL_AB_ROUTE_POSITIONS[5][2],
-        TRIAL_AB_ROUTE_POSITIONS[5][3],
-        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
-        "복귀의 상자");
-    addMechanic(5, 5, StageMechanicType::SpeedBoost,
-        TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[4][0],
-        TRIAL_AB_ROUTE_POSITIONS[4][1],
-        TRIAL_AB_ROUTE_POSITIONS[4][2],
-        TRIAL_AB_ROUTE_POSITIONS[4][3],
-        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-        "질주의 상자");
-    addMechanic(5, 6, StageMechanicType::SpeedBoost,
-        TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[7][0],
-        TRIAL_AB_ROUTE_POSITIONS[7][1],
-        TRIAL_AB_ROUTE_POSITIONS[7][2],
-        TRIAL_AB_ROUTE_POSITIONS[7][3],
-        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-        "질주의 상자");
-    addMechanic(5, 7, StageMechanicType::ReturnToStart,
-        TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[3][0],
-        TRIAL_AB_ROUTE_POSITIONS[3][1],
-        TRIAL_AB_ROUTE_POSITIONS[3][2],
-        TRIAL_AB_ROUTE_POSITIONS[3][3],
-        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
-        "복귀의 상자");
-    addMechanic(5, 8, StageMechanicType::SpeedBoost,
-        TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[6][0],
-        TRIAL_AB_ROUTE_POSITIONS[6][1],
-        TRIAL_AB_ROUTE_POSITIONS[6][2],
-        TRIAL_AB_ROUTE_POSITIONS[6][3],
-        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-        "질주의 상자");
-
-    addMechanic(6, 1, StageMechanicType::SpeedBoost,
-        TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[0][0],
-        TRIAL_AB_ROUTE_POSITIONS[0][1],
-        TRIAL_AB_ROUTE_POSITIONS[0][2],
-        TRIAL_AB_ROUTE_POSITIONS[0][3],
-        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-        "질주의 상자");
-    addMechanic(6, 2, StageMechanicType::ReturnToStart,
-        TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[1][0],
-        TRIAL_AB_ROUTE_POSITIONS[1][1],
-        TRIAL_AB_ROUTE_POSITIONS[1][2],
-        TRIAL_AB_ROUTE_POSITIONS[1][3],
-        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
-        "복귀의 상자");
-    addMechanic(6, 3, StageMechanicType::LaunchAway,
-        TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[2][0],
-        TRIAL_AB_ROUTE_POSITIONS[2][1],
-        TRIAL_AB_ROUTE_POSITIONS[2][2],
-        TRIAL_AB_ROUTE_POSITIONS[2][3],
-        35 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 18.0f, 10.0f,
-        "광폭의 상자");
-    addMechanic(6, 4, StageMechanicType::LaunchAway,
-        TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[3][0],
-        TRIAL_AB_ROUTE_POSITIONS[3][1],
-        TRIAL_AB_ROUTE_POSITIONS[3][2],
-        TRIAL_AB_ROUTE_POSITIONS[3][3],
-        35 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 22.0f, 12.0f,
-        "광폭의 상자");
-    addMechanic(6, 5, StageMechanicType::SpeedBoost,
-        TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[4][0],
-        TRIAL_AB_ROUTE_POSITIONS[4][1],
-        TRIAL_AB_ROUTE_POSITIONS[4][2],
-        TRIAL_AB_ROUTE_POSITIONS[4][3],
-        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-        "질주의 상자");
-    addMechanic(6, 6, StageMechanicType::ReturnToStart,
-        TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[5][0],
-        TRIAL_AB_ROUTE_POSITIONS[5][1],
-        TRIAL_AB_ROUTE_POSITIONS[5][2],
-        TRIAL_AB_ROUTE_POSITIONS[5][3],
-        30 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 0.0f, 0.0f,
-        "복귀의 상자");
-    addMechanic(6, 7, StageMechanicType::LaunchAway,
-        TRIAL_MECHANIC_BAD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[6][0],
-        TRIAL_AB_ROUTE_POSITIONS[6][1],
-        TRIAL_AB_ROUTE_POSITIONS[6][2],
-        TRIAL_AB_ROUTE_POSITIONS[6][3],
-        35 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 20.0f, 11.0f,
-        "광폭의 상자");
-    addMechanic(6, 8, StageMechanicType::SpeedBoost,
-        TRIAL_MECHANIC_GOOD_ENTRY,
-        TRIAL_AB_ROUTE_POSITIONS[7][0],
-        TRIAL_AB_ROUTE_POSITIONS[7][1],
-        TRIAL_AB_ROUTE_POSITIONS[7][2],
-        TRIAL_AB_ROUTE_POSITIONS[7][3],
-        25 * IN_MILLISECONDS, 30 * IN_MILLISECONDS, 8.0f, 0.0f,
-        "질주의 상자");
 }
 
 namespace
