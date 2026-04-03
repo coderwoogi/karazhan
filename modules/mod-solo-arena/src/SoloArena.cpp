@@ -60,6 +60,7 @@ namespace
     constexpr uint32 TRIAL_RANDOM_SPELL_KNOCK_AWAY = 36512;
     constexpr uint32 TRIAL_RANDOM_SPELL_KICK = 75448;
     constexpr uint32 TRIAL_RANDOM_SPELL_ROCKET_BOOTS = 51582;
+    constexpr uint32 TRIAL_RANDOM_SPELL_PARACHUTE_BUFF = 44795;
     constexpr uint32 TRIAL_TICKET_ITEM = 600022;
     constexpr uint32 TRIAL_DAILY_LIMIT = 5;
     constexpr uint8 MAX_STAGE_MECHANIC_SLOTS = 16;
@@ -3293,7 +3294,7 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
     if (session.Scenario == TrialScenario::Objective &&
         session.StageId >= 4 && session.StageId <= 6)
     {
-        switch (urand(1, 5))
+        switch (urand(1, 6))
         {
             case 1:
             {
@@ -3340,6 +3341,23 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
                 break;
             }
             case 5:
+            {
+                float x = player->GetPositionX();
+                float y = player->GetPositionY();
+                float z = ResolveArenaGroundZ(player->GetMap(), x, y,
+                    player->GetPositionZ()) + 60.0f;
+                float o = player->GetOrientation();
+                player->TeleportTo(session.ArenaMapId, x, y, z, o,
+                    TELE_TO_GM_MODE);
+                player->CastSpell(player, TRIAL_RANDOM_SPELL_PARACHUTE_BUFF,
+                    true);
+                SendSystem(player,
+                    "마법진이 폭발합니다. 공중으로 이동하며 낙하산이 펼쳐집니다.");
+                LogEvent(player, session, "MECHANIC_TRIGGERED",
+                    "랜덤 마법진: 공중 이동");
+                break;
+            }
+            case 6:
             default:
             {
                 float x = 0.0f;
