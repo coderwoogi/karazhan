@@ -3342,19 +3342,20 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
             }
             case 5:
             {
-                float x = player->GetPositionX();
-                float y = player->GetPositionY();
-                float z = ResolveArenaGroundZ(player->GetMap(), x, y,
-                    player->GetPositionZ()) + 60.0f;
-                float o = player->GetOrientation();
+                float x = 0.0f;
+                float y = 0.0f;
+                float z = 0.0f;
+                float o = 0.0f;
+                GetRandomObjectiveFlagLocation(x, y, z, o);
+                z = ResolveArenaGroundZ(player->GetMap(), x, y, z) + 60.0f;
                 player->TeleportTo(session.ArenaMapId, x, y, z, o,
                     TELE_TO_GM_MODE);
                 player->CastSpell(player, TRIAL_RANDOM_SPELL_PARACHUTE_BUFF,
                     true);
                 SendSystem(player,
-                    "마법진이 폭발합니다. 공중으로 이동하며 낙하산이 펼쳐집니다.");
+                    "마법진이 폭발합니다. 거점 상공으로 이동하며 낙하산이 펼쳐집니다.");
                 LogEvent(player, session, "MECHANIC_TRIGGERED",
-                    "랜덤 마법진: 공중 이동");
+                    "랜덤 마법진: 거점 상공 이동");
                 break;
             }
             case 6:
