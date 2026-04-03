@@ -2027,22 +2027,17 @@ void SoloArenaMgr::NormalizeObjectiveMovement(Player* player,
 
     session.NextMovementNormalizeAt = now + 1;
 
-    player->RemoveAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
-    player->RemoveAurasByType(SPELL_AURA_MOD_SPEED_ALWAYS);
-    player->RemoveAurasByType(SPELL_AURA_MOD_SPEED_NOT_STACK);
-    player->RemoveAurasByType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED);
-    player->RemoveAurasByType(SPELL_AURA_MOD_FLIGHT_SPEED_ALWAYS);
-    player->RemoveAurasByType(SPELL_AURA_MOD_FLIGHT_SPEED_NOT_STACKING);
+    if (!player->IsMounted())
+        return;
 
-    float runRate = player->IsMounted() ?
-        OBJECTIVE_MOUNT_RUN_RATE : OBJECTIVE_BASE_RUN_RATE;
+    float mountedRunRate = OBJECTIVE_MOUNT_RUN_RATE;
     if (session.ObjectiveSpeedBuffEndsAt != 0 &&
         uint64(std::time(nullptr)) < session.ObjectiveSpeedBuffEndsAt)
-        runRate += OBJECTIVE_SPEED_BOX_BONUS;
+        mountedRunRate += OBJECTIVE_SPEED_BOX_BONUS;
 
-    player->SetSpeed(MOVE_RUN, runRate, true);
-    player->SetSpeed(MOVE_RUN_BACK, runRate, true);
-    player->SetSpeed(MOVE_SWIM, runRate, true);
+    player->SetSpeed(MOVE_RUN, mountedRunRate, true);
+    player->SetSpeed(MOVE_RUN_BACK, mountedRunRate, true);
+    player->SetSpeed(MOVE_SWIM, mountedRunRate, true);
 }
 
 bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
