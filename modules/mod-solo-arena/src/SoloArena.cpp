@@ -49,6 +49,9 @@ namespace
     constexpr uint32 SOLO_ARENA_PREPARATION_MS = 20000;
     constexpr uint32 DEFAULT_COMBAT_LIMIT_MS = 180000;
     constexpr uint32 DEFAULT_OBJECTIVE_LIMIT_MS = 1200000;
+    constexpr float OBJECTIVE_BASE_RUN_RATE = 1.0f;
+    constexpr float OBJECTIVE_MOUNT_RUN_RATE = 2.0f;
+    constexpr float OBJECTIVE_SPEED_BOX_BONUS = 0.6f;
     constexpr uint32 TRIAL_MECHANIC_GOOD_ENTRY = 184663;
     constexpr uint32 TRIAL_MECHANIC_BAD_ENTRY = 184664;
     constexpr uint32 TRIAL_HELPER_ENTRY = 190023;
@@ -2043,24 +2046,18 @@ void SoloArenaMgr::NormalizeObjectiveMovement(Player* player,
 
     session.NextMovementNormalizeAt = now + 1;
 
-    player->RemoveAurasByType(SPELL_AURA_MOUNTED);
     player->RemoveAurasByType(SPELL_AURA_MOD_INCREASE_SPEED);
-    player->RemoveAurasByType(SPELL_AURA_MOD_INCREASE_MOUNTED_SPEED);
     player->RemoveAurasByType(SPELL_AURA_MOD_SPEED_ALWAYS);
-    player->RemoveAurasByType(SPELL_AURA_MOD_MOUNTED_SPEED_ALWAYS);
     player->RemoveAurasByType(SPELL_AURA_MOD_SPEED_NOT_STACK);
-    player->RemoveAurasByType(SPELL_AURA_MOD_MOUNTED_SPEED_NOT_STACK);
     player->RemoveAurasByType(SPELL_AURA_MOD_INCREASE_FLIGHT_SPEED);
-    player->RemoveAurasByType(SPELL_AURA_MOD_INCREASE_MOUNTED_FLIGHT_SPEED);
     player->RemoveAurasByType(SPELL_AURA_MOD_FLIGHT_SPEED_ALWAYS);
-    player->RemoveAurasByType(SPELL_AURA_MOD_MOUNTED_FLIGHT_SPEED_ALWAYS);
     player->RemoveAurasByType(SPELL_AURA_MOD_FLIGHT_SPEED_NOT_STACKING);
-    player->RemoveAurasByType(SPELL_AURA_MOD_FLIGHT_SPEED_MOUNTED_NOT_STACKING);
 
-    float runRate = 1.0f;
+    float runRate = player->IsMounted() ?
+        OBJECTIVE_MOUNT_RUN_RATE : OBJECTIVE_BASE_RUN_RATE;
     if (session.ObjectiveSpeedBuffEndsAt != 0 &&
         uint64(std::time(nullptr)) < session.ObjectiveSpeedBuffEndsAt)
-        runRate = 1.6f;
+        runRate += OBJECTIVE_SPEED_BOX_BONUS;
 
     player->SetSpeed(MOVE_RUN, runRate, true);
     player->SetSpeed(MOVE_RUN_BACK, runRate, true);
