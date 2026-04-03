@@ -3479,8 +3479,9 @@ void SoloArenaMgr::UpdateMechanics(Player* player, ArenaSession& session)
                     session.NextMechanicSpawnAt[slotIndex] = now +
                         (mechanic.SpawnIntervalMs / 1000);
             }
-            else if (player->GetDistance2d(go) <= 5.5f &&
-                std::abs(player->GetPositionZ() - go->GetPositionZ()) <= 6.0f)
+            else if (player->GetDistance2d(
+                    mechanic.SpawnX, mechanic.SpawnY) <= 6.0f &&
+                std::abs(player->GetPositionZ() - mechanic.SpawnZ) <= 8.0f)
             {
                 ApplyMechanicEffect(player, session, mechanic);
                 go->SetRespawnTime(0);
