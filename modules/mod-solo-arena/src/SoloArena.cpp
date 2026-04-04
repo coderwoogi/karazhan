@@ -204,6 +204,8 @@ namespace
         bool ObjectiveAllNodesCaptured = false;
         std::array<ObjectiveNodeOwner, BG_AB_DYNAMIC_NODES_COUNT>
             ObjectiveNodeOwners = {};
+        std::array<ObjectiveNodeOwner, BG_AB_DYNAMIC_NODES_COUNT>
+            ObjectiveVisualOwners = {};
         int8 ShadowTargetNode = -1;
         uint64 NextShadowNodeUpdateAt = 0;
         uint32 PetEntry = 0;
@@ -372,6 +374,71 @@ namespace
             if (current == owner)
                 ++count;
         return count;
+    }
+
+    TeamId GetObjectiveShadowTeam(TeamId playerTeam)
+    {
+        return Battleground::GetOtherTeamId(playerTeam);
+    }
+
+    uint32 GetObjectiveOccupiedBannerType(uint8 node, TeamId teamId)
+    {
+        return node * BG_AB_OBJECTS_PER_NODE +
+            (teamId == TEAM_ALLIANCE ?
+                BG_AB_OBJECT_BANNER_ALLY :
+                BG_AB_OBJECT_BANNER_HORDE);
+    }
+
+    uint32 GetObjectiveOccupiedAuraType(uint8 node, TeamId teamId)
+    {
+        return node * BG_AB_OBJECTS_PER_NODE +
+            (teamId == TEAM_ALLIANCE ?
+                BG_AB_OBJECT_AURA_ALLY :
+                BG_AB_OBJECT_AURA_HORDE);
+    }
+
+    void ApplyObjectiveNodeVisual(BattlegroundAB* bg, uint8 node,
+        ObjectiveNodeOwner owner, TeamId playerTeam)
+    {
+        if (!bg || node >= BG_AB_DYNAMIC_NODES_COUNT)
+            return;
+
+        for (uint8 offset = 0; offset < BG_AB_OBJECTS_PER_NODE; ++offset)
+            bg->SpawnBGObject(node * BG_AB_OBJECTS_PER_NODE + offset,
+                RESPAWN_ONE_DAY);
+
+        if (owner == ObjectiveNodeOwner::Neutral)
+        {
+            bg->SpawnBGObject(node * BG_AB_OBJECTS_PER_NODE +
+                BG_AB_OBJECT_BANNER_NEUTRAL, RESPAWN_IMMEDIATELY);
+            return;
+        }
+
+        TeamId visualTeam = owner == ObjectiveNodeOwner::Player ?
+            playerTeam : GetObjectiveShadowTeam(playerTeam);
+
+        bg->SpawnBGObject(GetObjectiveOccupiedBannerType(node, visualTeam),
+            RESPAWN_IMMEDIATELY);
+        bg->SpawnBGObject(GetObjectiveOccupiedAuraType(node, visualTeam),
+            RESPAWN_IMMEDIATELY);
+    }
+
+    void SyncObjectiveNodeVisuals(ArenaSession& session, BattlegroundAB* bg)
+    {
+        if (!bg || session.Team == TEAM_NEUTRAL)
+            return;
+
+        for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
+        {
+            if (session.ObjectiveVisualOwners[node] ==
+                session.ObjectiveNodeOwners[node])
+                continue;
+
+            ApplyObjectiveNodeVisual(bg, node,
+                session.ObjectiveNodeOwners[node], session.Team);
+            session.ObjectiveVisualOwners[node] =
+                session.ObjectiveNodeOwners[node];
+        }
     }
 
     void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
@@ -2217,6 +2284,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             if (playerBanner && playerBanner->isSpawned())
                 session.ObjectiveNodeOwners[node] = ObjectiveNodeOwner::Player;
         }
+
+        SyncObjectiveNodeVisuals(session, objectiveBg);
     }
 
     uint8 playerNodeCount = CountObjectiveNodesOwned(
@@ -2272,6 +2341,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                 LogEvent(player, session, "OBJECTIVE_NODE_CAPTURED_BY_SHADOW",
                     GetObjectiveNodeName(node));
                 session.ShadowTargetNode = -1;
+
+                SyncObjectiveNodeVisuals(session, objectiveBg);
             }
         }
 
@@ -2322,6 +2393,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             "그림자가 먼저 5개의 거점을 점령했습니다");
         return false;
     }
+
+    SyncObjectiveNodeVisuals(session, objectiveBg);
 
     return true;
 }
