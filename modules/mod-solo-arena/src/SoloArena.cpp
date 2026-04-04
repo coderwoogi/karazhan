@@ -214,6 +214,10 @@ namespace
         int8 ShadowCapturingNode = -1;
         uint64 ShadowCaptureEndsAt = 0;
         uint64 NextShadowNodeUpdateAt = 0;
+        uint64 NextObjectiveNodeScanAt = 0;
+        uint64 NextObjectiveWorldStateSyncAt = 0;
+        uint64 NextObjectiveMechanicUpdateAt = 0;
+        bool ObjectiveWorldStateDirty = true;
         std::array<uint64, PVP_TEAMS_COUNT> ObjectiveNextResourceTickAt = {};
         std::array<uint32, PVP_TEAMS_COUNT> ObjectiveResourceScores = {};
         std::array<uint8, PVP_TEAMS_COUNT> ObjectiveDisplayedBases =
@@ -2465,9 +2469,15 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         return false;
     }
 
-    UpdateMechanics(player, session);
-    if (objectiveBg)
+    if (session.NextObjectiveMechanicUpdateAt <= now)
     {
+        session.NextObjectiveMechanicUpdateAt = now + 1;
+        UpdateMechanics(player, session);
+    }
+
+    if (objectiveBg && session.NextObjectiveNodeScanAt <= now)
+    {
+        session.NextObjectiveNodeScanAt = now + 1;
         for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
         {
             GameObject* playerBanner = objectiveBg->GetBGObject(
@@ -2475,12 +2485,25 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                 (player->GetTeamId() == TEAM_ALLIANCE ?
                     BG_AB_NODE_STATE_ALLY_OCCUPIED :
                     BG_AB_NODE_STATE_HORDE_OCCUPIED));
-            if (playerBanner && playerBanner->isSpawned())
+            if (playerBanner && playerBanner->isSpawned() &&
+                session.ObjectiveNodeOwners[node] != ObjectiveNodeOwner::Player)
+            {
                 session.ObjectiveNodeOwners[node] = ObjectiveNodeOwner::Player;
+                session.ObjectiveWorldStateDirty = true;
+            }
         }
+    }
 
+    if (objectiveBg)
+    {
         SyncObjectiveNodeVisuals(session, objectiveBg);
-        SyncObjectiveWorldStates(player, session, objectiveBg, now);
+        if (session.ObjectiveWorldStateDirty ||
+            session.NextObjectiveWorldStateSyncAt <= now)
+        {
+            session.NextObjectiveWorldStateSyncAt = now + 1;
+            SyncObjectiveWorldStates(player, session, objectiveBg, now);
+            session.ObjectiveWorldStateDirty = false;
+        }
     }
 
     uint8 playerNodeCount = CountObjectiveNodesOwned(
@@ -2525,6 +2548,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ShadowCapturingNode = -1;
             session.ShadowCaptureEndsAt = 0;
             session.ShadowTargetNode = -1;
+            session.ObjectiveWorldStateDirty = true;
             SyncObjectiveNodeVisuals(session, objectiveBg);
             SyncObjectiveWorldStates(player, session, objectiveBg, now);
         }
@@ -2578,6 +2602,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     GetObjectiveNodeName(node)));
                 LogEvent(player, session, "OBJ_NODE_CAP_START",
                     GetObjectiveNodeName(node));
+                session.ObjectiveWorldStateDirty = true;
                 SyncObjectiveWorldStates(player, session, objectiveBg, now);
             }
         }
@@ -2631,7 +2656,14 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     }
 
     SyncObjectiveNodeVisuals(session, objectiveBg);
-    SyncObjectiveWorldStates(player, session, objectiveBg, now);
+    if (objectiveBg &&
+        (session.ObjectiveWorldStateDirty ||
+         session.NextObjectiveWorldStateSyncAt <= now))
+    {
+        session.NextObjectiveWorldStateSyncAt = now + 1;
+        SyncObjectiveWorldStates(player, session, objectiveBg, now);
+        session.ObjectiveWorldStateDirty = false;
+    }
 
     return true;
 }
