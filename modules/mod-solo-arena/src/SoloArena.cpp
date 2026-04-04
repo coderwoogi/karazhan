@@ -2247,8 +2247,15 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     BG_AB_NodePositions[node][1]) <= 10.0f)
             {
                 session.ObjectiveNodeOwners[node] = ObjectiveNodeOwner::Shadow;
+                if (objectiveBg)
+                {
+                    objectiveBg->PlaySoundToAll(
+                        player->GetTeamId() == TEAM_ALLIANCE ?
+                            BG_AB_SOUND_NODE_CAPTURED_HORDE :
+                            BG_AB_SOUND_NODE_CAPTURED_ALLIANCE);
+                }
                 SendSystem(player, Acore::StringFormat(
-                    "그림자가 {} 거점을 점령했습니다.",
+                    "[전장 알림] 그림자가 {} 거점을 점령했습니다.",
                     GetObjectiveNodeName(node)));
                 LogEvent(player, session, "OBJECTIVE_NODE_CAPTURED_BY_SHADOW",
                     GetObjectiveNodeName(node));
