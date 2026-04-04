@@ -24,6 +24,7 @@
 #include "TemporarySummon.h"
 #include "UnitScript.h"
 #include "WorldPacket.h"
+#include "WorldStateDefines.h"
 #include "WorldSession.h"
 
 #include "../../mod-instance-bonus-mission/src/thirdparty/httplib.h"
@@ -468,6 +469,120 @@ namespace
         }
 
         return nullptr;
+    }
+
+    uint32 GetObjectiveNodeIconWorldState(uint8 node)
+    {
+        switch (node)
+        {
+            case BG_AB_NODE_STABLES:
+                return WORLD_STATE_BATTLEGROUND_AB_STABLE_ICON;
+            case BG_AB_NODE_BLACKSMITH:
+                return WORLD_STATE_BATTLEGROUND_AB_BLACKSMITH_ICON;
+            case BG_AB_NODE_FARM:
+                return WORLD_STATE_BATTLEGROUND_AB_FARM_ICON;
+            case BG_AB_NODE_LUMBER_MILL:
+                return WORLD_STATE_BATTLEGROUND_AB_LUMBERMILL_ICON;
+            case BG_AB_NODE_GOLD_MINE:
+                return WORLD_STATE_BATTLEGROUND_AB_GOLDMINE_ICON;
+            default:
+                return 0;
+        }
+    }
+
+    uint32 GetObjectiveNodeStateWorldStateBase(uint8 node)
+    {
+        switch (node)
+        {
+            case BG_AB_NODE_STABLES:
+                return WORLD_STATE_BATTLEGROUND_AB_STABLE_STATE_ALLIANCE;
+            case BG_AB_NODE_BLACKSMITH:
+                return WORLD_STATE_BATTLEGROUND_AB_BLACKSMITH_STATE_ALLIANCE;
+            case BG_AB_NODE_FARM:
+                return WORLD_STATE_BATTLEGROUND_AB_FARM_STATE_ALLIANCE;
+            case BG_AB_NODE_LUMBER_MILL:
+                return WORLD_STATE_BATTLEGROUND_AB_LUMBERMILL_STATE_ALLIANCE;
+            case BG_AB_NODE_GOLD_MINE:
+                return WORLD_STATE_BATTLEGROUND_AB_GOLDMINE_STATE_ALLIANCE;
+            default:
+                return 0;
+        }
+    }
+
+    uint8 GetObjectiveNodeStateValue(ObjectiveNodeOwner owner, TeamId playerTeam,
+        bool capturing)
+    {
+        if (owner == ObjectiveNodeOwner::Neutral)
+            return BG_AB_NODE_STATE_NEUTRAL;
+
+        TeamId nodeTeam = owner == ObjectiveNodeOwner::Player ? playerTeam :
+            GetObjectiveShadowTeam(playerTeam);
+        if (capturing)
+            return nodeTeam == TEAM_ALLIANCE ?
+                BG_AB_NODE_STATE_ALLY_CONTESTED :
+                BG_AB_NODE_STATE_HORDE_CONTESTED;
+
+        return nodeTeam == TEAM_ALLIANCE ?
+            BG_AB_NODE_STATE_ALLY_OCCUPIED :
+            BG_AB_NODE_STATE_HORDE_OCCUPIED;
+    }
+
+    void SyncObjectiveWorldStates(Player* player, ArenaSession& session,
+        BattlegroundAB* bg)
+    {
+        if (!player || !bg || session.Team == TEAM_NEUTRAL)
+            return;
+
+        uint32 allianceCount = 0;
+        uint32 hordeCount = 0;
+
+        for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
+        {
+            bool capturing = session.ShadowCapturingNode == int8(node);
+            ObjectiveNodeOwner owner = session.ObjectiveNodeOwners[node];
+            if (capturing)
+                owner = ObjectiveNodeOwner::Shadow;
+
+            uint8 state = GetObjectiveNodeStateValue(owner, session.Team,
+                capturing);
+            uint32 iconState = GetObjectiveNodeIconWorldState(node);
+            uint32 stateBase = GetObjectiveNodeStateWorldStateBase(node);
+            if (!iconState || !stateBase)
+                continue;
+
+            bg->UpdateWorldState(iconState,
+                state == BG_AB_NODE_STATE_NEUTRAL ? 1 : 0);
+            for (uint8 i = BG_AB_NODE_STATE_ALLY_OCCUPIED;
+                 i <= BG_AB_NODE_STATE_HORDE_CONTESTED; ++i)
+            {
+                bg->UpdateWorldState(stateBase + i - 1, state == i ? 1 : 0);
+            }
+
+            if (capturing)
+                continue;
+
+            if (owner == ObjectiveNodeOwner::Player)
+            {
+                if (session.Team == TEAM_ALLIANCE)
+                    ++allianceCount;
+                else
+                    ++hordeCount;
+            }
+            else if (owner == ObjectiveNodeOwner::Shadow)
+            {
+                if (session.Team == TEAM_ALLIANCE)
+                    ++hordeCount;
+                else
+                    ++allianceCount;
+            }
+        }
+
+        bg->UpdateWorldState(
+            WORLD_STATE_BATTLEGROUND_AB_OCCUPIED_BASES_ALLIANCE,
+            allianceCount);
+        bg->UpdateWorldState(
+            WORLD_STATE_BATTLEGROUND_AB_OCCUPIED_BASES_HORDE,
+            hordeCount);
     }
 
     void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
@@ -2315,6 +2430,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         }
 
         SyncObjectiveNodeVisuals(session, objectiveBg);
+        SyncObjectiveWorldStates(player, session, objectiveBg);
     }
 
     uint8 playerNodeCount = CountObjectiveNodesOwned(
@@ -2410,6 +2526,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     GetObjectiveNodeName(node)));
                 LogEvent(player, session, "OBJECTIVE_NODE_CAPTURE_STARTED",
                     GetObjectiveNodeName(node));
+                SyncObjectiveWorldStates(player, session, objectiveBg);
             }
         }
 
@@ -2462,6 +2579,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     }
 
     SyncObjectiveNodeVisuals(session, objectiveBg);
+    SyncObjectiveWorldStates(player, session, objectiveBg);
 
     return true;
 }
