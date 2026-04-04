@@ -207,6 +207,8 @@ namespace
         std::array<ObjectiveNodeOwner, BG_AB_DYNAMIC_NODES_COUNT>
             ObjectiveVisualOwners = {};
         int8 ShadowTargetNode = -1;
+        int8 ShadowCapturingNode = -1;
+        uint64 ShadowCaptureEndsAt = 0;
         uint64 NextShadowNodeUpdateAt = 0;
         uint32 PetEntry = 0;
         uint32 PetDisplayId = 0;
@@ -439,6 +441,33 @@ namespace
             session.ObjectiveVisualOwners[node] =
                 session.ObjectiveNodeOwners[node];
         }
+    }
+
+    GameObject* GetObjectiveNodeBanner(BattlegroundAB* bg, uint8 node)
+    {
+        if (!bg || node >= BG_AB_DYNAMIC_NODES_COUNT)
+            return nullptr;
+
+        static constexpr std::array<uint32, 5> bannerOffsets =
+        {
+            BG_AB_OBJECT_BANNER_NEUTRAL,
+            BG_AB_OBJECT_BANNER_ALLY,
+            BG_AB_OBJECT_BANNER_HORDE,
+            BG_AB_OBJECT_BANNER_CONT_A,
+            BG_AB_OBJECT_BANNER_CONT_H
+        };
+
+        for (uint32 offset : bannerOffsets)
+        {
+            if (GameObject* go = bg->GetBGObject(
+                node * BG_AB_OBJECTS_PER_NODE + offset))
+            {
+                if (go->isSpawned())
+                    return go;
+            }
+        }
+
+        return nullptr;
     }
 
     void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
@@ -2307,6 +2336,47 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     SyncShadowPet(player, session, true);
     session.State = SessionState::Active;
 
+    if (session.ShadowCapturingNode >= 0 &&
+        session.ShadowCapturingNode < BG_AB_DYNAMIC_NODES_COUNT)
+    {
+        uint8 node = uint8(session.ShadowCapturingNode);
+
+        if (now >= time_t(session.ShadowCaptureEndsAt))
+        {
+            session.ObjectiveNodeOwners[node] = ObjectiveNodeOwner::Shadow;
+            if (objectiveBg)
+            {
+                objectiveBg->PlaySoundToAll(
+                    player->GetTeamId() == TEAM_ALLIANCE ?
+                        BG_AB_SOUND_NODE_CAPTURED_HORDE :
+                        BG_AB_SOUND_NODE_CAPTURED_ALLIANCE);
+            }
+            SendSystem(player, Acore::StringFormat(
+                "[전장 알림] 그림자가 {} 거점을 점령했습니다.",
+                GetObjectiveNodeName(node)));
+            LogEvent(player, session, "OBJECTIVE_NODE_CAPTURED_BY_SHADOW",
+                GetObjectiveNodeName(node));
+            session.ShadowCapturingNode = -1;
+            session.ShadowCaptureEndsAt = 0;
+            session.ShadowTargetNode = -1;
+            SyncObjectiveNodeVisuals(session, objectiveBg);
+        }
+        else
+        {
+            GameObject* banner = GetObjectiveNodeBanner(objectiveBg, node);
+            bot->CombatStop(true);
+            bot->StopMoving();
+            bot->SetReactState(REACT_PASSIVE);
+            if (banner)
+                bot->SetFacingToObject(banner);
+            else
+                bot->SetFacingTo(Position::NormalizeOrientation(
+                    std::atan2(BG_AB_NodePositions[node][1] - bot->GetPositionY(),
+                        BG_AB_NodePositions[node][0] - bot->GetPositionX())));
+            return true;
+        }
+    }
+
     if (bot->IsWithinDistInMap(player, 28.0f))
     {
         StartShadowCombat(player, bot);
@@ -2325,24 +2395,21 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         {
             uint8 node = uint8(session.ShadowTargetNode);
             if (bot->GetDistance2d(BG_AB_NodePositions[node][0],
-                    BG_AB_NodePositions[node][1]) <= 10.0f)
+                    BG_AB_NodePositions[node][1]) <= 6.0f)
             {
-                session.ObjectiveNodeOwners[node] = ObjectiveNodeOwner::Shadow;
-                if (objectiveBg)
-                {
-                    objectiveBg->PlaySoundToAll(
-                        player->GetTeamId() == TEAM_ALLIANCE ?
-                            BG_AB_SOUND_NODE_CAPTURED_HORDE :
-                            BG_AB_SOUND_NODE_CAPTURED_ALLIANCE);
-                }
+                session.ShadowCapturingNode = int8(node);
+                session.ShadowCaptureEndsAt = now + 3;
+                bot->CombatStop(true);
+                bot->StopMoving();
+                bot->SetReactState(REACT_PASSIVE);
+                if (GameObject* banner =
+                    GetObjectiveNodeBanner(objectiveBg, node))
+                    bot->SetFacingToObject(banner);
                 SendSystem(player, Acore::StringFormat(
-                    "[전장 알림] 그림자가 {} 거점을 점령했습니다.",
+                    "[전장 알림] 그림자가 {} 거점 깃발을 활성화하고 있습니다.",
                     GetObjectiveNodeName(node)));
-                LogEvent(player, session, "OBJECTIVE_NODE_CAPTURED_BY_SHADOW",
+                LogEvent(player, session, "OBJECTIVE_NODE_CAPTURE_STARTED",
                     GetObjectiveNodeName(node));
-                session.ShadowTargetNode = -1;
-
-                SyncObjectiveNodeVisuals(session, objectiveBg);
             }
         }
 
