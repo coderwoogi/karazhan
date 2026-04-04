@@ -705,6 +705,7 @@ namespace
         bool HasSession(ObjectGuid const& playerGuid) const;
         ArenaSession const* GetSession(ObjectGuid const& playerGuid) const;
         bool IsCombatActive(ObjectGuid const& playerGuid) const;
+        bool IsObjectiveRaceActive(ObjectGuid const& playerGuid) const;
         bool StartChallenge(Player* player, uint8 stageId);
         bool ReturnPlayer(Player* player);
         void SendUi(Player* player);
@@ -1371,6 +1372,17 @@ bool SoloArenaMgr::IsCombatActive(ObjectGuid const& playerGuid) const
         return false;
 
     return session->State == SessionState::Active;
+}
+
+bool SoloArenaMgr::IsObjectiveRaceActive(ObjectGuid const& playerGuid) const
+{
+    ArenaSession const* session = GetSession(playerGuid);
+    if (!session)
+        return false;
+
+    return session->Scenario == TrialScenario::Objective &&
+        session->StageId >= 4 && session->StageId <= 6 &&
+        session->State == SessionState::Active;
 }
 
 bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
@@ -4409,6 +4421,27 @@ namespace
         {
             InitializeProfile();
 
+            if (SoloArenaMgr::Instance().IsObjectiveRaceActive(
+                    _profile.PlayerGuid))
+            {
+                if (Unit* target = GetShadowTarget())
+                    if (me->GetDistance(target) <= 28.0f)
+                    {
+                        me->SetReactState(REACT_AGGRESSIVE);
+                        me->Attack(target, true);
+                        me->GetMotionMaster()->Clear();
+                        me->GetMotionMaster()->MoveChase(target,
+                            IsMeleeProfile() ? 1.5f :
+                            GetDesiredCombatRange());
+                        return;
+                    }
+
+                me->SetReactState(REACT_PASSIVE);
+                me->AttackStop();
+                me->ClearInCombat();
+                return;
+            }
+
             if (!SoloArenaMgr::Instance().IsCombatActive(
                     _profile.PlayerGuid))
             {
@@ -4458,6 +4491,25 @@ namespace
                     me->GetMotionMaster()->MoveTargetedHome();
                 }
                 return;
+            }
+
+            if (SoloArenaMgr::Instance().IsObjectiveRaceActive(
+                    _profile.PlayerGuid))
+            {
+                Unit* target = GetShadowTarget();
+                if (!target || !target->IsAlive())
+                {
+                    me->SetReactState(REACT_PASSIVE);
+                    me->AttackStop();
+                    return;
+                }
+
+                if (me->GetDistance(target) > 28.0f)
+                {
+                    me->SetReactState(REACT_PASSIVE);
+                    me->AttackStop();
+                    return;
+                }
             }
 
             if (!UpdateVictim())
