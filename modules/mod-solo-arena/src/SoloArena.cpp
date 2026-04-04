@@ -2520,7 +2520,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             SendSystem(player, Acore::StringFormat(
                 "[전장 알림] 그림자가 {} 거점을 점령했습니다.",
                 GetObjectiveNodeName(node)));
-            LogEvent(player, session, "OBJECTIVE_NODE_CAPTURED_BY_SHADOW",
+            LogEvent(player, session, "OBJ_NODE_CAP_SHADOW",
                 GetObjectiveNodeName(node));
             session.ShadowCapturingNode = -1;
             session.ShadowCaptureEndsAt = 0;
@@ -2576,7 +2576,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                 SendSystem(player, Acore::StringFormat(
                     "[전장 알림] 그림자가 {} 거점 깃발을 활성화하고 있습니다.",
                     GetObjectiveNodeName(node)));
-                LogEvent(player, session, "OBJECTIVE_NODE_CAPTURE_STARTED",
+                LogEvent(player, session, "OBJ_NODE_CAP_START",
                     GetObjectiveNodeName(node));
                 SyncObjectiveWorldStates(player, session, objectiveBg, now);
             }
