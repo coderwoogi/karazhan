@@ -207,10 +207,17 @@ namespace
             ObjectiveNodeOwners = {};
         std::array<ObjectiveNodeOwner, BG_AB_DYNAMIC_NODES_COUNT>
             ObjectiveVisualOwners = {};
+        std::array<uint8, BG_AB_DYNAMIC_NODES_COUNT>
+            ObjectiveClientStates =
+                {{ 255, 255, 255, 255, 255 }};
         int8 ShadowTargetNode = -1;
         int8 ShadowCapturingNode = -1;
         uint64 ShadowCaptureEndsAt = 0;
         uint64 NextShadowNodeUpdateAt = 0;
+        std::array<uint64, PVP_TEAMS_COUNT> ObjectiveNextResourceTickAt = {};
+        std::array<uint32, PVP_TEAMS_COUNT> ObjectiveResourceScores = {};
+        std::array<uint8, PVP_TEAMS_COUNT> ObjectiveDisplayedBases =
+            {{ 255, 255 }};
         uint32 PetEntry = 0;
         uint32 PetDisplayId = 0;
         std::array<ObjectGuid, MAX_STAGE_MECHANIC_SLOTS> MechanicGuids = {};
@@ -528,13 +535,12 @@ namespace
     }
 
     void SyncObjectiveWorldStates(Player* player, ArenaSession& session,
-        BattlegroundAB* bg)
+        BattlegroundAB* bg, uint64 now)
     {
         if (!player || !bg || session.Team == TEAM_NEUTRAL)
             return;
 
-        uint32 allianceCount = 0;
-        uint32 hordeCount = 0;
+        std::array<uint8, PVP_TEAMS_COUNT> controlledBases = {};
 
         for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
         {
@@ -550,12 +556,16 @@ namespace
             if (!iconState || !stateBase)
                 continue;
 
-            bg->UpdateWorldState(iconState,
-                state == BG_AB_NODE_STATE_NEUTRAL ? 1 : 0);
-            for (uint8 i = BG_AB_NODE_STATE_ALLY_OCCUPIED;
-                 i <= BG_AB_NODE_STATE_HORDE_CONTESTED; ++i)
+            if (session.ObjectiveClientStates[node] != state)
             {
-                bg->UpdateWorldState(stateBase + i - 1, state == i ? 1 : 0);
+                bg->UpdateWorldState(iconState,
+                    state == BG_AB_NODE_STATE_NEUTRAL ? 1 : 0);
+                for (uint8 i = BG_AB_NODE_STATE_ALLY_OCCUPIED;
+                     i <= BG_AB_NODE_STATE_HORDE_CONTESTED; ++i)
+                {
+                    bg->UpdateWorldState(stateBase + i - 1, state == i ? 1 : 0);
+                }
+                session.ObjectiveClientStates[node] = state;
             }
 
             if (capturing)
@@ -564,25 +574,65 @@ namespace
             if (owner == ObjectiveNodeOwner::Player)
             {
                 if (session.Team == TEAM_ALLIANCE)
-                    ++allianceCount;
+                    ++controlledBases[TEAM_ALLIANCE];
                 else
-                    ++hordeCount;
+                    ++controlledBases[TEAM_HORDE];
             }
             else if (owner == ObjectiveNodeOwner::Shadow)
             {
                 if (session.Team == TEAM_ALLIANCE)
-                    ++hordeCount;
+                    ++controlledBases[TEAM_HORDE];
                 else
-                    ++allianceCount;
+                    ++controlledBases[TEAM_ALLIANCE];
             }
         }
 
-        bg->UpdateWorldState(
-            WORLD_STATE_BATTLEGROUND_AB_OCCUPIED_BASES_ALLIANCE,
-            allianceCount);
-        bg->UpdateWorldState(
-            WORLD_STATE_BATTLEGROUND_AB_OCCUPIED_BASES_HORDE,
-            hordeCount);
+        for (uint8 teamIndex = TEAM_ALLIANCE; teamIndex < PVP_TEAMS_COUNT;
+             ++teamIndex)
+        {
+            if (session.ObjectiveDisplayedBases[teamIndex] !=
+                controlledBases[teamIndex])
+            {
+                bg->UpdateWorldState(
+                    teamIndex == TEAM_ALLIANCE ?
+                        WORLD_STATE_BATTLEGROUND_AB_OCCUPIED_BASES_ALLIANCE :
+                        WORLD_STATE_BATTLEGROUND_AB_OCCUPIED_BASES_HORDE,
+                    controlledBases[teamIndex]);
+                session.ObjectiveDisplayedBases[teamIndex] =
+                    controlledBases[teamIndex];
+                session.ObjectiveNextResourceTickAt[teamIndex] = now +
+                    BG_AB_TickIntervals[std::min<uint8>(
+                        controlledBases[teamIndex],
+                        BG_AB_DYNAMIC_NODES_COUNT)].count() / IN_MILLISECONDS;
+            }
+        }
+
+        for (uint8 teamIndex = TEAM_ALLIANCE; teamIndex < PVP_TEAMS_COUNT;
+             ++teamIndex)
+        {
+            uint8 bases = controlledBases[teamIndex];
+            if (bases == 0)
+                continue;
+
+            if (session.ObjectiveNextResourceTickAt[teamIndex] == 0)
+            {
+                session.ObjectiveNextResourceTickAt[teamIndex] = now +
+                    BG_AB_TickIntervals[bases].count() / IN_MILLISECONDS;
+                continue;
+            }
+
+            if (now < session.ObjectiveNextResourceTickAt[teamIndex])
+                continue;
+
+            session.ObjectiveResourceScores[teamIndex] += BG_AB_TickPoints[bases];
+            bg->UpdateWorldState(
+                teamIndex == TEAM_ALLIANCE ?
+                    WORLD_STATE_BATTLEGROUND_AB_RESOURCES_ALLIANCE :
+                    WORLD_STATE_BATTLEGROUND_AB_RESOURCES_HORDE,
+                session.ObjectiveResourceScores[teamIndex]);
+            session.ObjectiveNextResourceTickAt[teamIndex] = now +
+                BG_AB_TickIntervals[bases].count() / IN_MILLISECONDS;
+        }
     }
 
     void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
@@ -2430,7 +2480,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         }
 
         SyncObjectiveNodeVisuals(session, objectiveBg);
-        SyncObjectiveWorldStates(player, session, objectiveBg);
+        SyncObjectiveWorldStates(player, session, objectiveBg, now);
     }
 
     uint8 playerNodeCount = CountObjectiveNodesOwned(
@@ -2476,6 +2526,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ShadowCaptureEndsAt = 0;
             session.ShadowTargetNode = -1;
             SyncObjectiveNodeVisuals(session, objectiveBg);
+            SyncObjectiveWorldStates(player, session, objectiveBg, now);
         }
         else
         {
@@ -2514,7 +2565,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     BG_AB_NodePositions[node][1]) <= 6.0f)
             {
                 session.ShadowCapturingNode = int8(node);
-                session.ShadowCaptureEndsAt = now + 3;
+                session.ShadowCaptureEndsAt = now +
+                    BG_AB_FLAG_CAPTURING_TIME.count() / IN_MILLISECONDS;
                 bot->CombatStop(true);
                 bot->StopMoving();
                 bot->SetReactState(REACT_PASSIVE);
@@ -2526,7 +2578,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     GetObjectiveNodeName(node)));
                 LogEvent(player, session, "OBJECTIVE_NODE_CAPTURE_STARTED",
                     GetObjectiveNodeName(node));
-                SyncObjectiveWorldStates(player, session, objectiveBg);
+                SyncObjectiveWorldStates(player, session, objectiveBg, now);
             }
         }
 
@@ -2579,7 +2631,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     }
 
     SyncObjectiveNodeVisuals(session, objectiveBg);
-    SyncObjectiveWorldStates(player, session, objectiveBg);
+    SyncObjectiveWorldStates(player, session, objectiveBg, now);
 
     return true;
 }
