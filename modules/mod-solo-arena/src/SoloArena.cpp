@@ -192,6 +192,8 @@ namespace
         uint64 CombatEndsAt = 0;
         uint64 EndedAt = 0;
         uint64 NextTimePayloadAt = 0;
+        uint64 PlayerRespawnAt = 0;
+        uint64 ShadowRespawnAt = 0;
         uint64 CompletedAt = 0;
         uint64 FailedAt = 0;
         uint64 AbandonedAt = 0;
@@ -981,6 +983,8 @@ namespace
         void MarkAbandoned(ObjectGuid const& playerGuid);
         bool RespawnObjectivePlayer(ObjectGuid const& playerGuid);
         bool RespawnObjectiveShadow(ObjectGuid const& playerGuid);
+        void ProcessObjectiveRespawns(Player* player, ArenaSession& session,
+            uint64 now);
         ShadowProfile const* GetShadowProfile(
             ObjectGuid const& creatureGuid) const;
         void UnregisterShadow(ObjectGuid const& creatureGuid);
@@ -1368,7 +1372,9 @@ namespace
         payload << uint64(session.CombatStartedAt) << "\t";
         payload << uint64(session.CombatEndsAt) << "\t";
         payload << uint64(session.EndedAt) << "\t";
-        payload << uint32(session.State);
+        payload << uint32(session.State) << "\t";
+        payload << uint64(session.PlayerRespawnAt) << "\t";
+        payload << uint64(session.ShadowRespawnAt);
         SendAddonPayload(player, "TRIAL_UI", payload.str());
     }
 
@@ -2366,6 +2372,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     if (!player)
         return false;
 
+    uint64 now = std::time(nullptr);
+    ProcessObjectiveRespawns(player, session, now);
     NormalizeObjectiveMovement(player, session);
 
     if (player->GetMapId() != session.ArenaMapId)
@@ -2380,7 +2388,6 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         return false;
     }
 
-    uint64 now = std::time(nullptr);
     if (Battleground* bg = player->GetBattleground())
     {
         if (bg->GetStatus() == STATUS_WAIT_JOIN &&
@@ -2527,6 +2534,14 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     SyncShadowPet(player, session, true);
     session.State = SessionState::Active;
 
+    if ((bot->GetVictim() == player || player->GetVictim() == bot) &&
+        !bot->IsWithinDistInMap(player, 45.0f))
+    {
+        bot->CombatStop(true);
+        bot->SetReactState(REACT_AGGRESSIVE);
+        player->CombatStopWithPets(true);
+    }
+
     if (session.ShadowCapturingNode >= 0 &&
         session.ShadowCapturingNode < BG_AB_DYNAMIC_NODES_COUNT)
     {
@@ -2634,9 +2649,13 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         if (session.ShadowTargetNode >= 0)
         {
             uint8 node = uint8(session.ShadowTargetNode);
+            float targetX = BG_AB_NodePositions[node][0];
+            float targetY = BG_AB_NodePositions[node][1];
+            float targetZ = BG_AB_NodePositions[node][2];
+            if (Map* map = player->GetMap())
+                targetZ = ResolveArenaGroundZ(map, targetX, targetY, targetZ);
             bot->GetMotionMaster()->MovePoint(9000 + node,
-                BG_AB_NodePositions[node][0], BG_AB_NodePositions[node][1],
-                BG_AB_NodePositions[node][2]);
+                targetX, targetY, targetZ);
             bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
             bot->SetSpeed(MOVE_RUN_BACK, OBJECTIVE_MOUNT_RUN_RATE, true);
         }
@@ -2764,26 +2783,13 @@ bool SoloArenaMgr::RespawnObjectivePlayer(ObjectGuid const& playerGuid)
     if (player->IsAlive())
         return true;
 
-    float x = 0.0f;
-    float y = 0.0f;
-    float z = 0.0f;
-    float o = 0.0f;
-    GetObjectiveStartLocation(session.Team, x, y, z, o);
-    if (Map* map = sMapMgr->CreateBaseMap(session.ArenaMapId))
-        z = ResolveArenaGroundZ(map, x, y, z);
+    if (session.PlayerRespawnAt != 0)
+        return true;
 
-    player->ResurrectPlayer(1.0f);
-    player->SpawnCorpseBones();
-    player->SetFullHealth();
-    if (Powers powerType = player->getPowerType();
-        powerType != POWER_HEALTH)
-    {
-        player->SetPower(powerType, player->GetMaxPower(powerType));
-    }
-    player->ClearInCombat();
-    player->TeleportTo(session.ArenaMapId, x, y, z, o, TELE_TO_GM_MODE);
-    SendSystem(player, "당신은 시작 위치에서 다시 부활합니다.");
-    LogEvent(player, session, "OBJ_PLAYER_RESPAWN");
+    session.PlayerRespawnAt = uint64(std::time(nullptr)) + 10;
+    SendSystem(player, "당신은 10초 후 시작 위치에서 다시 부활합니다.");
+    LogEvent(player, session, "OBJ_PLAYER_RESPAWN_WAIT");
+    SendTrialTimePayload(player, session, true);
     return true;
 }
 
@@ -2801,19 +2807,80 @@ bool SoloArenaMgr::RespawnObjectiveShadow(ObjectGuid const& playerGuid)
     if (!player)
         return false;
 
-    CleanupBot(session);
+    if (session.ShadowRespawnAt != 0)
+        return true;
+
     session.BotGuid = ObjectGuid::Empty;
     session.PetGuid = ObjectGuid::Empty;
     session.ShadowTargetNode = -1;
     session.ShadowCapturingNode = -1;
     session.ShadowCaptureEndsAt = 0;
-
-    if (!SpawnShadow(player, session))
-        return false;
-
-    SendSystem(player, "그림자가 시작 위치에서 다시 부활했습니다.");
-    LogEvent(player, session, "OBJ_SHADOW_RESPAWN");
+    session.ShadowRespawnAt = uint64(std::time(nullptr)) + 10;
+    SendSystem(player, "그림자가 10초 후 시작 위치에서 다시 부활합니다.");
+    LogEvent(player, session, "OBJ_SHADOW_RESPAWN_WAIT");
+    SendTrialTimePayload(player, session, true);
     return true;
+}
+
+void SoloArenaMgr::ProcessObjectiveRespawns(Player* player,
+    ArenaSession& session, uint64 now)
+{
+    if (!player || session.Scenario != TrialScenario::Objective)
+        return;
+
+    if (session.PlayerRespawnAt != 0 && now >= session.PlayerRespawnAt)
+    {
+        float x = 0.0f;
+        float y = 0.0f;
+        float z = 0.0f;
+        float o = 0.0f;
+        GetObjectiveStartLocation(session.Team, x, y, z, o);
+        if (Map* map = sMapMgr->CreateBaseMap(session.ArenaMapId))
+            z = ResolveArenaGroundZ(map, x, y, z);
+
+        player->ResurrectPlayer(1.0f);
+        player->SpawnCorpseBones();
+        player->SetFullHealth();
+        if (Powers powerType = player->getPowerType();
+            powerType != POWER_HEALTH)
+        {
+            player->SetPower(powerType, player->GetMaxPower(powerType));
+        }
+        player->CombatStopWithPets(true);
+        player->TeleportTo(session.ArenaMapId, x, y, z, o, TELE_TO_GM_MODE);
+        session.PlayerRespawnAt = 0;
+        SendSystem(player, "당신이 시작 위치에서 다시 부활했습니다.");
+        LogEvent(player, session, "OBJ_PLAYER_RESPAWN");
+        SendTrialTimePayload(player, session, true);
+    }
+
+    if (session.ShadowRespawnAt != 0 && now >= session.ShadowRespawnAt)
+    {
+        CleanupBot(session);
+        session.BotGuid = ObjectGuid::Empty;
+        session.PetGuid = ObjectGuid::Empty;
+        session.ShadowTargetNode = -1;
+        session.ShadowCapturingNode = -1;
+        session.ShadowCaptureEndsAt = 0;
+        session.ShadowRespawnAt = 0;
+
+        if (SpawnShadow(player, session))
+        {
+            SendSystem(player, "그림자가 시작 위치에서 다시 부활했습니다.");
+            LogEvent(player, session, "OBJ_SHADOW_RESPAWN");
+        }
+        else
+        {
+            session.Result = ArenaResult::Failure;
+            session.State = SessionState::PendingFinish;
+            session.FailedAt = now;
+            session.EndedAt = now;
+            session.FinishDelayMs = 1;
+            LogEvent(player, session, "OBJECTIVE_SHADOW_RESPAWN_FAILED");
+            NotifyObjectiveFinishReason(player, "그림자 재소환 실패");
+        }
+        SendTrialTimePayload(player, session, true);
+    }
 }
 
 ShadowProfile const* SoloArenaMgr::GetShadowProfile(
@@ -2994,6 +3061,9 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
         std::max(0.5f, profile.CastSpeedRate));
     summon->SetSpeed(MOVE_RUN, std::max(profile.RunSpeedRate,
         stage.MoveSpeedRate), true);
+    summon->SetCanFly(false);
+    summon->SetDisableGravity(false);
+    summon->SetHover(false);
     summon->SetReactState(REACT_PASSIVE);
     summon->SetFaction(14);
     summon->SetWalk(false);

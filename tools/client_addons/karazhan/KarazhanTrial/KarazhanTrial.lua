@@ -148,6 +148,8 @@ local function NewState()
     sessionState = SESSION_PENDING_SPAWN,
     preparationEndsAt = nil,
     combatEndsAt = nil,
+    playerRespawnAt = nil,
+    shadowRespawnAt = nil,
     resultShown = false,
     result = {
       stageId = 0,
@@ -585,6 +587,11 @@ Trial.statusTitle:SetText("시련 진행 정보")
 Trial.currentTimeText = CreateLabel(
   Trial.statusBox, "GameFontNormal", 12, 0.92, 0.92, 0.92, "CENTER")
 Trial.currentTimeText:SetPoint("TOP", Trial.statusTitle, "BOTTOM", 0, -10)
+Trial.respawnTimeText = CreateLabel(
+  Trial.statusBox, "GameFontNormal", 11, 1.0, 0.84, 0.25, "CENTER")
+Trial.respawnTimeText:SetPoint("TOP", Trial.currentTimeText, "BOTTOM", 0, -8)
+Trial.respawnTimeText:SetText("")
+Trial.respawnTimeText:Hide()
 
 Trial.exitButton = CreateFrame(
   "Button", "KarazhanTrialExitButton", Trial.statusBox, "UIPanelButtonTemplate")
@@ -847,6 +854,24 @@ local function RefreshStatusTimes()
   else
     Trial.currentTimeText:SetText(
       "전투 시작까지: " .. FormatRemaining(Trial.state.preparationEndsAt))
+  end
+
+  local parts = {}
+  if Trial.state.playerRespawnAt and Trial.state.playerRespawnAt > time() then
+    table.insert(parts,
+      "플레이어 부활: " .. FormatRemaining(Trial.state.playerRespawnAt))
+  end
+  if Trial.state.shadowRespawnAt and Trial.state.shadowRespawnAt > time() then
+    table.insert(parts,
+      "그림자 부활: " .. FormatRemaining(Trial.state.shadowRespawnAt))
+  end
+
+  if #parts > 0 then
+    Trial.respawnTimeText:SetText(table.concat(parts, " / "))
+    Trial.respawnTimeText:Show()
+  else
+    Trial.respawnTimeText:SetText("")
+    Trial.respawnTimeText:Hide()
   end
 end
 
@@ -1417,6 +1442,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     Trial.state.preparationEndsAt = tonumber(parts[2]) or nil
     Trial.state.combatEndsAt = tonumber(parts[4]) or nil
     Trial.state.sessionState = tonumber(parts[6]) or SESSION_PENDING_SPAWN
+    Trial.state.playerRespawnAt = tonumber(parts[7]) or nil
+    Trial.state.shadowRespawnAt = tonumber(parts[8]) or nil
     Trial.state.inProgress = Trial.state.sessionState == SESSION_ACTIVE
       or Trial.state.sessionState == SESSION_WAITING_FOR_START
     Trial.state.pendingArena = Trial.state.sessionState == SESSION_PENDING_SPAWN
@@ -1439,6 +1466,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     Trial.state.inProgress = false
     Trial.state.pendingArena = false
     Trial.state.sessionState = SESSION_AWAITING_RETURN
+    Trial.state.playerRespawnAt = nil
+    Trial.state.shadowRespawnAt = nil
     Trial.state.result.stageId = tonumber(parts[2]) or 0
     Trial.state.result.stageName = GetStageNameById(tonumber(parts[2]) or 0)
     Trial.state.result.resultLabel = parts[4] or "종료"
