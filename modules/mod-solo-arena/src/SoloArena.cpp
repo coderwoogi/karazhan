@@ -75,20 +75,54 @@ namespace
         {{807.46f, 1189.16f, 11.92f, 5.44f}},
         {{1146.62f, 816.94f, -98.49f, 6.14f}}
     }};
-    constexpr std::array<std::array<float, 4>, 12> TRIAL_AB_ROUTE_POSITIONS =
+    constexpr std::array<std::array<float, 4>, 20> TRIAL_AB_ROUTE_POSITIONS =
     {{
-        {{1176.0f, 1191.0f, -56.7f, 0.90f}},    // 0 stables approach
-        {{1095.0f, 1098.0f, -49.0f, 2.45f}},    // 1 upper mid road
-        {{1008.0f, 1120.0f, -39.0f, 3.20f}},    // 2 blacksmith north road
-        {{989.5f, 1041.0f, -44.8f, -2.60f}},    // 3 blacksmith approach
-        {{902.0f, 944.0f, -49.5f, 2.90f}},      // 4 lower mid road
-        {{816.0f, 882.0f, -56.0f, -2.30f}},     // 5 farm approach
-        {{899.0f, 1098.0f, -15.0f, 4.90f}},     // 6 lumber road
-        {{849.0f, 1138.0f, 11.1f, -2.30f}},     // 7 lumber approach
-        {{1068.0f, 915.0f, -70.0f, 5.85f}},     // 8 gold road
-        {{1138.0f, 858.0f, -110.9f, -0.73f}},   // 9 gold approach
-        {{1354.0f, 1275.0f, -11.3f, 4.77f}},    // 10 alliance start
-        {{714.6f, 646.1f, -10.9f, 4.34f}}       // 11 horde start
+        {{1354.0f, 1275.0f, -11.3f, 4.77f}},    // 0 alliance base
+        {{1278.0f, 1234.0f, -13.5f, 4.20f}},    // 1 alliance gate
+        {{1220.0f, 1210.0f, -34.0f, 3.60f}},    // 2 stables north road
+        {{1176.0f, 1191.0f, -56.7f, 0.90f}},    // 3 stables approach
+        {{1148.0f, 1154.0f, -48.0f, 2.70f}},    // 4 upper west road
+        {{1087.0f, 1101.0f, -48.0f, 2.45f}},    // 5 upper center road
+        {{1014.0f, 1115.0f, -39.0f, 3.10f}},    // 6 blacksmith north road
+        {{1012.0f, 1072.0f, -39.5f, 4.10f}},    // 7 blacksmith east bridge
+        {{989.5f, 1041.0f, -44.8f, -2.60f}},    // 8 blacksmith approach
+        {{916.0f, 959.0f, -49.5f, 2.90f}},      // 9 lower center road
+        {{861.0f, 909.0f, -53.0f, -2.70f}},     // 10 farm west road
+        {{816.0f, 882.0f, -56.0f, -2.30f}},     // 11 farm approach
+        {{955.0f, 1140.0f, -26.0f, 4.30f}},     // 12 lumber south road
+        {{892.0f, 1146.0f, -3.0f, 4.80f}},      // 13 lumber bridge
+        {{849.0f, 1138.0f, 11.1f, -2.30f}},     // 14 lumber approach
+        {{1019.0f, 918.0f, -59.0f, 5.40f}},     // 15 gold north road
+        {{1091.0f, 900.0f, -86.0f, 5.80f}},     // 16 gold bridge
+        {{1138.0f, 858.0f, -110.9f, -0.73f}},   // 17 gold approach
+        {{786.0f, 728.0f, -14.0f, 0.90f}},      // 18 horde gate
+        {{714.6f, 646.1f, -10.9f, 4.34f}}       // 19 horde base
+    }};
+    constexpr std::array<uint8, BG_AB_DYNAMIC_NODES_COUNT>
+        TRIAL_AB_NODE_ROUTE_IDS = {{ 3, 8, 11, 14, 17 }};
+    constexpr std::array<uint8, 2> TRIAL_AB_START_ROUTE_IDS = {{ 0, 19 }};
+    constexpr std::array<std::array<uint8, 5>, 20> TRIAL_AB_ROUTE_GRAPH =
+    {{
+        {{ 1, 255, 255, 255, 255 }},
+        {{ 0, 2, 5, 255, 255 }},
+        {{ 1, 3, 4, 255, 255 }},
+        {{ 2, 255, 255, 255, 255 }},
+        {{ 2, 5, 12, 255, 255 }},
+        {{ 1, 4, 6, 9, 255 }},
+        {{ 5, 7, 8, 255, 255 }},
+        {{ 6, 8, 15, 255, 255 }},
+        {{ 6, 7, 9, 255, 255 }},
+        {{ 5, 8, 10, 15, 18 }},
+        {{ 9, 11, 255, 255, 255 }},
+        {{ 10, 255, 255, 255, 255 }},
+        {{ 4, 13, 255, 255, 255 }},
+        {{ 12, 14, 255, 255, 255 }},
+        {{ 13, 255, 255, 255, 255 }},
+        {{ 7, 9, 16, 255, 255 }},
+        {{ 15, 17, 255, 255, 255 }},
+        {{ 16, 255, 255, 255, 255 }},
+        {{ 9, 19, 255, 255, 255 }},
+        {{ 18, 255, 255, 255, 255 }}
     }};
 
     enum class StageMechanicType : uint8
@@ -393,9 +427,7 @@ namespace
         if (nodeId >= BG_AB_DYNAMIC_NODES_COUNT)
             nodeId = 0;
 
-        static constexpr std::array<uint8, BG_AB_DYNAMIC_NODES_COUNT>
-            approachRouteIds = {{ 0, 3, 5, 7, 9 }};
-        uint8 routeId = approachRouteIds[nodeId];
+        uint8 routeId = TRIAL_AB_NODE_ROUTE_IDS[nodeId];
         x = TRIAL_AB_ROUTE_POSITIONS[routeId][0];
         y = TRIAL_AB_ROUTE_POSITIONS[routeId][1];
         z = TRIAL_AB_ROUTE_POSITIONS[routeId][2];
@@ -678,24 +710,6 @@ namespace
     bool GetObjectiveTravelPoint(float currentX, float currentY,
         uint8 targetNode, float& x, float& y, float& z)
     {
-        static constexpr std::array<uint8, BG_AB_DYNAMIC_NODES_COUNT>
-            approachRouteIds = {{ 0, 3, 5, 7, 9 }};
-        static constexpr std::array<std::array<uint8, 4>, 12> routeGraph =
-        {{
-            {{ 1, 10, 255, 255 }},
-            {{ 0, 2, 6, 255 }},
-            {{ 1, 3, 6, 255 }},
-            {{ 2, 4, 8, 255 }},
-            {{ 3, 5, 8, 11 }},
-            {{ 4, 11, 255, 255 }},
-            {{ 1, 2, 7, 255 }},
-            {{ 6, 255, 255, 255 }},
-            {{ 3, 4, 9, 255 }},
-            {{ 8, 255, 255, 255 }},
-            {{ 0, 1, 255, 255 }},
-            {{ 4, 5, 255, 255 }}
-        }};
-
         auto distance2d = [](float ax, float ay, float bx, float by)
         {
             float dx = ax - bx;
@@ -716,13 +730,13 @@ namespace
             }
         }
 
-        uint8 targetRoute = approachRouteIds[targetNode];
+        uint8 targetRoute = TRIAL_AB_NODE_ROUTE_IDS[targetNode];
         if (startRoute == targetRoute || bestStartDistance <= 6.0f)
             return false;
 
-        std::array<int8, 12> parent = {};
+        std::array<int8, TRIAL_AB_ROUTE_POSITIONS.size()> parent = {};
         parent.fill(-1);
-        std::array<bool, 12> visited = {};
+        std::array<bool, TRIAL_AB_ROUTE_POSITIONS.size()> visited = {};
         std::vector<uint8> queue;
         queue.push_back(startRoute);
         visited[startRoute] = true;
@@ -733,7 +747,7 @@ namespace
             if (current == targetRoute)
                 break;
 
-            for (uint8 next : routeGraph[current])
+            for (uint8 next : TRIAL_AB_ROUTE_GRAPH[current])
             {
                 if (next == 255 || visited[next])
                     continue;
@@ -788,26 +802,8 @@ namespace
         if (targetNode >= BG_AB_DYNAMIC_NODES_COUNT)
             return false;
 
-        static constexpr std::array<uint8, BG_AB_DYNAMIC_NODES_COUNT>
-            approachRouteIds = {{ 0, 3, 5, 7, 9 }};
-        static constexpr std::array<std::array<uint8, 4>, 12> routeGraph =
-        {{
-            {{ 1, 10, 255, 255 }},
-            {{ 0, 2, 6, 255 }},
-            {{ 1, 3, 4, 255 }},
-            {{ 2, 255, 255, 255 }},
-            {{ 2, 5, 8, 255 }},
-            {{ 4, 255, 255, 255 }},
-            {{ 1, 7, 255, 255 }},
-            {{ 6, 255, 255, 255 }},
-            {{ 4, 9, 255, 255 }},
-            {{ 8, 255, 255, 255 }},
-            {{ 0, 255, 255, 255 }},
-            {{ 4, 255, 255, 255 }}
-        }};
-
         uint8 startRoute = GetNearestObjectiveRouteIndex(currentX, currentY);
-        uint8 targetRoute = approachRouteIds[targetNode];
+        uint8 targetRoute = TRIAL_AB_NODE_ROUTE_IDS[targetNode];
 
         if (startRoute == targetRoute)
         {
@@ -815,9 +811,9 @@ namespace
             return true;
         }
 
-        std::array<int8, 12> parent = {};
+        std::array<int8, TRIAL_AB_ROUTE_POSITIONS.size()> parent = {};
         parent.fill(-1);
-        std::array<bool, 12> visited = {};
+        std::array<bool, TRIAL_AB_ROUTE_POSITIONS.size()> visited = {};
         std::vector<uint8> queue;
         queue.push_back(startRoute);
         visited[startRoute] = true;
@@ -828,7 +824,7 @@ namespace
             if (current == targetRoute)
                 break;
 
-            for (uint8 next : routeGraph[current])
+            for (uint8 next : TRIAL_AB_ROUTE_GRAPH[current])
             {
                 if (next == 255 || visited[next])
                     continue;
