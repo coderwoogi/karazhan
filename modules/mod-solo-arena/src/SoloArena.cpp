@@ -3216,8 +3216,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                 targetZ, targetO);
 
             if (session.ShadowGroundPathNode != int8(node) ||
-                session.NextShadowGroundRepathAt <= now ||
-                bot->IsStopped())
+                session.NextShadowGroundRepathAt <= now)
             {
                 Movement::PointsArray groundPath;
                 if (BuildObjectiveGroundPath(bot, targetX, targetY,
@@ -3225,7 +3224,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                 {
                     session.ShadowGroundPath = groundPath;
                     session.ShadowGroundPathNode = int8(node);
-                    session.NextShadowGroundRepathAt = now + 4;
+                    session.NextShadowGroundRepathAt = now + 8;
                     bot->GetMotionMaster()->Clear();
                     bot->GetMotionMaster()->MoveSplinePath(
                         &session.ShadowGroundPath);
@@ -3286,7 +3285,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     bot->GetMotionMaster()->Clear();
                     bot->GetMotionMaster()->MovePoint(9000 + node,
                         targetX, targetY, targetZ);
-                    session.NextShadowGroundRepathAt = now + 2;
+                    session.NextShadowGroundRepathAt = now + 5;
                 }
             }
             bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
@@ -3540,20 +3539,19 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
     float expectedY = bot->GetPositionY();
     float expectedZ = bot->GetPositionZ();
 
-    if (session.ShadowRouteIndex < session.ShadowRoute.size())
+    if (!session.ShadowGroundPath.empty())
     {
-        uint8 routeIndex = session.ShadowRoute[session.ShadowRouteIndex];
-        expectedX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
-        expectedY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
-        expectedZ = TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
+        G3D::Vector3 const& end = session.ShadowGroundPath.back();
+        expectedX = end.x;
+        expectedY = end.y;
+        expectedZ = end.z;
     }
-    else
+    else if (session.ShadowTargetNode >= 0 &&
+        session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT)
     {
-        uint8 routeIndex = GetNearestObjectiveRouteIndex(bot->GetPositionX(),
-            bot->GetPositionY());
-        expectedX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
-        expectedY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
-        expectedZ = TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
+        float o = 0.0f;
+        GetObjectiveNodeApproachLocation(uint8(session.ShadowTargetNode),
+            expectedX, expectedY, expectedZ, o);
     }
 
     float groundZ = ResolveArenaGroundZ(player->GetMap(), bot->GetPositionX(),
@@ -3561,8 +3559,11 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
     float expectedGroundZ = ResolveArenaGroundZ(player->GetMap(), expectedX,
         expectedY, expectedZ);
 
-    bool tooHigh = std::fabs(bot->GetPositionZ() - groundZ) > 3.0f;
-    if (bot->IsInWater() || tooHigh)
+    bool isFlyingState = bot->HasUnitMovementFlag(MOVEMENTFLAG_FLYING) ||
+        bot->HasUnitMovementFlag(MOVEMENTFLAG_CAN_FLY) ||
+        bot->HasUnitMovementFlag(MOVEMENTFLAG_DISABLE_GRAVITY);
+    bool tooHigh = std::fabs(bot->GetPositionZ() - groundZ) > 12.0f;
+    if (bot->IsInWater() || isFlyingState || tooHigh)
     {
         if (Map* map = player->GetMap())
             map->CanReachPositionAndGetValidCoords(bot,
@@ -3597,7 +3598,7 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
         {
             session.ShadowGroundPath = groundPath;
             session.ShadowGroundPathNode = session.ShadowTargetNode;
-            session.NextShadowGroundRepathAt = std::time(nullptr) + 4;
+            session.NextShadowGroundRepathAt = std::time(nullptr) + 8;
             bot->GetMotionMaster()->MoveSplinePath(
                 &session.ShadowGroundPath);
         }
