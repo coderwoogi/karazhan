@@ -103,7 +103,7 @@ INSERT INTO `solo_arena_stage_mechanic` (
 (3, 1, 3, 178187, 1285.80, 1662.80, 39.96, 0.00, 25000, 15000, 18.00, 0.00, 190023, 1, '균열의 제단');
 
 DELETE FROM `creature_template`
-WHERE `entry` IN (190021, 190022, 190023, 190024);
+WHERE `entry` IN (190021, 190022, 190023, 190024, 190025);
 
 INSERT INTO `creature_template` (
     `entry`, `name`, `subname`, `gossip_menu_id`,
@@ -141,10 +141,17 @@ INSERT INTO `creature_template` (
     2000, 2000, 1, 7,
     '', 0, 1, 1,
     1, 1, 1,
-    0, 'npc_solo_arena_hazard', 12340);
+    0, 'npc_solo_arena_hazard', 12340),
+(190025, '시련 경로 마커', 'GM 경로 배치용', 0,
+    1, 1, 0, 35, 0,
+    1, 1, 0.35, 0, 1,
+    2000, 2000, 1, 7,
+    '', 0, 1, 1,
+    1, 1, 1,
+    128, '', 12340);
 
 DELETE FROM `creature_template_model`
-WHERE `CreatureID` IN (190021, 190022, 190023, 190024);
+WHERE `CreatureID` IN (190021, 190022, 190023, 190024, 190025);
 
 INSERT INTO `creature_template_model` (
     `CreatureID`, `Idx`, `CreatureDisplayID`, `DisplayScale`,
@@ -153,7 +160,8 @@ INSERT INTO `creature_template_model` (
 (190021, 0, 3167, 1, 1, 12340),
 (190022, 0, 3167, 1, 1, 12340),
 (190023, 0, 1126, 1, 1, 12340),
-(190024, 0, 1126, 1, 1, 12340);
+(190024, 0, 1126, 1, 1, 12340),
+(190025, 0, 1126, 0.35, 1, 12340);
 
 DELETE FROM `creature`
 WHERE `guid` = 190021
