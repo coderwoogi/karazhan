@@ -251,6 +251,7 @@ namespace
             ObjectiveClientStates =
                 {{ 255, 255, 255, 255, 255 }};
         int8 ShadowTargetNode = -1;
+        int8 ShadowCurrentSector = -1;
         int8 ShadowCapturingNode = -1;
         uint64 ShadowCaptureEndsAt = 0;
         uint64 NextShadowNodeUpdateAt = 0;
@@ -960,15 +961,14 @@ namespace
         return false;
     }
 
-    bool BuildObjectiveTravelRoute(float currentX, float currentY,
+    bool BuildObjectiveTravelRouteFromSector(uint8 startSector,
         uint8 targetNode, std::vector<uint8>& route)
     {
         route.clear();
 
-        if (targetNode >= BG_AB_DYNAMIC_NODES_COUNT)
+        if (targetNode >= BG_AB_DYNAMIC_NODES_COUNT || startSector > 6)
             return false;
 
-        uint8 startSector = GetNearestObjectiveLandSector(currentX, currentY);
         uint8 targetSector = GetObjectiveTargetSector(targetNode);
         if (startSector == targetSector)
         {
@@ -1039,6 +1039,14 @@ namespace
             route.push_back(TRIAL_AB_NODE_ROUTE_IDS[targetNode]);
 
         return true;
+    }
+
+    bool BuildObjectiveTravelRoute(float currentX, float currentY,
+        uint8 targetNode, std::vector<uint8>& route)
+    {
+        uint8 startSector = GetNearestObjectiveLandSector(currentX, currentY);
+        return BuildObjectiveTravelRouteFromSector(startSector, targetNode,
+            route);
     }
 
     Unit* SelectShadowPetTarget(Player* player)
@@ -2960,6 +2968,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ShadowCapturingNode = -1;
             session.ShadowCaptureEndsAt = 0;
             session.ShadowTargetNode = -1;
+            session.ShadowCurrentSector = int8(GetObjectiveTargetSector(node));
             session.ShadowRoute.clear();
             session.ShadowRouteIndex = 0;
             bot->ClearEmoteState();
@@ -3060,8 +3069,12 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ShadowRoute.clear();
             session.ShadowRouteIndex = 0;
             if (bestNode >= 0)
-                BuildObjectiveTravelRoute(bot->GetPositionX(),
-                    bot->GetPositionY(), uint8(bestNode),
+                BuildObjectiveTravelRouteFromSector(
+                    session.ShadowCurrentSector >= 0 ?
+                        uint8(session.ShadowCurrentSector) :
+                        GetNearestObjectiveLandSector(bot->GetPositionX(),
+                            bot->GetPositionY()),
+                    uint8(bestNode),
                     session.ShadowRoute);
         }
 
@@ -3077,8 +3090,12 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 
             if (session.ShadowRoute.empty())
             {
-                BuildObjectiveTravelRoute(bot->GetPositionX(),
-                    bot->GetPositionY(), node, session.ShadowRoute);
+                BuildObjectiveTravelRouteFromSector(
+                    session.ShadowCurrentSector >= 0 ?
+                        uint8(session.ShadowCurrentSector) :
+                        GetNearestObjectiveLandSector(bot->GetPositionX(),
+                            bot->GetPositionY()),
+                    node, session.ShadowRoute);
                 session.ShadowRouteIndex = 0;
             }
 
@@ -3401,7 +3418,11 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
         if (session.ShadowTargetNode >= 0 &&
             session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT)
         {
-            BuildObjectiveTravelRoute(bot->GetPositionX(), bot->GetPositionY(),
+            BuildObjectiveTravelRouteFromSector(
+                session.ShadowCurrentSector >= 0 ?
+                    uint8(session.ShadowCurrentSector) :
+                    GetNearestObjectiveLandSector(bot->GetPositionX(),
+                        bot->GetPositionY()),
                 uint8(session.ShadowTargetNode), session.ShadowRoute);
         }
 
@@ -3497,6 +3518,9 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     if (session.Scenario == TrialScenario::Objective)
     {
         session.ShadowTargetNode = -1;
+        session.ShadowCurrentSector =
+            Battleground::GetOtherTeamId(session.Team) == TEAM_ALLIANCE ?
+                0 : 6;
         session.ShadowCapturingNode = -1;
         session.ShadowCaptureEndsAt = 0;
         session.ShadowRoute.clear();
