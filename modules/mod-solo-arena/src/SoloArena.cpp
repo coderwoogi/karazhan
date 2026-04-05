@@ -396,6 +396,40 @@ namespace
         TacticalSpell Area;
     };
 
+    bool IsGapCloserSpell(uint32 spellId)
+    {
+        switch (spellId)
+        {
+            case 11578: // Charge
+            case 36554: // Shadowstep
+            case 49576: // Death Grip
+            case 16979: // Feral Charge
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    bool IsCrowdControlSpell(uint32 spellId)
+    {
+        switch (spellId)
+        {
+            case 5246:
+            case 10308:
+            case 19503:
+            case 2094:
+            case 10890:
+            case 47476:
+            case 51514:
+            case 42917:
+            case 6215:
+            case 33786:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     bool IsObjectiveTrialStage(uint8 stageId)
     {
         return stageId >= 4 && stageId <= 6;
@@ -5801,8 +5835,8 @@ namespace
             case CLASS_WARRIOR:
                 package.Burst = { 12292, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                     0.0f, 24000, true, 1.0f, 1.0f, false, false };
-                package.Utility = { 6552, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
-                    5.0f, 12000, false, 1.0f, 1.0f, true, false };
+                package.Utility = { 11578, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    25.0f, 12000, false, 1.0f, 1.0f, false, false };
                 package.CrowdControl = { 5246, SPELL_SCHOOL_MASK_NORMAL,
                     0.0f, 8.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 1680, SPELL_SCHOOL_MASK_NORMAL, 1.05f,
@@ -5831,8 +5865,8 @@ namespace
             case CLASS_ROGUE:
                 package.Burst = { 13750, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                     0.0f, 25000, true, 1.0f, 1.0f, false, false };
-                package.Utility = { 1766, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
-                    5.0f, 10000, false, 1.0f, 1.0f, true, false };
+                package.Utility = { 36554, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    25.0f, 12000, false, 1.0f, 1.0f, false, false };
                 package.CrowdControl = { 2094, SPELL_SCHOOL_MASK_NORMAL,
                     0.0f, 10.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 51723, SPELL_SCHOOL_MASK_NORMAL, 1.00f,
@@ -5862,8 +5896,8 @@ namespace
             case CLASS_DEATH_KNIGHT:
                 package.Burst = { 55268, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                     0.0f, 26000, true, 0.80f, 1.0f, false, false };
-                package.Utility = { 47528, SPELL_SCHOOL_MASK_FROST, 0.0f,
-                    5.0f, 12000, false, 1.0f, 1.0f, true, false };
+                package.Utility = { 49576, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                    30.0f, 12000, false, 1.0f, 1.0f, false, false };
                 package.CrowdControl = { 47476, SPELL_SCHOOL_MASK_SHADOW,
                     0.0f, 20.0f, 16000, false, 1.0f, 1.0f, true, false };
                 package.Area = { 49938, SPELL_SCHOOL_MASK_SHADOW, 1.00f,
@@ -5911,8 +5945,8 @@ namespace
                 {
                     package.Burst = { 17116, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                         0.0f, 22000, true, 1.0f, 1.0f, false, false };
-                    package.Utility = { 5211, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
-                        5.0f, 14000, false, 1.0f, 1.0f, false, false };
+                    package.Utility = { 16979, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                        25.0f, 12000, false, 1.0f, 1.0f, false, false };
                     package.CrowdControl = { 33786, SPELL_SCHOOL_MASK_NATURE,
                         0.0f, 20.0f, 18000, false, 1.0f, 1.0f, false, false };
                     package.Area = { 62078, SPELL_SCHOOL_MASK_NORMAL, 1.00f,
@@ -6043,20 +6077,27 @@ namespace
                     Milliseconds(_package.TertiaryCooldownMs));
             }
 
-            if (_profile.StageId >= 3)
+            if (_profile.StageId >= 3 ||
+                SoloArenaMgr::Instance().IsObjectiveRaceActive(
+                    _profile.PlayerGuid))
             {
                 events.ScheduleEvent(EVENT_DEFENSIVE,
                     Milliseconds(_package.DefensiveCooldownMs));
-                events.ScheduleEvent(EVENT_CC,
-                    Milliseconds(_tactical.CrowdControl.CooldownMs));
+                if (_tactical.CrowdControl.SpellId)
+                    events.ScheduleEvent(EVENT_CC,
+                        Milliseconds(_tactical.CrowdControl.CooldownMs));
             }
 
-            if (_profile.StageId >= 2)
+            if (_profile.StageId >= 2 ||
+                SoloArenaMgr::Instance().IsObjectiveRaceActive(
+                    _profile.PlayerGuid))
             {
-                events.ScheduleEvent(EVENT_BURST,
-                    Milliseconds(_tactical.Burst.CooldownMs));
-                events.ScheduleEvent(EVENT_UTILITY,
-                    Milliseconds(_tactical.Utility.CooldownMs / 2));
+                if (_tactical.Burst.SpellId)
+                    events.ScheduleEvent(EVENT_BURST,
+                        Milliseconds(_tactical.Burst.CooldownMs));
+                if (_tactical.Utility.SpellId)
+                    events.ScheduleEvent(EVENT_UTILITY,
+                        Milliseconds(_tactical.Utility.CooldownMs / 2));
             }
 
             if (_profile.StageId >= 3)
@@ -6391,6 +6432,43 @@ namespace
             Unit* victim = me->GetVictim();
             if (!victim || !victim->IsAlive())
                 return;
+
+            float distance = me->GetDistance(victim);
+
+            if (IsGapCloserSpell(spell.SpellId))
+            {
+                if (!IsMeleeProfile())
+                    return;
+
+                if (distance < 8.0f || distance > std::max(10.0f, spell.Range))
+                    return;
+
+                if (!me->IsWithinLOSInMap(victim))
+                    return;
+
+                me->SetFacingToObject(victim);
+                if (me->CastSpell(victim, spell.SpellId, false) ==
+                    SPELL_FAILED_SUCCESS)
+                {
+                    IssueChase(victim, 1.5f, 1200);
+                }
+                return;
+            }
+
+            if (IsCrowdControlSpell(spell.SpellId))
+            {
+                bool shouldUseCc = victim->HasUnitState(UNIT_STATE_CASTING);
+                if (!shouldUseCc)
+                {
+                    if (IsMeleeProfile())
+                        shouldUseCc = distance <= std::max(8.0f, spell.Range);
+                    else
+                        shouldUseCc = distance <= 14.0f;
+                }
+
+                if (!shouldUseCc || distance > std::max(8.0f, spell.Range))
+                    return;
+            }
 
             if (spell.TargetHealthPct < 1.0f &&
                 victim->GetHealthPct() > (spell.TargetHealthPct * 100.0f))
