@@ -1238,10 +1238,33 @@ namespace
         return bestIndex;
     }
 
+    bool IsObjectiveMarkerLinkOnLand(Map* map,
+        ObjectivePathMarker const& a,
+        ObjectivePathMarker const& b)
+    {
+        if (!map)
+            return true;
+
+        constexpr uint32 sampleCount = 8;
+        for (uint32 step = 1; step < sampleCount; ++step)
+        {
+            float t = float(step) / float(sampleCount);
+            float sampleX = a.X + ((b.X - a.X) * t);
+            float sampleY = a.Y + ((b.Y - a.Y) * t);
+            float sampleZ = a.Z + ((b.Z - a.Z) * t);
+            float groundZ = ResolveArenaGroundZ(map, sampleX, sampleY, sampleZ);
+            if (map->IsInWater(1, sampleX, sampleY, groundZ + 1.0f, 2.0f))
+                return false;
+        }
+
+        return true;
+    }
+
     ObjectiveMarkerGraph BuildObjectiveMarkerGraph()
     {
         ObjectiveMarkerGraph graph;
         graph.Markers = GetObjectivePathMarkers();
+        Map* baseMap = sMapMgr->CreateBaseMap(DEFAULT_OBJECTIVE_MAP_ID);
 
         size_t const markerCount = graph.Markers.size();
         graph.Links.resize(markerCount);
@@ -1290,6 +1313,12 @@ namespace
                 size_t b = std::max(i, j);
                 if (!linkedPairs.insert({ a, b }).second)
                     continue;
+
+                if (!IsObjectiveMarkerLinkOnLand(baseMap,
+                    graph.Markers[i], graph.Markers[j]))
+                {
+                    continue;
+                }
 
                 linkNodes(i, j);
                 ++linked;
