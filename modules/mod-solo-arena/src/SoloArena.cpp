@@ -1433,6 +1433,26 @@ namespace
         return true;
     }
 
+    bool GetObjectiveStartMarkerLocation(TeamId teamId, float& x, float& y,
+        float& z, float& o)
+    {
+        GetObjectiveStartLocation(teamId, x, y, z, o);
+
+        ObjectiveMarkerGraph graph = BuildObjectiveMarkerGraph();
+        if (graph.Markers.empty())
+            return false;
+
+        int32 markerIndex = GetNearestObjectiveMarkerIndex(graph.Markers, x, y);
+        if (markerIndex < 0)
+            return false;
+
+        ObjectivePathMarker const& marker = graph.Markers[size_t(markerIndex)];
+        x = marker.X;
+        y = marker.Y;
+        z = marker.Z;
+        return true;
+    }
+
     bool BuildObjectiveMarkerRoute(float startX, float startY, float startZ,
         float endX, float endY, float endZ, std::vector<G3D::Vector3>& route)
     {
@@ -3448,9 +3468,10 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             if (!GetObjectiveNodeMarkerLocation(node, approachX, approachY,
                 approachZ))
             {
-                float approachO = 0.0f;
-                GetObjectiveNodeApproachLocation(node, approachX, approachY,
-                    approachZ, approachO);
+                session.ShadowTargetNode = -1;
+                session.ShadowMarkerRoute.clear();
+                session.ShadowMarkerRouteIndex = 0;
+                return true;
             }
             if (bot->GetDistance2d(approachX, approachY) <= 5.0f)
             {
@@ -3502,18 +3523,6 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     }
                 }
 
-                if (cost == std::numeric_limits<float>::max())
-                {
-                    float markerX = 0.0f;
-                    float markerY = 0.0f;
-                    float markerZ = 0.0f;
-                    if (GetObjectiveNodeMarkerLocation(node, markerX, markerY,
-                        markerZ))
-                    {
-                        cost = bot->GetDistance2d(markerX, markerY);
-                    }
-                }
-
                 if (cost < bestCost)
                 {
                     bestCost = cost;
@@ -3541,8 +3550,10 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             if (!GetObjectiveNodeMarkerLocation(node, targetX, targetY,
                 targetZ))
             {
-                GetObjectiveNodeApproachLocation(node, targetX, targetY,
-                    targetZ, targetO);
+                session.ShadowTargetNode = -1;
+                session.ShadowMarkerRoute.clear();
+                session.ShadowMarkerRouteIndex = 0;
+                return true;
             }
 
             if (session.ShadowMarkerRoute.empty())
@@ -3572,8 +3583,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                 }
             }
 
-            bool hasMarkerRoute =
-                session.ShadowMarkerRouteIndex < session.ShadowMarkerRoute.size();
+            bool hasMarkerRoute = !session.ShadowMarkerRoute.empty();
             if (hasMarkerRoute)
             {
                 G3D::Vector3 const& finalMarker = session.ShadowMarkerRoute.back();
@@ -3592,8 +3602,9 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 
             if (!hasMarkerRoute)
             {
-                bot->GetMotionMaster()->MovePoint(9000 + node,
-                    targetX, targetY, targetZ);
+                if (bot->GetDistance2d(targetX, targetY) <= 5.0f)
+                    bot->GetMotionMaster()->MovePoint(9000 + node,
+                        targetX, targetY, targetZ);
             }
 
             bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
@@ -3870,8 +3881,12 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
         session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT)
     {
         float o = 0.0f;
-        GetObjectiveNodeApproachLocation(uint8(session.ShadowTargetNode),
-            expectedX, expectedY, expectedZ, o);
+        if (!GetObjectiveNodeMarkerLocation(uint8(session.ShadowTargetNode),
+            expectedX, expectedY, expectedZ))
+        {
+            GetObjectiveStartLocation(Battleground::GetOtherTeamId(session.Team),
+                expectedX, expectedY, expectedZ, o);
+        }
     }
 
     float groundZ = ResolveArenaGroundZ(player->GetMap(), bot->GetPositionX(),
@@ -3948,9 +3963,15 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
     if (session.Scenario == TrialScenario::Objective)
     {
         shadowStage.ArenaMapId = DEFAULT_OBJECTIVE_MAP_ID;
-        GetObjectiveStartLocation(Battleground::GetOtherTeamId(session.Team),
-            shadowStage.BotX, shadowStage.BotY,
-            shadowStage.BotZ, shadowStage.BotO);
+        if (!GetObjectiveStartMarkerLocation(
+                Battleground::GetOtherTeamId(session.Team),
+                shadowStage.BotX, shadowStage.BotY,
+                shadowStage.BotZ, shadowStage.BotO))
+        {
+            GetObjectiveStartLocation(Battleground::GetOtherTeamId(session.Team),
+                shadowStage.BotX, shadowStage.BotY,
+                shadowStage.BotZ, shadowStage.BotO);
+        }
     }
 
     ShadowProfile profile = CaptureShadowProfile(player, shadowStage);
