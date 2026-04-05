@@ -3495,8 +3495,11 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     SyncShadowPet(player, session, true);
     session.State = SessionState::Active;
 
-    if ((bot->GetVictim() == player || player->GetVictim() == bot) &&
-        !bot->IsWithinDistInMap(player, 20.0f))
+    bool inShadowCombat = (bot->GetVictim() == player ||
+        player->GetVictim() == bot || bot->IsInCombatWith(player) ||
+        player->IsInCombatWith(bot));
+
+    if (inShadowCombat && !bot->IsWithinDistInMap(player, 35.0f))
     {
         bot->CombatStop(true);
         bot->SetReactState(REACT_AGGRESSIVE);
@@ -3504,6 +3507,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         player->CombatStopWithPets(true);
         session.ShadowMarkerRoute.clear();
         session.ShadowMarkerRouteIndex = 0;
+        inShadowCombat = false;
     }
 
     for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
@@ -3544,7 +3548,10 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         }
     }
 
-    if (bot->IsWithinDistInMap(player, 6.0f) && bot->IsWithinLOSInMap(player))
+    if (inShadowCombat)
+        return true;
+
+    if (bot->IsWithinDistInMap(player, 18.0f) && bot->IsWithinLOSInMap(player))
     {
         bot->ClearEmoteState();
         StartShadowCombat(player, bot);
