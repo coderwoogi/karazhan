@@ -75,16 +75,20 @@ namespace
         {{807.46f, 1189.16f, 11.92f, 5.44f}},
         {{1146.62f, 816.94f, -98.49f, 6.14f}}
     }};
-    constexpr std::array<std::array<float, 4>, 8> TRIAL_AB_ROUTE_POSITIONS =
+    constexpr std::array<std::array<float, 4>, 12> TRIAL_AB_ROUTE_POSITIONS =
     {{
-        {{1095.00f, 1098.00f, -49.00f, 2.45f}}, // stables -> blacksmith
-        {{902.00f, 944.00f, -49.50f, 2.90f}},   // farm -> blacksmith
-        {{899.00f, 1098.00f, -15.00f, 4.90f}},  // lumber mill -> blacksmith
-        {{1068.00f, 915.00f, -70.00f, 5.85f}},  // gold mine -> blacksmith
-        {{1006.00f, 1188.00f, -36.00f, 3.65f}}, // stables -> lumber mill
-        {{988.00f, 852.00f, -73.00f, 5.75f}},   // farm -> gold mine
-        {{862.00f, 1018.00f, -24.00f, 4.55f}},  // farm -> lumber mill
-        {{1148.00f, 996.00f, -78.00f, 0.75f}}   // stables -> gold mine
+        {{1176.0f, 1191.0f, -56.7f, 0.90f}},    // 0 stables approach
+        {{1095.0f, 1098.0f, -49.0f, 2.45f}},    // 1 upper mid road
+        {{1008.0f, 1120.0f, -39.0f, 3.20f}},    // 2 blacksmith north road
+        {{989.5f, 1041.0f, -44.8f, -2.60f}},    // 3 blacksmith approach
+        {{902.0f, 944.0f, -49.5f, 2.90f}},      // 4 lower mid road
+        {{816.0f, 882.0f, -56.0f, -2.30f}},     // 5 farm approach
+        {{899.0f, 1098.0f, -15.0f, 4.90f}},     // 6 lumber road
+        {{849.0f, 1138.0f, 11.1f, -2.30f}},     // 7 lumber approach
+        {{1068.0f, 915.0f, -70.0f, 5.85f}},     // 8 gold road
+        {{1138.0f, 858.0f, -110.9f, -0.73f}},   // 9 gold approach
+        {{1354.0f, 1275.0f, -11.3f, 4.77f}},    // 10 alliance start
+        {{714.6f, 646.1f, -10.9f, 4.34f}}       // 11 horde start
     }};
 
     enum class StageMechanicType : uint8
@@ -216,6 +220,8 @@ namespace
         int8 ShadowCapturingNode = -1;
         uint64 ShadowCaptureEndsAt = 0;
         uint64 NextShadowNodeUpdateAt = 0;
+        std::vector<uint8> ShadowRoute;
+        uint8 ShadowRouteIndex = 0;
         uint64 NextObjectiveNodeScanAt = 0;
         uint64 NextObjectiveWorldStateSyncAt = 0;
         uint64 NextObjectiveMechanicUpdateAt = 0;
@@ -384,23 +390,16 @@ namespace
     void GetObjectiveNodeApproachLocation(uint8 nodeId, float& x, float& y,
         float& z, float& o)
     {
-        static constexpr std::array<std::array<float, 4>,
-            BG_AB_DYNAMIC_NODES_COUNT> landApproachPositions =
-        {{
-            {{ 1176.0f, 1191.0f, -56.7f, 0.90f }},   // stables
-            {{ 989.5f, 1041.0f, -44.8f, -2.60f }},   // blacksmith
-            {{ 816.0f, 882.0f, -56.0f, -2.30f }},    // farm
-            {{ 849.0f, 1138.0f, 11.1f, -2.30f }},    // lumber mill
-            {{ 1138.0f, 858.0f, -110.9f, -0.73f }}   // gold mine
-        }};
-
         if (nodeId >= BG_AB_DYNAMIC_NODES_COUNT)
             nodeId = 0;
 
-        x = landApproachPositions[nodeId][0];
-        y = landApproachPositions[nodeId][1];
-        z = landApproachPositions[nodeId][2];
-        o = landApproachPositions[nodeId][3];
+        static constexpr std::array<uint8, BG_AB_DYNAMIC_NODES_COUNT>
+            approachRouteIds = {{ 0, 3, 5, 7, 9 }};
+        uint8 routeId = approachRouteIds[nodeId];
+        x = TRIAL_AB_ROUTE_POSITIONS[routeId][0];
+        y = TRIAL_AB_ROUTE_POSITIONS[routeId][1];
+        z = TRIAL_AB_ROUTE_POSITIONS[routeId][2];
+        o = TRIAL_AB_ROUTE_POSITIONS[routeId][3];
     }
 
     uint8 CountObjectiveNodesOwned(
@@ -679,12 +678,23 @@ namespace
     bool GetObjectiveTravelPoint(float currentX, float currentY,
         uint8 targetNode, float& x, float& y, float& z)
     {
-        float targetX = 0.0f;
-        float targetY = 0.0f;
-        float targetZ = 0.0f;
-        float targetO = 0.0f;
-        GetObjectiveNodeApproachLocation(targetNode, targetX, targetY, targetZ,
-            targetO);
+        static constexpr std::array<uint8, BG_AB_DYNAMIC_NODES_COUNT>
+            approachRouteIds = {{ 0, 3, 5, 7, 9 }};
+        static constexpr std::array<std::array<uint8, 4>, 12> routeGraph =
+        {{
+            {{ 1, 10, 255, 255 }},
+            {{ 0, 2, 6, 255 }},
+            {{ 1, 3, 6, 255 }},
+            {{ 2, 4, 8, 255 }},
+            {{ 3, 5, 8, 11 }},
+            {{ 4, 11, 255, 255 }},
+            {{ 1, 2, 7, 255 }},
+            {{ 6, 255, 255, 255 }},
+            {{ 3, 4, 9, 255 }},
+            {{ 8, 255, 255, 255 }},
+            {{ 0, 1, 255, 255 }},
+            {{ 4, 5, 255, 255 }}
+        }};
 
         auto distance2d = [](float ax, float ay, float bx, float by)
         {
@@ -693,33 +703,62 @@ namespace
             return std::sqrt((dx * dx) + (dy * dy));
         };
 
-        float directDistance = distance2d(currentX, currentY, targetX, targetY);
-        float bestScore = directDistance;
-        int32 bestRoute = -1;
-
+        uint8 startRoute = 0;
+        float bestStartDistance = std::numeric_limits<float>::max();
         for (uint8 i = 0; i < TRIAL_AB_ROUTE_POSITIONS.size(); ++i)
         {
-            float routeX = TRIAL_AB_ROUTE_POSITIONS[i][0];
-            float routeY = TRIAL_AB_ROUTE_POSITIONS[i][1];
-            float routeDistance = distance2d(currentX, currentY, routeX, routeY);
-            if (routeDistance < 8.0f)
-                continue;
-
-            float score = routeDistance +
-                distance2d(routeX, routeY, targetX, targetY);
-            if (score + 5.0f < bestScore)
+            float distance = distance2d(currentX, currentY,
+                TRIAL_AB_ROUTE_POSITIONS[i][0], TRIAL_AB_ROUTE_POSITIONS[i][1]);
+            if (distance < bestStartDistance)
             {
-                bestScore = score;
-                bestRoute = i;
+                bestStartDistance = distance;
+                startRoute = i;
             }
         }
 
-        if (bestRoute < 0)
+        uint8 targetRoute = approachRouteIds[targetNode];
+        if (startRoute == targetRoute || bestStartDistance <= 6.0f)
             return false;
 
-        x = TRIAL_AB_ROUTE_POSITIONS[bestRoute][0];
-        y = TRIAL_AB_ROUTE_POSITIONS[bestRoute][1];
-        z = TRIAL_AB_ROUTE_POSITIONS[bestRoute][2];
+        std::array<int8, 12> parent = {};
+        parent.fill(-1);
+        std::array<bool, 12> visited = {};
+        std::vector<uint8> queue;
+        queue.push_back(startRoute);
+        visited[startRoute] = true;
+
+        for (size_t idx = 0; idx < queue.size(); ++idx)
+        {
+            uint8 current = queue[idx];
+            if (current == targetRoute)
+                break;
+
+            for (uint8 next : routeGraph[current])
+            {
+                if (next == 255 || visited[next])
+                    continue;
+
+                visited[next] = true;
+                parent[next] = int8(current);
+                queue.push_back(next);
+            }
+        }
+
+        if (!visited[targetRoute])
+            return false;
+
+        std::vector<uint8> route;
+        for (int8 node = int8(targetRoute); node >= 0; node = parent[node])
+            route.push_back(uint8(node));
+        std::reverse(route.begin(), route.end());
+
+        if (route.size() <= 1)
+            return false;
+
+        uint8 nextRoute = route[1];
+        x = TRIAL_AB_ROUTE_POSITIONS[nextRoute][0];
+        y = TRIAL_AB_ROUTE_POSITIONS[nextRoute][1];
+        z = TRIAL_AB_ROUTE_POSITIONS[nextRoute][2];
         return true;
     }
 
@@ -2998,6 +3037,23 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
     {
         bot->NearTeleportTo(bot->GetPositionX(), bot->GetPositionY(), groundZ,
             bot->GetOrientation(), true);
+    }
+
+    if (bot->IsInWater())
+    {
+        float routeX = 0.0f;
+        float routeY = 0.0f;
+        float routeZ = 0.0f;
+        if (session.ShadowTargetNode >= 0 &&
+            session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT &&
+            GetObjectiveTravelPoint(bot->GetPositionX(), bot->GetPositionY(),
+                uint8(session.ShadowTargetNode), routeX, routeY, routeZ))
+        {
+            routeZ = ResolveArenaGroundZ(player->GetMap(), routeX, routeY,
+                routeZ);
+            bot->NearTeleportTo(routeX, routeY, routeZ, bot->GetOrientation(),
+                true);
+        }
     }
 }
 
