@@ -1184,6 +1184,12 @@ namespace
         float Z = 0.0f;
     };
 
+    struct ObjectiveMarkerGraph
+    {
+        std::vector<ObjectivePathMarker> Markers;
+        std::vector<std::vector<std::pair<size_t, float>>> Links;
+    };
+
     std::vector<ObjectivePathMarker> GetObjectivePathMarkers()
     {
         std::vector<ObjectivePathMarker> markers;
@@ -1231,54 +1237,58 @@ namespace
         return bestIndex;
     }
 
-    bool BuildObjectiveMarkerRoute(float startX, float startY, float startZ,
-        float endX, float endY, float endZ, std::vector<G3D::Vector3>& route)
+    ObjectiveMarkerGraph BuildObjectiveMarkerGraph()
     {
-        route.clear();
+        ObjectiveMarkerGraph graph;
+        graph.Markers = GetObjectivePathMarkers();
 
-        std::vector<ObjectivePathMarker> markers = GetObjectivePathMarkers();
-        if (markers.empty())
-            return false;
+        size_t const markerCount = graph.Markers.size();
+        graph.Links.resize(markerCount);
 
-        int32 startIndex = GetNearestObjectiveMarkerIndex(markers, startX, startY);
-        int32 endIndex = GetNearestObjectiveMarkerIndex(markers, endX, endY);
-        if (startIndex < 0 || endIndex < 0)
-            return false;
-
-        if (startIndex == endIndex)
+        auto linkNodes = [&](size_t a, size_t b)
         {
-            route.emplace_back(markers[size_t(startIndex)].X,
-                markers[size_t(startIndex)].Y,
-                markers[size_t(startIndex)].Z);
-            return true;
-        }
-
-        size_t const markerCount = markers.size();
-        std::vector<std::vector<std::pair<size_t, float>>> graph(markerCount);
-        auto linkNodes = [&](size_t a, size_t b, float ax, float ay, float az,
-                             float bx, float by, float bz)
-        {
-            float dx = ax - bx;
-            float dy = ay - by;
-            float dz = az - bz;
+            float dx = graph.Markers[a].X - graph.Markers[b].X;
+            float dy = graph.Markers[a].Y - graph.Markers[b].Y;
+            float dz = graph.Markers[a].Z - graph.Markers[b].Z;
             float cost = std::sqrt(dx * dx + dy * dy + dz * dz);
-            graph[a].push_back({ b, cost });
-            graph[b].push_back({ a, cost });
+            graph.Links[a].push_back({ b, cost });
+            graph.Links[b].push_back({ a, cost });
         };
 
         for (size_t i = 0; i < markerCount; ++i)
         {
             for (size_t j = i + 1; j < markerCount; ++j)
             {
-                float dx = markers[i].X - markers[j].X;
-                float dy = markers[i].Y - markers[j].Y;
-                if (std::sqrt(dx * dx + dy * dy) <= TRIAL_MARKER_LINK_DISTANCE)
-                {
-                    linkNodes(i, j,
-                        markers[i].X, markers[i].Y, markers[i].Z,
-                        markers[j].X, markers[j].Y, markers[j].Z);
-                }
+                float dx = graph.Markers[i].X - graph.Markers[j].X;
+                float dy = graph.Markers[i].Y - graph.Markers[j].Y;
+                float distance2d = std::sqrt(dx * dx + dy * dy);
+                if (distance2d <= TRIAL_MARKER_LINK_DISTANCE)
+                    linkNodes(i, j);
             }
+        }
+
+        return graph;
+    }
+
+    bool BuildObjectiveMarkerIndexRoute(ObjectiveMarkerGraph const& graph,
+        int32 startIndex, int32 endIndex, std::vector<size_t>& indexRoute,
+        float* outCost = nullptr)
+    {
+        indexRoute.clear();
+
+        if (startIndex < 0 || endIndex < 0)
+            return false;
+
+        size_t const markerCount = graph.Markers.size();
+        if (size_t(startIndex) >= markerCount || size_t(endIndex) >= markerCount)
+            return false;
+
+        if (startIndex == endIndex)
+        {
+            indexRoute.push_back(size_t(startIndex));
+            if (outCost)
+                *outCost = 0.0f;
+            return true;
         }
 
         std::vector<float> dist(markerCount,
@@ -1302,7 +1312,7 @@ namespace
             if (current == size_t(endIndex))
                 break;
 
-            for (auto const& edge : graph[current])
+            for (auto const& edge : graph.Links[current])
             {
                 size_t next = edge.first;
                 float nextCost = currentCost + edge.second;
@@ -1318,21 +1328,82 @@ namespace
         if (prev[size_t(endIndex)] < 0)
             return false;
 
-        std::vector<size_t> indexPath;
-        for (int32 cursor = endIndex; cursor >= 0; cursor = prev[size_t(cursor)])
+        for (int32 cursor = endIndex; cursor >= 0;
+             cursor = prev[size_t(cursor)])
         {
-            indexPath.push_back(size_t(cursor));
+            indexRoute.push_back(size_t(cursor));
             if (cursor == startIndex)
                 break;
         }
 
-        if (indexPath.empty() || int32(indexPath.back()) != startIndex)
+        if (indexRoute.empty() || int32(indexRoute.back()) != startIndex)
             return false;
 
-        std::reverse(indexPath.begin(), indexPath.end());
-        for (size_t idx : indexPath)
+        std::reverse(indexRoute.begin(), indexRoute.end());
+        if (outCost)
+            *outCost = dist[size_t(endIndex)];
+        return true;
+    }
+
+    int32 GetObjectiveNodeMarkerIndex(ObjectiveMarkerGraph const& graph,
+        uint8 node)
+    {
+        float x = 0.0f;
+        float y = 0.0f;
+        float z = 0.0f;
+        float o = 0.0f;
+        GetObjectiveNodeApproachLocation(node, x, y, z, o);
+        return GetNearestObjectiveMarkerIndex(graph.Markers, x, y);
+    }
+
+    bool GetObjectiveNodeMarkerLocation(uint8 node, float& x, float& y, float& z)
+    {
+        ObjectiveMarkerGraph graph = BuildObjectiveMarkerGraph();
+        if (graph.Markers.empty())
+            return false;
+
+        int32 markerIndex = GetObjectiveNodeMarkerIndex(graph, node);
+        if (markerIndex < 0)
+            return false;
+
+        ObjectivePathMarker const& marker = graph.Markers[size_t(markerIndex)];
+        x = marker.X;
+        y = marker.Y;
+        z = marker.Z;
+        return true;
+    }
+
+    bool BuildObjectiveMarkerRoute(float startX, float startY, float startZ,
+        float endX, float endY, float endZ, std::vector<G3D::Vector3>& route)
+    {
+        route.clear();
+        ObjectiveMarkerGraph graph = BuildObjectiveMarkerGraph();
+        if (graph.Markers.empty())
+            return false;
+
+        int32 startIndex = GetNearestObjectiveMarkerIndex(graph.Markers,
+            startX, startY);
+        int32 endIndex = GetNearestObjectiveMarkerIndex(graph.Markers,
+            endX, endY);
+        std::vector<size_t> indexRoute;
+        if (!BuildObjectiveMarkerIndexRoute(graph, startIndex, endIndex,
+            indexRoute))
         {
-            route.emplace_back(markers[idx].X, markers[idx].Y, markers[idx].Z);
+            return false;
+        }
+
+        for (size_t idx : indexRoute)
+            route.emplace_back(graph.Markers[idx].X, graph.Markers[idx].Y,
+                graph.Markers[idx].Z);
+
+        if (!route.empty())
+        {
+            G3D::Vector3 const& first = route.front();
+            if (std::fabs(first.x - startX) <= 6.0f &&
+                std::fabs(first.y - startY) <= 6.0f)
+            {
+                route.erase(route.begin());
+            }
         }
 
         return !route.empty();
@@ -3232,6 +3303,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         bot->SetReactState(REACT_AGGRESSIVE);
         bot->ClearEmoteState();
         player->CombatStopWithPets(true);
+        session.ShadowMarkerRoute.clear();
+        session.ShadowMarkerRouteIndex = 0;
     }
 
     if (session.ShadowCapturingNode >= 0 &&
@@ -3303,6 +3376,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     {
         session.NextShadowNodeUpdateAt = now + 2;
 
+        ObjectiveMarkerGraph markerGraph = BuildObjectiveMarkerGraph();
+
         if (session.ShadowTargetNode >= 0 &&
             session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT)
         {
@@ -3310,9 +3385,13 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             float approachX = 0.0f;
             float approachY = 0.0f;
             float approachZ = 0.0f;
-            float approachO = 0.0f;
-            GetObjectiveNodeApproachLocation(node, approachX, approachY,
-                approachZ, approachO);
+            if (!GetObjectiveNodeMarkerLocation(node, approachX, approachY,
+                approachZ))
+            {
+                float approachO = 0.0f;
+                GetObjectiveNodeApproachLocation(node, approachX, approachY,
+                    approachZ, approachO);
+            }
             if (bot->GetDistance2d(approachX, approachY) <= 5.0f)
             {
                 session.ShadowCapturingNode = int8(node);
@@ -3337,24 +3416,47 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 
         if (session.ShadowTargetNode < 0)
         {
-            float bestDistance = std::numeric_limits<float>::max();
+            float bestCost = std::numeric_limits<float>::max();
             int8 bestNode = -1;
+            int32 startMarkerIndex = GetNearestObjectiveMarkerIndex(
+                markerGraph.Markers, bot->GetPositionX(), bot->GetPositionY());
+
             for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
             {
                 if (session.ObjectiveNodeOwners[node] ==
                     ObjectiveNodeOwner::Shadow)
-                    continue;
-
-                float approachX = 0.0f;
-                float approachY = 0.0f;
-                float approachZ = 0.0f;
-                float approachO = 0.0f;
-                GetObjectiveNodeApproachLocation(node, approachX, approachY,
-                    approachZ, approachO);
-                float distance = bot->GetDistance2d(approachX, approachY);
-                if (distance < bestDistance)
                 {
-                    bestDistance = distance;
+                    continue;
+                }
+
+                float cost = std::numeric_limits<float>::max();
+                int32 nodeMarkerIndex = GetObjectiveNodeMarkerIndex(markerGraph,
+                    node);
+
+                if (startMarkerIndex >= 0 && nodeMarkerIndex >= 0)
+                {
+                    std::vector<size_t> indexRoute;
+                    if (BuildObjectiveMarkerIndexRoute(markerGraph,
+                        startMarkerIndex, nodeMarkerIndex, indexRoute, &cost))
+                    {
+                    }
+                }
+
+                if (cost == std::numeric_limits<float>::max())
+                {
+                    float markerX = 0.0f;
+                    float markerY = 0.0f;
+                    float markerZ = 0.0f;
+                    if (GetObjectiveNodeMarkerLocation(node, markerX, markerY,
+                        markerZ))
+                    {
+                        cost = bot->GetDistance2d(markerX, markerY);
+                    }
+                }
+
+                if (cost < bestCost)
+                {
+                    bestCost = cost;
                     bestNode = int8(node);
                 }
             }
@@ -3376,8 +3478,12 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             float targetY = 0.0f;
             float targetZ = 0.0f;
             float targetO = 0.0f;
-            GetObjectiveNodeApproachLocation(node, targetX, targetY,
-                targetZ, targetO);
+            if (!GetObjectiveNodeMarkerLocation(node, targetX, targetY,
+                targetZ))
+            {
+                GetObjectiveNodeApproachLocation(node, targetX, targetY,
+                    targetZ, targetO);
+            }
 
             if (session.ShadowMarkerRoute.empty())
             {
@@ -3385,35 +3491,35 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     bot->GetPositionY(), bot->GetPositionZ(),
                     targetX, targetY, targetZ, session.ShadowMarkerRoute);
                 session.ShadowMarkerRouteIndex = 0;
-            }
 
-            if (session.ShadowMarkerRouteIndex < session.ShadowMarkerRoute.size())
-            {
-                G3D::Vector3 const& marker =
-                    session.ShadowMarkerRoute[session.ShadowMarkerRouteIndex];
-                targetX = marker.x;
-                targetY = marker.y;
-                targetZ = marker.z;
-
-                if (bot->GetDistance2d(targetX, targetY) <= 4.0f)
+                if (!session.ShadowMarkerRoute.empty())
                 {
-                    ++session.ShadowMarkerRouteIndex;
-                    if (session.ShadowMarkerRouteIndex <
-                        session.ShadowMarkerRoute.size())
+                    Movement::PointsArray markerPath;
+                    for (G3D::Vector3 const& marker : session.ShadowMarkerRoute)
+                        markerPath.push_back(marker);
+
+                    bot->GetMotionMaster()->Clear();
+                    if (markerPath.size() == 1)
                     {
-                        G3D::Vector3 const& nextMarker =
-                            session.ShadowMarkerRoute[
-                                session.ShadowMarkerRouteIndex];
-                        targetX = nextMarker.x;
-                        targetY = nextMarker.y;
-                        targetZ = nextMarker.z;
+                        G3D::Vector3 const& marker = markerPath.front();
+                        bot->GetMotionMaster()->MovePoint(9000 + node,
+                            marker.x, marker.y, marker.z);
                     }
                     else
                     {
-                        GetObjectiveNodeApproachLocation(node,
-                            targetX, targetY, targetZ, targetO);
+                        bot->GetMotionMaster()->MoveSplinePath(&markerPath);
                     }
                 }
+            }
+
+            bool hasMarkerRoute =
+                session.ShadowMarkerRouteIndex < session.ShadowMarkerRoute.size();
+            if (hasMarkerRoute)
+            {
+                G3D::Vector3 const& finalMarker = session.ShadowMarkerRoute.back();
+                targetX = finalMarker.x;
+                targetY = finalMarker.y;
+                targetZ = finalMarker.z;
             }
 
             if (Map* map = player->GetMap())
@@ -3424,8 +3530,12 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     targetX, targetY, targetZ);
             }
 
-            bot->GetMotionMaster()->MovePoint(9000 + node,
-                targetX, targetY, targetZ);
+            if (!hasMarkerRoute)
+            {
+                bot->GetMotionMaster()->MovePoint(9000 + node,
+                    targetX, targetY, targetZ);
+            }
+
             bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
             bot->SetSpeed(MOVE_RUN_BACK, OBJECTIVE_MOUNT_RUN_RATE, true);
         }
@@ -3681,10 +3791,10 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
     float expectedY = bot->GetPositionY();
     float expectedZ = bot->GetPositionZ();
 
-    if (session.ShadowMarkerRouteIndex < session.ShadowMarkerRoute.size())
+    if (!session.ShadowMarkerRoute.empty())
     {
         G3D::Vector3 const& marker =
-            session.ShadowMarkerRoute[session.ShadowMarkerRouteIndex];
+            session.ShadowMarkerRoute.back();
         expectedX = marker.x;
         expectedY = marker.y;
         expectedZ = marker.z;
