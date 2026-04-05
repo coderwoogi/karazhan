@@ -14,6 +14,7 @@
 #include "ObjectMgr.h"
 #include "Player.h"
 #include "Pet.h"
+#include "PathGenerator.h"
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "ScriptedGossip.h"
@@ -257,6 +258,9 @@ namespace
         uint64 NextShadowNodeUpdateAt = 0;
         std::vector<uint8> ShadowRoute;
         uint8 ShadowRouteIndex = 0;
+        Movement::PointsArray ShadowGroundPath;
+        int8 ShadowGroundPathNode = -1;
+        uint64 NextShadowGroundRepathAt = 0;
         uint64 NextObjectiveNodeScanAt = 0;
         uint64 NextObjectiveWorldStateSyncAt = 0;
         uint64 NextObjectiveMechanicUpdateAt = 0;
@@ -1127,6 +1131,43 @@ namespace
         uint8 startSector = GetNearestObjectiveLandSector(currentX, currentY);
         return BuildObjectiveTravelRouteFromSector(startSector, targetNode,
             route);
+    }
+
+    float ResolveArenaGroundZ(Map* map, float x, float y, float fallbackZ);
+
+    bool BuildObjectiveGroundPath(Creature* bot, float destX, float destY,
+        float destZ, Movement::PointsArray& pathPoints)
+    {
+        pathPoints.clear();
+
+        if (!bot || !bot->GetMap())
+            return false;
+
+        destZ = ResolveArenaGroundZ(bot->GetMap(), destX, destY, destZ);
+
+        PathGenerator path(bot);
+        path.SetUseStraightPath(false);
+        path.SetSlopeCheck(true);
+
+        if (!path.CalculatePath(destX, destY, destZ, true))
+            return false;
+
+        PathType pathType = path.GetPathType();
+        if (pathType & (PATHFIND_NOPATH | PATHFIND_NOT_USING_PATH |
+                        PATHFIND_SHORTCUT))
+        {
+            return false;
+        }
+
+        Movement::PointsArray const& generatedPath = path.GetPath();
+        if (generatedPath.size() < 2)
+            return false;
+
+        if (path.IsWaterPath(generatedPath))
+            return false;
+
+        pathPoints = generatedPath;
+        return true;
     }
 
     Unit* SelectShadowPetTarget(Player* player)
@@ -3051,6 +3092,9 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ShadowCurrentSector = int8(GetObjectiveTargetSector(node));
             session.ShadowRoute.clear();
             session.ShadowRouteIndex = 0;
+            session.ShadowGroundPath.clear();
+            session.ShadowGroundPathNode = -1;
+            session.NextShadowGroundRepathAt = 0;
             bot->ClearEmoteState();
             bot->SetReactState(REACT_AGGRESSIVE);
             session.ObjectiveWorldStateDirty = true;
@@ -3148,6 +3192,9 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ShadowTargetNode = bestNode;
             session.ShadowRoute.clear();
             session.ShadowRouteIndex = 0;
+            session.ShadowGroundPath.clear();
+            session.ShadowGroundPathNode = -1;
+            session.NextShadowGroundRepathAt = 0;
             if (bestNode >= 0)
                 BuildObjectiveTravelRouteFromSector(
                     session.ShadowCurrentSector >= 0 ?
@@ -3168,51 +3215,80 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             GetObjectiveNodeApproachLocation(node, targetX, targetY,
                 targetZ, targetO);
 
-            if (session.ShadowRoute.empty())
+            if (session.ShadowGroundPathNode != int8(node) ||
+                session.NextShadowGroundRepathAt <= now ||
+                bot->IsStopped())
             {
-                BuildObjectiveTravelRouteFromSector(
-                    session.ShadowCurrentSector >= 0 ?
-                        uint8(session.ShadowCurrentSector) :
-                        GetNearestObjectiveLandSector(bot->GetPositionX(),
-                            bot->GetPositionY()),
-                    node, session.ShadowRoute);
-                session.ShadowRouteIndex = 0;
-            }
-
-            if (session.ShadowRouteIndex < session.ShadowRoute.size())
-            {
-                uint8 routeIndex = session.ShadowRoute[
-                    session.ShadowRouteIndex];
-                targetX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
-                targetY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
-                targetZ = TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
-                if (bot->GetDistance2d(targetX, targetY) <= 5.0f)
+                Movement::PointsArray groundPath;
+                if (BuildObjectiveGroundPath(bot, targetX, targetY,
+                    targetZ, groundPath))
                 {
-                    ++session.ShadowRouteIndex;
+                    session.ShadowGroundPath = groundPath;
+                    session.ShadowGroundPathNode = int8(node);
+                    session.NextShadowGroundRepathAt = now + 4;
+                    bot->GetMotionMaster()->Clear();
+                    bot->GetMotionMaster()->MoveSplinePath(
+                        &session.ShadowGroundPath);
+                }
+                else
+                {
+                    session.ShadowGroundPath.clear();
+                    session.ShadowGroundPathNode = -1;
+                    if (session.ShadowRoute.empty())
+                    {
+                        BuildObjectiveTravelRouteFromSector(
+                            session.ShadowCurrentSector >= 0 ?
+                                uint8(session.ShadowCurrentSector) :
+                                GetNearestObjectiveLandSector(
+                                    bot->GetPositionX(),
+                                    bot->GetPositionY()),
+                            node, session.ShadowRoute);
+                        session.ShadowRouteIndex = 0;
+                    }
+
                     if (session.ShadowRouteIndex < session.ShadowRoute.size())
                     {
-                        routeIndex = session.ShadowRoute[
+                        uint8 routeIndex = session.ShadowRoute[
                             session.ShadowRouteIndex];
                         targetX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
                         targetY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
                         targetZ = TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
+                        if (bot->GetDistance2d(targetX, targetY) <= 5.0f)
+                        {
+                            ++session.ShadowRouteIndex;
+                            if (session.ShadowRouteIndex <
+                                session.ShadowRoute.size())
+                            {
+                                routeIndex = session.ShadowRoute[
+                                    session.ShadowRouteIndex];
+                                targetX =
+                                    TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
+                                targetY =
+                                    TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
+                                targetZ =
+                                    TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
+                            }
+                            else
+                            {
+                                GetObjectiveNodeApproachLocation(node,
+                                    targetX, targetY, targetZ, targetO);
+                            }
+                        }
                     }
-                    else
+
+                    if (Map* map = player->GetMap())
                     {
-                        GetObjectiveNodeApproachLocation(node, targetX, targetY,
-                            targetZ, targetO);
+                        map->CanReachPositionAndGetValidCoords(bot,
+                            targetX, targetY, targetZ, true, true);
+                        targetZ = ResolveArenaGroundZ(map,
+                            targetX, targetY, targetZ);
                     }
+                    bot->GetMotionMaster()->Clear();
+                    bot->GetMotionMaster()->MovePoint(9000 + node,
+                        targetX, targetY, targetZ);
+                    session.NextShadowGroundRepathAt = now + 2;
                 }
             }
-
-            if (Map* map = player->GetMap())
-            {
-                map->CanReachPositionAndGetValidCoords(bot,
-                    targetX, targetY, targetZ, true, true);
-                targetZ = ResolveArenaGroundZ(map, targetX, targetY, targetZ);
-            }
-            bot->GetMotionMaster()->MovePoint(9000 + node,
-                targetX, targetY, targetZ);
             bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
             bot->SetSpeed(MOVE_RUN_BACK, OBJECTIVE_MOUNT_RUN_RATE, true);
         }
@@ -3372,6 +3448,9 @@ bool SoloArenaMgr::RespawnObjectiveShadow(ObjectGuid const& playerGuid)
     session.ShadowTargetNode = -1;
     session.ShadowCapturingNode = -1;
     session.ShadowCaptureEndsAt = 0;
+    session.ShadowGroundPath.clear();
+    session.ShadowGroundPathNode = -1;
+    session.NextShadowGroundRepathAt = 0;
     session.ShadowRespawnAt = uint64(std::time(nullptr)) + 10;
     SendSystem(player, "그림자가 10초 후 시작 위치에서 다시 부활합니다.");
     LogEvent(player, session, "OBJ_SHADOW_RESPAWN_WAIT");
@@ -3419,6 +3498,9 @@ void SoloArenaMgr::ProcessObjectiveRespawns(Player* player,
         session.ShadowTargetNode = -1;
         session.ShadowCapturingNode = -1;
         session.ShadowCaptureEndsAt = 0;
+        session.ShadowGroundPath.clear();
+        session.ShadowGroundPathNode = -1;
+        session.NextShadowGroundRepathAt = 0;
         session.ShadowRespawnAt = 0;
 
         if (SpawnShadow(player, session))
@@ -3495,6 +3577,9 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
         bot->ClearEmoteState();
         session.ShadowRoute.clear();
         session.ShadowRouteIndex = 0;
+        session.ShadowGroundPath.clear();
+        session.ShadowGroundPathNode = -1;
+        session.NextShadowGroundRepathAt = 0;
         if (session.ShadowTargetNode >= 0 &&
             session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT)
         {
@@ -3506,8 +3591,21 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
                 uint8(session.ShadowTargetNode), session.ShadowRoute);
         }
 
-        bot->GetMotionMaster()->MovePoint(9800, expectedX, expectedY,
-            expectedGroundZ);
+        Movement::PointsArray groundPath;
+        if (BuildObjectiveGroundPath(bot, expectedX, expectedY,
+            expectedGroundZ, groundPath))
+        {
+            session.ShadowGroundPath = groundPath;
+            session.ShadowGroundPathNode = session.ShadowTargetNode;
+            session.NextShadowGroundRepathAt = std::time(nullptr) + 4;
+            bot->GetMotionMaster()->MoveSplinePath(
+                &session.ShadowGroundPath);
+        }
+        else
+        {
+            bot->GetMotionMaster()->MovePoint(9800, expectedX, expectedY,
+                expectedGroundZ);
+        }
     }
 }
 
@@ -3605,6 +3703,9 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         session.ShadowCaptureEndsAt = 0;
         session.ShadowRoute.clear();
         session.ShadowRouteIndex = 0;
+        session.ShadowGroundPath.clear();
+        session.ShadowGroundPathNode = -1;
+        session.NextShadowGroundRepathAt = 0;
         SendSystem(player,
             "그림자가 반대 진영 기지에서 움직이기 시작했습니다.");
     }
