@@ -259,8 +259,8 @@ namespace
                 {{ 255, 255, 255, 255, 255 }};
         int8 ShadowTargetNode = -1;
         int8 ShadowCurrentSector = -1;
-        int8 ShadowCapturingNode = -1;
-        uint64 ShadowCaptureEndsAt = 0;
+        std::array<uint64, BG_AB_DYNAMIC_NODES_COUNT>
+            ShadowNodeCaptureEndsAt = {};
         uint64 NextShadowNodeUpdateAt = 0;
         std::vector<uint8> ShadowRoute;
         uint8 ShadowRouteIndex = 0;
@@ -606,6 +606,16 @@ namespace
             BG_AB_NODE_STATE_HORDE_OCCUPIED;
     }
 
+    bool IsObjectiveNodeShadowCapturing(ArenaSession const& session, uint8 node,
+        uint64 now)
+    {
+        if (node >= BG_AB_DYNAMIC_NODES_COUNT)
+            return false;
+
+        return session.ShadowNodeCaptureEndsAt[node] != 0 &&
+            now < session.ShadowNodeCaptureEndsAt[node];
+    }
+
     void SyncObjectiveWorldStates(Player* player, ArenaSession& session,
         BattlegroundAB* bg, uint64 now)
     {
@@ -616,7 +626,7 @@ namespace
 
         for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
         {
-            bool capturing = session.ShadowCapturingNode == int8(node);
+            bool capturing = IsObjectiveNodeShadowCapturing(session, node, now);
             ObjectiveNodeOwner owner = session.ObjectiveNodeOwners[node];
             if (capturing)
                 owner = ObjectiveNodeOwner::Shadow;
@@ -3496,12 +3506,12 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         session.ShadowMarkerRouteIndex = 0;
     }
 
-    if (session.ShadowCapturingNode >= 0 &&
-        session.ShadowCapturingNode < BG_AB_DYNAMIC_NODES_COUNT)
+    for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
     {
-        uint8 node = uint8(session.ShadowCapturingNode);
+        if (session.ShadowNodeCaptureEndsAt[node] == 0)
+            continue;
 
-        if (now >= time_t(session.ShadowCaptureEndsAt))
+        if (now >= time_t(session.ShadowNodeCaptureEndsAt[node]))
         {
             session.ObjectiveNodeOwners[node] = ObjectiveNodeOwner::Shadow;
             if (objectiveBg)
@@ -3516,8 +3526,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                 GetObjectiveNodeName(node)));
             LogEvent(player, session, "OBJ_NODE_CAP_SHADOW",
                 GetObjectiveNodeName(node));
-            session.ShadowCapturingNode = -1;
-            session.ShadowCaptureEndsAt = 0;
+            session.ShadowNodeCaptureEndsAt[node] = 0;
             session.ShadowTargetNode = -1;
             session.ShadowCurrentSector = int8(GetObjectiveTargetSector(node));
             session.ShadowRoute.clear();
@@ -3532,21 +3541,6 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ObjectiveWorldStateDirty = true;
             SyncObjectiveNodeVisuals(session, objectiveBg);
             SyncObjectiveWorldStates(player, session, objectiveBg, now);
-        }
-        else
-        {
-            GameObject* banner = GetObjectiveNodeBanner(objectiveBg, node);
-            bot->CombatStop(true);
-            bot->StopMoving();
-            bot->SetReactState(REACT_PASSIVE);
-            bot->SetEmoteState(EMOTE_STATE_USE_STANDING);
-            if (banner)
-                bot->SetFacingToObject(banner);
-            else
-                bot->SetFacingTo(Position::NormalizeOrientation(
-                    std::atan2(BG_AB_NodePositions[node][1] - bot->GetPositionY(),
-                        BG_AB_NodePositions[node][0] - bot->GetPositionX())));
-            return true;
         }
     }
 
@@ -3586,23 +3580,31 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             }
             if (atTargetMarker && bot->GetDistance2d(approachX, approachY) <= 5.0f)
             {
-                session.ShadowCapturingNode = int8(node);
-                session.ShadowCaptureEndsAt = now +
-                    BG_AB_FLAG_CAPTURING_TIME.count() / IN_MILLISECONDS;
-                bot->CombatStop(true);
-                bot->StopMoving();
-                bot->SetReactState(REACT_PASSIVE);
-                if (GameObject* banner =
-                    GetObjectiveNodeBanner(objectiveBg, node))
-                    bot->SetFacingToObject(banner);
-                bot->SetEmoteState(EMOTE_STATE_USE_STANDING);
-                SendSystem(player, Acore::StringFormat(
-                    "[전장 알림] 그림자가 {} 거점 깃발을 활성화하고 있습니다.",
-                    GetObjectiveNodeName(node)));
-                LogEvent(player, session, "OBJ_NODE_CAP_START",
-                    GetObjectiveNodeName(node));
-                session.ObjectiveWorldStateDirty = true;
-                SyncObjectiveWorldStates(player, session, objectiveBg, now);
+                if (session.ShadowNodeCaptureEndsAt[node] == 0)
+                {
+                    session.ShadowNodeCaptureEndsAt[node] = now +
+                        BG_AB_FLAG_CAPTURING_TIME.count() / IN_MILLISECONDS;
+                    if (GameObject* banner =
+                        GetObjectiveNodeBanner(objectiveBg, node))
+                        bot->SetFacingToObject(banner);
+                    SendSystem(player, Acore::StringFormat(
+                        "[전장 알림] 그림자가 {} 거점 깃발을 활성화했습니다.",
+                        GetObjectiveNodeName(node)));
+                    LogEvent(player, session, "OBJ_NODE_CAP_START",
+                        GetObjectiveNodeName(node));
+                    session.ObjectiveWorldStateDirty = true;
+                    SyncObjectiveWorldStates(player, session, objectiveBg, now);
+                }
+
+                session.ShadowCurrentSector = int8(GetObjectiveTargetSector(node));
+                session.ShadowTargetNode = -1;
+                session.ShadowRoute.clear();
+                session.ShadowRouteIndex = 0;
+                session.ShadowMarkerRoute.clear();
+                session.ShadowMarkerRouteIndex = 0;
+                session.ShadowGroundPath.clear();
+                session.ShadowGroundPathNode = -1;
+                session.NextShadowGroundRepathAt = 0;
             }
         }
 
@@ -3616,7 +3618,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
             {
                 if (session.ObjectiveNodeOwners[node] ==
-                    ObjectiveNodeOwner::Shadow)
+                        ObjectiveNodeOwner::Shadow ||
+                    IsObjectiveNodeShadowCapturing(session, node, now))
                 {
                     continue;
                 }
@@ -3841,8 +3844,7 @@ bool SoloArenaMgr::RespawnObjectiveShadow(ObjectGuid const& playerGuid)
     session.BotGuid = ObjectGuid::Empty;
     session.PetGuid = ObjectGuid::Empty;
     session.ShadowTargetNode = -1;
-    session.ShadowCapturingNode = -1;
-    session.ShadowCaptureEndsAt = 0;
+    session.ShadowNodeCaptureEndsAt.fill(0);
     session.ShadowMarkerRoute.clear();
     session.ShadowMarkerRouteIndex = 0;
     session.ShadowGroundPath.clear();
@@ -3893,8 +3895,7 @@ void SoloArenaMgr::ProcessObjectiveRespawns(Player* player,
         session.BotGuid = ObjectGuid::Empty;
         session.PetGuid = ObjectGuid::Empty;
         session.ShadowTargetNode = -1;
-        session.ShadowCapturingNode = -1;
-        session.ShadowCaptureEndsAt = 0;
+        session.ShadowNodeCaptureEndsAt.fill(0);
         session.ShadowMarkerRoute.clear();
         session.ShadowMarkerRouteIndex = 0;
         session.ShadowGroundPath.clear();
@@ -4093,8 +4094,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         session.ShadowCurrentSector =
             Battleground::GetOtherTeamId(session.Team) == TEAM_ALLIANCE ?
                 0 : 6;
-        session.ShadowCapturingNode = -1;
-        session.ShadowCaptureEndsAt = 0;
+        session.ShadowNodeCaptureEndsAt.fill(0);
         session.ShadowRoute.clear();
         session.ShadowRouteIndex = 0;
         session.ShadowMarkerRoute.clear();
