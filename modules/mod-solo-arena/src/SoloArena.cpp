@@ -381,6 +381,28 @@ namespace
         o = BG_AB_NodePositions[BG_AB_NODE_BLACKSMITH][3];
     }
 
+    void GetObjectiveNodeApproachLocation(uint8 nodeId, float& x, float& y,
+        float& z, float& o)
+    {
+        static constexpr std::array<std::array<float, 4>,
+            BG_AB_DYNAMIC_NODES_COUNT> landApproachPositions =
+        {{
+            {{ 1176.0f, 1191.0f, -56.7f, 0.90f }},   // stables
+            {{ 989.5f, 1041.0f, -44.8f, -2.60f }},   // blacksmith
+            {{ 816.0f, 882.0f, -56.0f, -2.30f }},    // farm
+            {{ 849.0f, 1138.0f, 11.1f, -2.30f }},    // lumber mill
+            {{ 1138.0f, 858.0f, -110.9f, -0.73f }}   // gold mine
+        }};
+
+        if (nodeId >= BG_AB_DYNAMIC_NODES_COUNT)
+            nodeId = 0;
+
+        x = landApproachPositions[nodeId][0];
+        y = landApproachPositions[nodeId][1];
+        z = landApproachPositions[nodeId][2];
+        o = landApproachPositions[nodeId][3];
+    }
+
     uint8 CountObjectiveNodesOwned(
         std::array<ObjectiveNodeOwner, BG_AB_DYNAMIC_NODES_COUNT> const& owners,
         ObjectiveNodeOwner owner)
@@ -644,14 +666,14 @@ namespace
     void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
     {
         uint8 node = urand(0, BG_AB_DYNAMIC_NODES_COUNT - 1);
+        GetObjectiveNodeApproachLocation(node, x, y, z, o);
         float angle = frand(0.0f, float(M_PI) * 2.0f);
-        float distance = frand(9.0f, 14.0f);
-        x = BG_AB_NodePositions[node][0] + std::cos(angle) * distance;
-        y = BG_AB_NodePositions[node][1] + std::sin(angle) * distance;
-        z = BG_AB_NodePositions[node][2];
-        o = Position::NormalizeOrientation(
-            std::atan2(BG_AB_NodePositions[node][1] - y,
-                BG_AB_NodePositions[node][0] - x));
+        float distance = frand(1.0f, 3.0f);
+        x += std::cos(angle) * distance;
+        y += std::sin(angle) * distance;
+        o = Position::NormalizeOrientation(std::atan2(
+            BG_AB_NodePositions[node][1] - y,
+            BG_AB_NodePositions[node][0] - x));
     }
 
     Unit* SelectShadowPetTarget(Player* player)
@@ -2609,8 +2631,13 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT)
         {
             uint8 node = uint8(session.ShadowTargetNode);
-            if (bot->GetDistance2d(BG_AB_NodePositions[node][0],
-                    BG_AB_NodePositions[node][1]) <= 6.0f)
+            float approachX = 0.0f;
+            float approachY = 0.0f;
+            float approachZ = 0.0f;
+            float approachO = 0.0f;
+            GetObjectiveNodeApproachLocation(node, approachX, approachY,
+                approachZ, approachO);
+            if (bot->GetDistance2d(approachX, approachY) <= 5.0f)
             {
                 session.ShadowCapturingNode = int8(node);
                 session.ShadowCaptureEndsAt = now +
@@ -2641,8 +2668,13 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                     ObjectiveNodeOwner::Shadow)
                     continue;
 
-                float distance = bot->GetDistance2d(BG_AB_NodePositions[node][0],
-                    BG_AB_NodePositions[node][1]);
+                float approachX = 0.0f;
+                float approachY = 0.0f;
+                float approachZ = 0.0f;
+                float approachO = 0.0f;
+                GetObjectiveNodeApproachLocation(node, approachX, approachY,
+                    approachZ, approachO);
+                float distance = bot->GetDistance2d(approachX, approachY);
                 if (distance < bestDistance)
                 {
                     bestDistance = distance;
@@ -2656,9 +2688,12 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         if (session.ShadowTargetNode >= 0)
         {
             uint8 node = uint8(session.ShadowTargetNode);
-            float targetX = BG_AB_NodePositions[node][0];
-            float targetY = BG_AB_NodePositions[node][1];
-            float targetZ = BG_AB_NodePositions[node][2];
+            float targetX = 0.0f;
+            float targetY = 0.0f;
+            float targetZ = 0.0f;
+            float targetO = 0.0f;
+            GetObjectiveNodeApproachLocation(node, targetX, targetY,
+                targetZ, targetO);
             if (Map* map = player->GetMap())
                 targetZ = ResolveArenaGroundZ(map, targetX, targetY, targetZ);
             bot->GetMotionMaster()->MovePoint(9000 + node,
