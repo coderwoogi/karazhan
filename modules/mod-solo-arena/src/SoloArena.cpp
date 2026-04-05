@@ -3383,8 +3383,7 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
         expectedY, expectedZ);
 
     bool tooHigh = std::fabs(bot->GetPositionZ() - groundZ) > 3.0f;
-    bool tooFarFromRoute = bot->GetDistance2d(expectedX, expectedY) > 45.0f;
-    if (bot->IsInWater() || tooHigh || tooFarFromRoute)
+    if (bot->IsInWater() || tooHigh)
     {
         if (Map* map = player->GetMap())
             map->CanReachPositionAndGetValidCoords(bot,
