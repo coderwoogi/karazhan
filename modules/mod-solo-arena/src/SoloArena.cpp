@@ -644,10 +644,14 @@ namespace
     void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
     {
         uint8 node = urand(0, BG_AB_DYNAMIC_NODES_COUNT - 1);
-        x = BG_AB_NodePositions[node][0];
-        y = BG_AB_NodePositions[node][1];
+        float angle = frand(0.0f, float(M_PI) * 2.0f);
+        float distance = frand(9.0f, 14.0f);
+        x = BG_AB_NodePositions[node][0] + std::cos(angle) * distance;
+        y = BG_AB_NodePositions[node][1] + std::sin(angle) * distance;
         z = BG_AB_NodePositions[node][2];
-        o = BG_AB_NodePositions[node][3];
+        o = Position::NormalizeOrientation(
+            std::atan2(BG_AB_NodePositions[node][1] - y,
+                BG_AB_NodePositions[node][0] - x));
     }
 
     Unit* SelectShadowPetTarget(Player* player)
