@@ -794,6 +794,172 @@ namespace
         return bestIndex;
     }
 
+    uint8 GetNearestObjectiveLandSector(float x, float y)
+    {
+        float bestDistance = std::numeric_limits<float>::max();
+        uint8 bestSector = 0;
+        for (uint8 sector = 0; sector < TRIAL_AB_START_ROUTE_IDS.size() +
+            BG_AB_DYNAMIC_NODES_COUNT; ++sector)
+        {
+            uint8 routeIndex = 0;
+            if (sector == 0)
+                routeIndex = TRIAL_AB_START_ROUTE_IDS[0];
+            else if (sector == 6)
+                routeIndex = TRIAL_AB_START_ROUTE_IDS[1];
+            else
+                routeIndex = TRIAL_AB_NODE_ROUTE_IDS[sector - 1];
+
+            float distance = std::hypot(TRIAL_AB_ROUTE_POSITIONS[routeIndex][0] - x,
+                TRIAL_AB_ROUTE_POSITIONS[routeIndex][1] - y);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestSector = sector;
+            }
+        }
+
+        return bestSector;
+    }
+
+    uint8 GetObjectiveTargetSector(uint8 targetNode)
+    {
+        switch (targetNode)
+        {
+            case BG_AB_NODE_STABLES:
+                return 1;
+            case BG_AB_NODE_BLACKSMITH:
+                return 2;
+            case BG_AB_NODE_FARM:
+                return 3;
+            case BG_AB_NODE_LUMBER_MILL:
+                return 4;
+            case BG_AB_NODE_GOLD_MINE:
+                return 5;
+            default:
+                return 2;
+        }
+    }
+
+    void AppendObjectiveRouteIds(std::vector<uint8>& route,
+        std::initializer_list<uint8> routeIds)
+    {
+        for (uint8 routeId : routeIds)
+        {
+            if (route.empty() || route.back() != routeId)
+                route.push_back(routeId);
+        }
+    }
+
+    bool AppendObjectiveLandSegment(uint8 fromSector, uint8 toSector,
+        std::vector<uint8>& route)
+    {
+        if (fromSector == toSector)
+            return true;
+
+        if (fromSector == 0 && toSector == 1)
+        {
+            AppendObjectiveRouteIds(route, { 1, 2, 3 });
+            return true;
+        }
+        if (fromSector == 1 && toSector == 0)
+        {
+            AppendObjectiveRouteIds(route, { 2, 1, 0 });
+            return true;
+        }
+        if (fromSector == 0 && toSector == 2)
+        {
+            AppendObjectiveRouteIds(route, { 1, 5, 6, 7, 8 });
+            return true;
+        }
+        if (fromSector == 2 && toSector == 0)
+        {
+            AppendObjectiveRouteIds(route, { 7, 6, 5, 1, 0 });
+            return true;
+        }
+        if (fromSector == 1 && toSector == 2)
+        {
+            AppendObjectiveRouteIds(route, { 4, 5, 6, 7, 8 });
+            return true;
+        }
+        if (fromSector == 2 && toSector == 1)
+        {
+            AppendObjectiveRouteIds(route, { 6, 5, 4, 3 });
+            return true;
+        }
+        if (fromSector == 1 && toSector == 4)
+        {
+            AppendObjectiveRouteIds(route, { 4, 12, 13, 14 });
+            return true;
+        }
+        if (fromSector == 4 && toSector == 1)
+        {
+            AppendObjectiveRouteIds(route, { 13, 12, 4, 3 });
+            return true;
+        }
+        if (fromSector == 2 && toSector == 4)
+        {
+            AppendObjectiveRouteIds(route, { 5, 12, 13, 14 });
+            return true;
+        }
+        if (fromSector == 4 && toSector == 2)
+        {
+            AppendObjectiveRouteIds(route, { 13, 12, 5, 6, 7, 8 });
+            return true;
+        }
+        if (fromSector == 2 && toSector == 3)
+        {
+            AppendObjectiveRouteIds(route, { 9, 10, 11 });
+            return true;
+        }
+        if (fromSector == 3 && toSector == 2)
+        {
+            AppendObjectiveRouteIds(route, { 10, 9, 8 });
+            return true;
+        }
+        if (fromSector == 2 && toSector == 5)
+        {
+            AppendObjectiveRouteIds(route, { 7, 15, 16, 17 });
+            return true;
+        }
+        if (fromSector == 5 && toSector == 2)
+        {
+            AppendObjectiveRouteIds(route, { 16, 15, 7, 8 });
+            return true;
+        }
+        if (fromSector == 6 && toSector == 3)
+        {
+            AppendObjectiveRouteIds(route, { 18, 10, 11 });
+            return true;
+        }
+        if (fromSector == 3 && toSector == 6)
+        {
+            AppendObjectiveRouteIds(route, { 10, 18, 19 });
+            return true;
+        }
+        if (fromSector == 6 && toSector == 5)
+        {
+            AppendObjectiveRouteIds(route, { 18, 9, 15, 16, 17 });
+            return true;
+        }
+        if (fromSector == 5 && toSector == 6)
+        {
+            AppendObjectiveRouteIds(route, { 16, 15, 9, 18, 19 });
+            return true;
+        }
+        if (fromSector == 6 && toSector == 2)
+        {
+            AppendObjectiveRouteIds(route, { 18, 9, 8 });
+            return true;
+        }
+        if (fromSector == 2 && toSector == 6)
+        {
+            AppendObjectiveRouteIds(route, { 9, 18, 19 });
+            return true;
+        }
+
+        return false;
+    }
+
     bool BuildObjectiveTravelRoute(float currentX, float currentY,
         uint8 targetNode, std::vector<uint8>& route)
     {
@@ -802,29 +968,39 @@ namespace
         if (targetNode >= BG_AB_DYNAMIC_NODES_COUNT)
             return false;
 
-        uint8 startRoute = GetNearestObjectiveRouteIndex(currentX, currentY);
-        uint8 targetRoute = TRIAL_AB_NODE_ROUTE_IDS[targetNode];
-
-        if (startRoute == targetRoute)
+        uint8 startSector = GetNearestObjectiveLandSector(currentX, currentY);
+        uint8 targetSector = GetObjectiveTargetSector(targetNode);
+        if (startSector == targetSector)
         {
-            route.push_back(targetRoute);
+            route.push_back(TRIAL_AB_NODE_ROUTE_IDS[targetNode]);
             return true;
         }
 
-        std::array<int8, TRIAL_AB_ROUTE_POSITIONS.size()> parent = {};
+        static constexpr std::array<std::array<uint8, 4>, 7> sectorGraph =
+        {{
+            {{ 1, 2, 255, 255 }},
+            {{ 0, 2, 4, 255 }},
+            {{ 0, 1, 3, 5 }},
+            {{ 2, 6, 255, 255 }},
+            {{ 1, 2, 255, 255 }},
+            {{ 2, 6, 255, 255 }},
+            {{ 2, 3, 5, 255 }}
+        }};
+
+        std::array<int8, 7> parent = {};
         parent.fill(-1);
-        std::array<bool, TRIAL_AB_ROUTE_POSITIONS.size()> visited = {};
+        std::array<bool, 7> visited = {};
         std::vector<uint8> queue;
-        queue.push_back(startRoute);
-        visited[startRoute] = true;
+        queue.push_back(startSector);
+        visited[startSector] = true;
 
         for (size_t idx = 0; idx < queue.size(); ++idx)
         {
             uint8 current = queue[idx];
-            if (current == targetRoute)
+            if (current == targetSector)
                 break;
 
-            for (uint8 next : TRIAL_AB_ROUTE_GRAPH[current])
+            for (uint8 next : sectorGraph[current])
             {
                 if (next == 255 || visited[next])
                     continue;
@@ -835,26 +1011,32 @@ namespace
             }
         }
 
-        if (!visited[targetRoute])
+        if (!visited[targetSector])
             return false;
 
-        std::vector<uint8> reversed;
-        for (int8 current = int8(targetRoute); current >= 0;
+        std::vector<uint8> reversedSectors;
+        for (int8 current = int8(targetSector); current >= 0;
             current = parent[uint8(current)])
         {
-            reversed.push_back(uint8(current));
-            if (uint8(current) == startRoute)
+            reversedSectors.push_back(uint8(current));
+            if (uint8(current) == startSector)
                 break;
         }
 
-        if (reversed.empty() || reversed.back() != startRoute)
+        if (reversedSectors.empty() || reversedSectors.back() != startSector)
             return false;
 
-        route.assign(reversed.rbegin(), reversed.rend());
-        if (!route.empty() && route.front() == startRoute)
-            route.erase(route.begin());
+        std::vector<uint8> sectorPath(reversedSectors.rbegin(),
+            reversedSectors.rend());
+        for (size_t i = 0; i + 1 < sectorPath.size(); ++i)
+        {
+            if (!AppendObjectiveLandSegment(sectorPath[i],
+                    sectorPath[i + 1], route))
+                return false;
+        }
+
         if (route.empty())
-            route.push_back(targetRoute);
+            route.push_back(TRIAL_AB_NODE_ROUTE_IDS[targetNode]);
 
         return true;
     }
