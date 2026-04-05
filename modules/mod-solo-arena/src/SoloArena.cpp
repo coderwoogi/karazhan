@@ -3679,8 +3679,13 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             bot->GetMotionMaster()->MovePoint(9000 + node,
                 targetX, targetY, targetZ);
 
-            bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
-            bot->SetSpeed(MOVE_RUN_BACK, OBJECTIVE_MOUNT_RUN_RATE, true);
+            StageConfig const* currentStage = GetStage(session.StageId);
+            float objectiveRunRate = OBJECTIVE_MOUNT_RUN_RATE;
+            if (currentStage)
+                objectiveRunRate *= std::max(1.0f, currentStage->MoveSpeedRate);
+
+            bot->SetSpeed(MOVE_RUN, objectiveRunRate, true);
+            bot->SetSpeed(MOVE_RUN_BACK, objectiveRunRate, true);
         }
     }
 
@@ -5361,16 +5366,18 @@ void SoloArenaMgr::LoadDefaultStages()
     stage4.StageId = 4;
     stage4.Name = "그림자 시련 4단계";
     stage4.ArenaMapId = DEFAULT_OBJECTIVE_MAP_ID;
-    stage4.HealthMultiplier = 1.30f;
-    stage4.DamageMultiplier = 1.30f;
+    stage4.HealthMultiplier = 1.00f;
+    stage4.DamageMultiplier = 1.00f;
+    stage4.MoveSpeedRate = 1.00f;
     _stages[stage4.StageId] = stage4;
 
     StageConfig stage5 = stage1;
     stage5.StageId = 5;
     stage5.Name = "그림자 시련 5단계";
     stage5.ArenaMapId = DEFAULT_OBJECTIVE_MAP_ID;
-    stage5.HealthMultiplier = 1.40f;
-    stage5.DamageMultiplier = 1.40f;
+    stage5.HealthMultiplier = 1.20f;
+    stage5.DamageMultiplier = 1.20f;
+    stage5.MoveSpeedRate = 1.20f;
     _stages[stage5.StageId] = stage5;
 
     StageConfig stage6 = stage1;
@@ -5379,6 +5386,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage6.ArenaMapId = DEFAULT_OBJECTIVE_MAP_ID;
     stage6.HealthMultiplier = 1.50f;
     stage6.DamageMultiplier = 1.50f;
+    stage6.MoveSpeedRate = 1.50f;
     _stages[stage6.StageId] = stage6;
 
     StageConfig stage7 = stage1;
