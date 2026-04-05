@@ -676,6 +676,53 @@ namespace
             BG_AB_NodePositions[node][0] - x));
     }
 
+    bool GetObjectiveTravelPoint(float currentX, float currentY,
+        uint8 targetNode, float& x, float& y, float& z)
+    {
+        float targetX = 0.0f;
+        float targetY = 0.0f;
+        float targetZ = 0.0f;
+        float targetO = 0.0f;
+        GetObjectiveNodeApproachLocation(targetNode, targetX, targetY, targetZ,
+            targetO);
+
+        auto distance2d = [](float ax, float ay, float bx, float by)
+        {
+            float dx = ax - bx;
+            float dy = ay - by;
+            return std::sqrt((dx * dx) + (dy * dy));
+        };
+
+        float directDistance = distance2d(currentX, currentY, targetX, targetY);
+        float bestScore = directDistance;
+        int32 bestRoute = -1;
+
+        for (uint8 i = 0; i < TRIAL_AB_ROUTE_POSITIONS.size(); ++i)
+        {
+            float routeX = TRIAL_AB_ROUTE_POSITIONS[i][0];
+            float routeY = TRIAL_AB_ROUTE_POSITIONS[i][1];
+            float routeDistance = distance2d(currentX, currentY, routeX, routeY);
+            if (routeDistance < 8.0f)
+                continue;
+
+            float score = routeDistance +
+                distance2d(routeX, routeY, targetX, targetY);
+            if (score + 5.0f < bestScore)
+            {
+                bestScore = score;
+                bestRoute = i;
+            }
+        }
+
+        if (bestRoute < 0)
+            return false;
+
+        x = TRIAL_AB_ROUTE_POSITIONS[bestRoute][0];
+        y = TRIAL_AB_ROUTE_POSITIONS[bestRoute][1];
+        z = TRIAL_AB_ROUTE_POSITIONS[bestRoute][2];
+        return true;
+    }
+
     Unit* SelectShadowPetTarget(Player* player)
     {
         if (!player)
@@ -2694,6 +2741,16 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             float targetO = 0.0f;
             GetObjectiveNodeApproachLocation(node, targetX, targetY,
                 targetZ, targetO);
+            float travelX = 0.0f;
+            float travelY = 0.0f;
+            float travelZ = 0.0f;
+            if (GetObjectiveTravelPoint(bot->GetPositionX(),
+                    bot->GetPositionY(), node, travelX, travelY, travelZ))
+            {
+                targetX = travelX;
+                targetY = travelY;
+                targetZ = travelZ;
+            }
             if (Map* map = player->GetMap())
                 targetZ = ResolveArenaGroundZ(map, targetX, targetY, targetZ);
             bot->GetMotionMaster()->MovePoint(9000 + node,
