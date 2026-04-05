@@ -985,6 +985,8 @@ namespace
         bool RespawnObjectiveShadow(ObjectGuid const& playerGuid);
         void ProcessObjectiveRespawns(Player* player, ArenaSession& session,
             uint64 now);
+        void EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
+            ArenaSession& session);
         ShadowProfile const* GetShadowProfile(
             ObjectGuid const& creatureGuid) const;
         void UnregisterShadow(ObjectGuid const& creatureGuid);
@@ -2531,6 +2533,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     if (!bot || !bot->IsAlive())
         return true;
 
+    EnsureObjectiveShadowGrounded(player, bot, session);
     SyncShadowPet(player, session, true);
     session.State = SessionState::Active;
 
@@ -2883,6 +2886,25 @@ void SoloArenaMgr::ProcessObjectiveRespawns(Player* player,
     }
 }
 
+void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
+    ArenaSession& session)
+{
+    if (!player || !bot || session.Scenario != TrialScenario::Objective)
+        return;
+
+    bot->SetCanFly(false);
+    bot->SetDisableGravity(false);
+    bot->SetHover(false);
+
+    float groundZ = ResolveArenaGroundZ(player->GetMap(), bot->GetPositionX(),
+        bot->GetPositionY(), bot->GetPositionZ());
+    if (std::fabs(bot->GetPositionZ() - groundZ) > 3.0f)
+    {
+        bot->NearTeleportTo(bot->GetPositionX(), bot->GetPositionY(), groundZ,
+            bot->GetOrientation(), true);
+    }
+}
+
 ShadowProfile const* SoloArenaMgr::GetShadowProfile(
     ObjectGuid const& creatureGuid) const
 {
@@ -2956,6 +2978,8 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 
     summon->ClearInCombat();
     player->ClearInCombat();
+    if (session.Scenario == TrialScenario::Objective)
+        EnsureObjectiveShadowGrounded(player, summon, session);
     SyncShadowPet(player, session, false);
 
     if (WorldSession* playerSession = player->GetSession())
