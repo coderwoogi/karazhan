@@ -69,9 +69,9 @@ namespace
     constexpr uint32 TRIAL_PATH_MARKER_ENTRY = 190025;
     constexpr uint32 TRIAL_DAILY_LIMIT = 5;
     constexpr uint8 MAX_STAGE_MECHANIC_SLOTS = 16;
-    constexpr float TRIAL_MARKER_LINK_DISTANCE = 40.0f;
-    constexpr uint32 TRIAL_MARKER_MAX_NEIGHBORS = 5;
-    constexpr float TRIAL_NODE_MARKER_MAX_DISTANCE = 18.0f;
+    constexpr float TRIAL_MARKER_LINK_DISTANCE = 65.0f;
+    constexpr uint32 TRIAL_MARKER_MAX_NEIGHBORS = 8;
+    constexpr float TRIAL_NODE_MARKER_MAX_DISTANCE = 35.0f;
     constexpr float TRIAL_MARKER_ENDPOINT_DISTANCE = 80.0f;
     constexpr std::array<std::array<float, 4>, BG_AB_DYNAMIC_NODES_COUNT>
         TRIAL_AB_MECHANIC_POSITIONS =
@@ -1522,6 +1522,32 @@ namespace
 
             bestDistance = distance;
             bestNeighbor = int32(neighborIndex);
+        }
+
+        if (bestNeighbor < 0)
+        {
+            for (size_t i = 0; i < graph.Markers.size(); ++i)
+            {
+                if (i == size_t(currentIndex))
+                    continue;
+
+                ObjectivePathMarker const& neighbor = graph.Markers[i];
+                float currentDx = currentX - neighbor.X;
+                float currentDy = currentY - neighbor.Y;
+                float currentDistance = std::sqrt(
+                    currentDx * currentDx + currentDy * currentDy);
+                if (currentDistance > TRIAL_MARKER_LINK_DISTANCE)
+                    continue;
+
+                float dx = neighbor.X - targetMarker.X;
+                float dy = neighbor.Y - targetMarker.Y;
+                float distance = std::sqrt(dx * dx + dy * dy);
+                if (distance >= bestDistance)
+                    continue;
+
+                bestDistance = distance;
+                bestNeighbor = int32(i);
+            }
         }
 
         if (bestNeighbor < 0)
