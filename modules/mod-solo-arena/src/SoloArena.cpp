@@ -975,70 +975,150 @@ namespace
             route.push_back(TRIAL_AB_NODE_ROUTE_IDS[targetNode]);
             return true;
         }
-
-        static constexpr std::array<std::array<uint8, 4>, 7> sectorGraph =
-        {{
-            {{ 1, 2, 255, 255 }},
-            {{ 0, 2, 4, 255 }},
-            {{ 0, 1, 3, 5 }},
-            {{ 2, 6, 255, 255 }},
-            {{ 1, 2, 255, 255 }},
-            {{ 2, 6, 255, 255 }},
-            {{ 2, 3, 5, 255 }}
-        }};
-
-        std::array<int8, 7> parent = {};
-        parent.fill(-1);
-        std::array<bool, 7> visited = {};
-        std::vector<uint8> queue;
-        queue.push_back(startSector);
-        visited[startSector] = true;
-
-        for (size_t idx = 0; idx < queue.size(); ++idx)
+        switch (startSector)
         {
-            uint8 current = queue[idx];
-            if (current == targetSector)
+            case 0: // alliance base
+                switch (targetNode)
+                {
+                    case BG_AB_NODE_STABLES:
+                        AppendObjectiveRouteIds(route, { 1, 2, 3 });
+                        return true;
+                    case BG_AB_NODE_BLACKSMITH:
+                        AppendObjectiveRouteIds(route, { 1, 5, 6, 7, 8 });
+                        return true;
+                    case BG_AB_NODE_FARM:
+                        AppendObjectiveRouteIds(route, { 1, 5, 9, 10, 11 });
+                        return true;
+                    case BG_AB_NODE_LUMBER_MILL:
+                        AppendObjectiveRouteIds(route, { 1, 4, 12, 13, 14 });
+                        return true;
+                    case BG_AB_NODE_GOLD_MINE:
+                        AppendObjectiveRouteIds(route,
+                            { 1, 5, 7, 15, 16, 17 });
+                        return true;
+                }
                 break;
-
-            for (uint8 next : sectorGraph[current])
-            {
-                if (next == 255 || visited[next])
-                    continue;
-
-                visited[next] = true;
-                parent[next] = int8(current);
-                queue.push_back(next);
-            }
-        }
-
-        if (!visited[targetSector])
-            return false;
-
-        std::vector<uint8> reversedSectors;
-        for (int8 current = int8(targetSector); current >= 0;
-            current = parent[uint8(current)])
-        {
-            reversedSectors.push_back(uint8(current));
-            if (uint8(current) == startSector)
+            case 1: // stables
+                switch (targetNode)
+                {
+                    case BG_AB_NODE_BLACKSMITH:
+                        AppendObjectiveRouteIds(route, { 4, 5, 6, 7, 8 });
+                        return true;
+                    case BG_AB_NODE_FARM:
+                        AppendObjectiveRouteIds(route, { 4, 5, 9, 10, 11 });
+                        return true;
+                    case BG_AB_NODE_LUMBER_MILL:
+                        AppendObjectiveRouteIds(route, { 4, 12, 13, 14 });
+                        return true;
+                    case BG_AB_NODE_GOLD_MINE:
+                        AppendObjectiveRouteIds(route,
+                            { 4, 5, 7, 15, 16, 17 });
+                        return true;
+                }
+                break;
+            case 2: // blacksmith
+                switch (targetNode)
+                {
+                    case BG_AB_NODE_STABLES:
+                        AppendObjectiveRouteIds(route, { 6, 5, 4, 3 });
+                        return true;
+                    case BG_AB_NODE_FARM:
+                        AppendObjectiveRouteIds(route, { 9, 10, 11 });
+                        return true;
+                    case BG_AB_NODE_LUMBER_MILL:
+                        AppendObjectiveRouteIds(route, { 6, 5, 12, 13, 14 });
+                        return true;
+                    case BG_AB_NODE_GOLD_MINE:
+                        AppendObjectiveRouteIds(route, { 7, 15, 16, 17 });
+                        return true;
+                }
+                break;
+            case 3: // farm
+                switch (targetNode)
+                {
+                    case BG_AB_NODE_STABLES:
+                        AppendObjectiveRouteIds(route,
+                            { 10, 9, 5, 4, 3 });
+                        return true;
+                    case BG_AB_NODE_BLACKSMITH:
+                        AppendObjectiveRouteIds(route, { 10, 9, 8 });
+                        return true;
+                    case BG_AB_NODE_LUMBER_MILL:
+                        AppendObjectiveRouteIds(route,
+                            { 10, 9, 5, 12, 13, 14 });
+                        return true;
+                    case BG_AB_NODE_GOLD_MINE:
+                        AppendObjectiveRouteIds(route,
+                            { 10, 9, 15, 16, 17 });
+                        return true;
+                }
+                break;
+            case 4: // lumber mill
+                switch (targetNode)
+                {
+                    case BG_AB_NODE_STABLES:
+                        AppendObjectiveRouteIds(route, { 13, 12, 4, 3 });
+                        return true;
+                    case BG_AB_NODE_BLACKSMITH:
+                        AppendObjectiveRouteIds(route,
+                            { 13, 12, 5, 6, 7, 8 });
+                        return true;
+                    case BG_AB_NODE_FARM:
+                        AppendObjectiveRouteIds(route,
+                            { 13, 12, 5, 9, 10, 11 });
+                        return true;
+                    case BG_AB_NODE_GOLD_MINE:
+                        AppendObjectiveRouteIds(route,
+                            { 13, 12, 5, 7, 15, 16, 17 });
+                        return true;
+                }
+                break;
+            case 5: // gold mine
+                switch (targetNode)
+                {
+                    case BG_AB_NODE_STABLES:
+                        AppendObjectiveRouteIds(route,
+                            { 16, 15, 7, 6, 5, 4, 3 });
+                        return true;
+                    case BG_AB_NODE_BLACKSMITH:
+                        AppendObjectiveRouteIds(route, { 16, 15, 7, 8 });
+                        return true;
+                    case BG_AB_NODE_FARM:
+                        AppendObjectiveRouteIds(route,
+                            { 16, 15, 9, 10, 11 });
+                        return true;
+                    case BG_AB_NODE_LUMBER_MILL:
+                        AppendObjectiveRouteIds(route,
+                            { 16, 15, 7, 6, 5, 12, 13, 14 });
+                        return true;
+                }
+                break;
+            case 6: // horde base
+                switch (targetNode)
+                {
+                    case BG_AB_NODE_STABLES:
+                        AppendObjectiveRouteIds(route,
+                            { 18, 9, 5, 4, 3 });
+                        return true;
+                    case BG_AB_NODE_BLACKSMITH:
+                        AppendObjectiveRouteIds(route, { 18, 9, 8 });
+                        return true;
+                    case BG_AB_NODE_FARM:
+                        AppendObjectiveRouteIds(route, { 18, 10, 11 });
+                        return true;
+                    case BG_AB_NODE_LUMBER_MILL:
+                        AppendObjectiveRouteIds(route,
+                            { 18, 9, 5, 12, 13, 14 });
+                        return true;
+                    case BG_AB_NODE_GOLD_MINE:
+                        AppendObjectiveRouteIds(route,
+                            { 18, 9, 15, 16, 17 });
+                        return true;
+                }
                 break;
         }
 
-        if (reversedSectors.empty() || reversedSectors.back() != startSector)
-            return false;
-
-        std::vector<uint8> sectorPath(reversedSectors.rbegin(),
-            reversedSectors.rend());
-        for (size_t i = 0; i + 1 < sectorPath.size(); ++i)
-        {
-            if (!AppendObjectiveLandSegment(sectorPath[i],
-                    sectorPath[i + 1], route))
-                return false;
-        }
-
-        if (route.empty())
-            route.push_back(TRIAL_AB_NODE_ROUTE_IDS[targetNode]);
-
-        return true;
+        return false;
     }
 
     bool BuildObjectiveTravelRoute(float currentX, float currentY,
