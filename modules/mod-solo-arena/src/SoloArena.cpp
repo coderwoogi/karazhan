@@ -54,6 +54,8 @@ namespace
     constexpr uint32 DEFAULT_COMBAT_LIMIT_MS = 180000;
     constexpr uint32 DEFAULT_OBJECTIVE_LIMIT_MS = 1200000;
     constexpr uint32 OBJECTIVE_WIN_RESOURCES = 1600;
+    constexpr uint32 OBJECTIVE_RESPAWN_DELAY_SEC = 15;
+    constexpr uint32 OBJECTIVE_FLAG_USE_DELAY_SEC = 5;
     constexpr float OBJECTIVE_BASE_RUN_RATE = 1.0f;
     constexpr float OBJECTIVE_MOUNT_RUN_RATE = 2.0f;
     constexpr float OBJECTIVE_SPEED_BOX_BONUS = 0.6f;
@@ -260,6 +262,8 @@ namespace
                 {{ 255, 255, 255, 255, 255 }};
         int8 ShadowTargetNode = -1;
         int8 ShadowCurrentSector = -1;
+        std::array<uint64, BG_AB_DYNAMIC_NODES_COUNT>
+            ShadowNodeActivationEndsAt = {};
         std::array<uint64, BG_AB_DYNAMIC_NODES_COUNT>
             ShadowNodeCaptureEndsAt = {};
         uint64 NextShadowNodeUpdateAt = 0;
@@ -3532,6 +3536,19 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 
     for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
     {
+        if (session.ShadowNodeActivationEndsAt[node] != 0)
+        {
+            if (now >= time_t(session.ShadowNodeActivationEndsAt[node]))
+            {
+                session.ShadowNodeActivationEndsAt[node] = 0;
+                session.ShadowNodeCaptureEndsAt[node] = now +
+                    BG_AB_FLAG_CAPTURING_TIME.count() / IN_MILLISECONDS;
+                session.ObjectiveWorldStateDirty = true;
+                SyncObjectiveWorldStates(player, session, objectiveBg, now);
+            }
+            continue;
+        }
+
         if (session.ShadowNodeCaptureEndsAt[node] == 0)
             continue;
 
@@ -3607,20 +3624,19 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             }
             if (atTargetMarker && bot->GetDistance2d(approachX, approachY) <= 5.0f)
             {
-                if (session.ShadowNodeCaptureEndsAt[node] == 0)
+                if (session.ShadowNodeActivationEndsAt[node] == 0 &&
+                    session.ShadowNodeCaptureEndsAt[node] == 0)
                 {
-                    session.ShadowNodeCaptureEndsAt[node] = now +
-                        BG_AB_FLAG_CAPTURING_TIME.count() / IN_MILLISECONDS;
+                    session.ShadowNodeActivationEndsAt[node] = now +
+                        OBJECTIVE_FLAG_USE_DELAY_SEC;
                     if (GameObject* banner =
                         GetObjectiveNodeBanner(objectiveBg, node))
                         bot->SetFacingToObject(banner);
                     SendSystem(player, Acore::StringFormat(
-                        "[전장 알림] 그림자가 {} 거점 깃발을 활성화했습니다.",
+                        "[전장 알림] 그림자가 {} 거점 깃발을 사용하고 있습니다.",
                         GetObjectiveNodeName(node)));
                     LogEvent(player, session, "OBJ_NODE_CAP_START",
                         GetObjectiveNodeName(node));
-                    session.ObjectiveWorldStateDirty = true;
-                    SyncObjectiveWorldStates(player, session, objectiveBg, now);
                 }
 
                 session.ShadowCurrentSector = int8(GetObjectiveTargetSector(node));
@@ -3646,6 +3662,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             {
                 if (session.ObjectiveNodeOwners[node] ==
                         ObjectiveNodeOwner::Shadow ||
+                    session.ShadowNodeActivationEndsAt[node] != 0 ||
                     IsObjectiveNodeShadowCapturing(session, node, now))
                 {
                     continue;
@@ -3837,8 +3854,9 @@ bool SoloArenaMgr::RespawnObjectivePlayer(ObjectGuid const& playerGuid)
     if (session.PlayerRespawnAt != 0)
         return true;
 
-    session.PlayerRespawnAt = uint64(std::time(nullptr)) + 10;
-    SendSystem(player, "당신은 10초 후 시작 위치에서 다시 부활합니다.");
+    session.PlayerRespawnAt = uint64(std::time(nullptr)) +
+        OBJECTIVE_RESPAWN_DELAY_SEC;
+    SendSystem(player, "당신은 15초 후 시작 위치에서 다시 부활합니다.");
     LogEvent(player, session, "OBJ_PLAYER_RESPAWN_WAIT");
     SendTrialTimePayload(player, session, true);
     return true;
@@ -3864,14 +3882,16 @@ bool SoloArenaMgr::RespawnObjectiveShadow(ObjectGuid const& playerGuid)
     session.BotGuid = ObjectGuid::Empty;
     session.PetGuid = ObjectGuid::Empty;
     session.ShadowTargetNode = -1;
+    session.ShadowNodeActivationEndsAt.fill(0);
     session.ShadowNodeCaptureEndsAt.fill(0);
     session.ShadowMarkerRoute.clear();
     session.ShadowMarkerRouteIndex = 0;
     session.ShadowGroundPath.clear();
     session.ShadowGroundPathNode = -1;
     session.NextShadowGroundRepathAt = 0;
-    session.ShadowRespawnAt = uint64(std::time(nullptr)) + 10;
-    SendSystem(player, "그림자가 10초 후 시작 위치에서 다시 부활합니다.");
+    session.ShadowRespawnAt = uint64(std::time(nullptr)) +
+        OBJECTIVE_RESPAWN_DELAY_SEC;
+    SendSystem(player, "그림자가 15초 후 시작 위치에서 다시 부활합니다.");
     LogEvent(player, session, "OBJ_SHADOW_RESPAWN_WAIT");
     SendTrialTimePayload(player, session, true);
     return true;
@@ -3915,6 +3935,7 @@ void SoloArenaMgr::ProcessObjectiveRespawns(Player* player,
         session.BotGuid = ObjectGuid::Empty;
         session.PetGuid = ObjectGuid::Empty;
         session.ShadowTargetNode = -1;
+        session.ShadowNodeActivationEndsAt.fill(0);
         session.ShadowNodeCaptureEndsAt.fill(0);
         session.ShadowMarkerRoute.clear();
         session.ShadowMarkerRouteIndex = 0;
@@ -4114,6 +4135,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         session.ShadowCurrentSector =
             Battleground::GetOtherTeamId(session.Team) == TEAM_ALLIANCE ?
                 0 : 6;
+        session.ShadowNodeActivationEndsAt.fill(0);
         session.ShadowNodeCaptureEndsAt.fill(0);
         session.ShadowRoute.clear();
         session.ShadowRouteIndex = 0;
