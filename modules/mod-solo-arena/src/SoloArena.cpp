@@ -979,6 +979,8 @@ namespace
         void MarkVictory(ObjectGuid const& playerGuid);
         void MarkFailure(ObjectGuid const& playerGuid);
         void MarkAbandoned(ObjectGuid const& playerGuid);
+        bool RespawnObjectivePlayer(ObjectGuid const& playerGuid);
+        bool RespawnObjectiveShadow(ObjectGuid const& playerGuid);
         ShadowProfile const* GetShadowProfile(
             ObjectGuid const& creatureGuid) const;
         void UnregisterShadow(ObjectGuid const& creatureGuid);
@@ -2743,6 +2745,75 @@ void SoloArenaMgr::MarkAbandoned(ObjectGuid const& playerGuid)
         SendTrialTimePayload(player, itr->second, true);
         SpeakTrialTaunt(player, itr->second, "abandoned");
     }
+}
+
+bool SoloArenaMgr::RespawnObjectivePlayer(ObjectGuid const& playerGuid)
+{
+    auto itr = _sessions.find(playerGuid.GetCounter());
+    if (itr == _sessions.end())
+        return false;
+
+    ArenaSession& session = itr->second;
+    if (session.Scenario != TrialScenario::Objective)
+        return false;
+
+    Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid);
+    if (!player)
+        return false;
+
+    if (player->IsAlive())
+        return true;
+
+    float x = 0.0f;
+    float y = 0.0f;
+    float z = 0.0f;
+    float o = 0.0f;
+    GetObjectiveStartLocation(session.Team, x, y, z, o);
+    if (Map* map = sMapMgr->CreateBaseMap(session.ArenaMapId))
+        z = ResolveArenaGroundZ(map, x, y, z);
+
+    player->ResurrectPlayer(1.0f);
+    player->SpawnCorpseBones();
+    player->SetFullHealth();
+    if (Powers powerType = player->getPowerType();
+        powerType != POWER_HEALTH)
+    {
+        player->SetPower(powerType, player->GetMaxPower(powerType));
+    }
+    player->ClearInCombat();
+    player->TeleportTo(session.ArenaMapId, x, y, z, o, TELE_TO_GM_MODE);
+    SendSystem(player, "당신은 시작 위치에서 다시 부활합니다.");
+    LogEvent(player, session, "OBJ_PLAYER_RESPAWN");
+    return true;
+}
+
+bool SoloArenaMgr::RespawnObjectiveShadow(ObjectGuid const& playerGuid)
+{
+    auto itr = _sessions.find(playerGuid.GetCounter());
+    if (itr == _sessions.end())
+        return false;
+
+    ArenaSession& session = itr->second;
+    if (session.Scenario != TrialScenario::Objective)
+        return false;
+
+    Player* player = ObjectAccessor::FindConnectedPlayer(playerGuid);
+    if (!player)
+        return false;
+
+    CleanupBot(session);
+    session.BotGuid = ObjectGuid::Empty;
+    session.PetGuid = ObjectGuid::Empty;
+    session.ShadowTargetNode = -1;
+    session.ShadowCapturingNode = -1;
+    session.ShadowCaptureEndsAt = 0;
+
+    if (!SpawnShadow(player, session))
+        return false;
+
+    SendSystem(player, "그림자가 시작 위치에서 다시 부활했습니다.");
+    LogEvent(player, session, "OBJ_SHADOW_RESPAWN");
+    return true;
 }
 
 ShadowProfile const* SoloArenaMgr::GetShadowProfile(
@@ -4748,11 +4819,24 @@ namespace
         void KilledUnit(Unit* victim) override
         {
             if (Player* player = victim->ToPlayer())
-                SoloArenaMgr::Instance().MarkFailure(player->GetGUID());
+            {
+                if (!SoloArenaMgr::Instance().RespawnObjectivePlayer(
+                        player->GetGUID()))
+                {
+                    SoloArenaMgr::Instance().MarkFailure(player->GetGUID());
+                }
+            }
         }
 
         void JustDied(Unit* killer) override
         {
+            if (SoloArenaMgr::Instance().RespawnObjectiveShadow(
+                    _profile.PlayerGuid))
+            {
+                SoloArenaMgr::Instance().UnregisterShadow(me->GetGUID());
+                return;
+            }
+
             if (Player* player = killer ? killer->ToPlayer() : nullptr)
                 SoloArenaMgr::Instance().MarkVictory(player->GetGUID());
 
@@ -5403,7 +5487,11 @@ namespace
             if (!SoloArenaMgr::Instance().IsManagedShadow(killer))
                 return;
 
-            SoloArenaMgr::Instance().MarkFailure(killed->GetGUID());
+            if (!SoloArenaMgr::Instance().RespawnObjectivePlayer(
+                    killed->GetGUID()))
+            {
+                SoloArenaMgr::Instance().MarkFailure(killed->GetGUID());
+            }
         }
 
         bool OnPlayerCanUseChat(
