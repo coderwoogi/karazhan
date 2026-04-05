@@ -70,7 +70,8 @@ namespace
     constexpr uint32 TRIAL_DAILY_LIMIT = 5;
     constexpr uint8 MAX_STAGE_MECHANIC_SLOTS = 16;
     constexpr float TRIAL_MARKER_LINK_DISTANCE = 40.0f;
-    constexpr uint32 TRIAL_MARKER_MAX_NEIGHBORS = 3;
+    constexpr uint32 TRIAL_MARKER_MAX_NEIGHBORS = 5;
+    constexpr float TRIAL_NODE_MARKER_MAX_DISTANCE = 18.0f;
     constexpr float TRIAL_MARKER_ENDPOINT_DISTANCE = 80.0f;
     constexpr std::array<std::array<float, 4>, BG_AB_DYNAMIC_NODES_COUNT>
         TRIAL_AB_MECHANIC_POSITIONS =
@@ -1238,6 +1239,20 @@ namespace
         return bestIndex;
     }
 
+    int32 GetNearestObjectiveMarkerIndexWithin(
+        std::vector<ObjectivePathMarker> const& markers,
+        float x, float y, float maxDistance)
+    {
+        int32 bestIndex = GetNearestObjectiveMarkerIndex(markers, x, y);
+        if (bestIndex < 0)
+            return -1;
+
+        float dx = x - markers[size_t(bestIndex)].X;
+        float dy = y - markers[size_t(bestIndex)].Y;
+        float distance = std::sqrt(dx * dx + dy * dy);
+        return distance <= maxDistance ? bestIndex : -1;
+    }
+
     bool IsObjectiveMarkerLinkOnLand(Map* map,
         ObjectivePathMarker const& a,
         ObjectivePathMarker const& b)
@@ -1413,7 +1428,8 @@ namespace
         float z = 0.0f;
         float o = 0.0f;
         GetObjectiveNodeApproachLocation(node, x, y, z, o);
-        return GetNearestObjectiveMarkerIndex(graph.Markers, x, y);
+        return GetNearestObjectiveMarkerIndexWithin(graph.Markers, x, y,
+            TRIAL_NODE_MARKER_MAX_DISTANCE);
     }
 
     bool GetObjectiveNodeMarkerLocation(uint8 node, float& x, float& y, float& z)
