@@ -763,6 +763,25 @@ local function GetStageDescription(stage)
     return ""
   end
 
+  local stageId = tonumber(stage.stageId) or 0
+  if stageId >= 4 and stageId <= 6 then
+    local lines = {
+      "아라시 분지에서 그림자와 거점 경쟁을 진행합니다.",
+      "승리 조건: 먼저 1600점을 달성",
+      "진행 방식: 깃발을 직접 활성화하고 자원 점수를 확보",
+      "그림자도 거점을 점령하며 동일한 점수 규칙을 따릅니다.",
+      "일일 입장 제한: 하루 최대 5회",
+      string.format("체력 배율 %.2f / 공격 배율 %.2f", stage.health, stage.damage),
+      string.format("스킬 주기 %dms / 이동 속도 %.2f", stage.spellInterval, stage.moveSpeed),
+    }
+
+    if stage.mechanicName and stage.mechanicName ~= "" then
+      table.insert(lines, "주요 기믹: " .. stage.mechanicName)
+    end
+
+    return table.concat(lines, "\n")
+  end
+
   local lines = {
     "언더시티 투기장에서 당신의 그림자와 1:1 결투를 치릅니다.",
     "일일 입장 제한: 하루 최대 5회",
