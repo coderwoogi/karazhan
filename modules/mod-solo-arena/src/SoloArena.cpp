@@ -3909,13 +3909,10 @@ void SoloArenaMgr::ProcessObjectiveRespawns(Player* player,
         }
         else
         {
-            session.Result = ArenaResult::Failure;
-            session.State = SessionState::PendingFinish;
-            session.FailedAt = now;
-            session.EndedAt = now;
-            session.FinishDelayMs = 1;
-            LogEvent(player, session, "OBJECTIVE_SHADOW_RESPAWN_FAILED");
-            NotifyObjectiveFinishReason(player, "그림자 재소환 실패");
+            session.ShadowRespawnAt = now + 5;
+            SendSystem(player,
+                "그림자 재소환이 지연되었습니다. 5초 후 다시 시도합니다.");
+            LogEvent(player, session, "OBJ_SHADOW_RESPAWN_RETRY");
         }
         SendTrialTimePayload(player, session, true);
     }
@@ -6109,6 +6106,11 @@ namespace
             if (!_initialized)
                 return;
 
+            if (_movementLockMs > diff)
+                _movementLockMs -= diff;
+            else
+                _movementLockMs = 0;
+
             if (_petInterceptMs > diff)
                 _petInterceptMs -= diff;
             else
@@ -6285,14 +6287,15 @@ namespace
 
             if (me->GetDistance(victim) > range)
             {
-                me->GetMotionMaster()->MoveChase(victim,
-                    IsMeleeProfile() ? 1.5f : GetDesiredCombatRange());
+                IssueChase(victim, IsMeleeProfile() ? 1.5f :
+                    GetPreferredRangedRange(range), 900);
                 return;
             }
 
             if (!me->IsWithinLOSInMap(victim))
             {
-                RepositionForCombat(victim, range);
+                IssueChase(victim, IsMeleeProfile() ? 1.5f :
+                    GetPreferredRangedRange(range), 900);
                 return;
             }
 
@@ -6307,14 +6310,16 @@ namespace
                 me->SetFacingToObject(victim);
                 SpellCastResult result = me->CastSpell(victim, spellId, false);
                 if (result != SPELL_FAILED_SUCCESS)
-                    RepositionForCombat(victim, range);
+                    IssueChase(victim, IsMeleeProfile() ? 1.5f :
+                        GetPreferredRangedRange(range), 900);
                 return;
             }
 
             SpellCastResult result = me->CastSpell(victim, spellId, false);
             if (result != SPELL_FAILED_SUCCESS)
             {
-                RepositionForCombat(victim, range);
+                IssueChase(victim, IsMeleeProfile() ? 1.5f :
+                    GetPreferredRangedRange(range), 900);
                 return;
             }
 
@@ -6370,7 +6375,7 @@ namespace
             if (victim->ToPet())
             {
                 if (!me->IsWithinMeleeRange(victim))
-                    me->GetMotionMaster()->MoveChase(victim, 1.5f);
+                    IssueChase(victim, 1.5f, 700);
                 return;
             }
 
@@ -6378,19 +6383,19 @@ namespace
             if (IsMeleeProfile())
             {
                 if (!me->IsWithinMeleeRange(victim))
-                    me->GetMotionMaster()->MoveChase(victim, 1.5f);
+                    IssueChase(victim, 1.5f, 700);
                 return;
             }
 
-            float desiredRange = GetDesiredCombatRange();
-            if (distance < (desiredRange * 0.55f))
+            float desiredRange = GetPreferredRangedRange(GetDesiredCombatRange());
+            if (distance < 5.0f)
             {
                 RepositionForCombat(victim, desiredRange);
                 return;
             }
 
-            if (distance > (desiredRange + 4.0f))
-                me->GetMotionMaster()->MoveChase(victim, desiredRange);
+            if (distance > (desiredRange + 2.0f))
+                IssueChase(victim, desiredRange, 900);
         }
 
         Unit* GetShadowTarget()
@@ -6423,11 +6428,11 @@ namespace
 
         void RepositionForCombat(Unit* victim, float preferredRange)
         {
-            if (!victim)
+            if (!victim || _movementLockMs != 0)
                 return;
 
             float range = IsMeleeProfile() ? 2.5f :
-                std::max(12.0f, preferredRange - 2.0f);
+                std::max(7.5f, preferredRange - 1.0f);
             float angle = victim->GetAbsoluteAngle(me) + float(M_PI) * 0.5f;
             float x = victim->GetPositionX() + std::cos(angle) * range;
             float y = victim->GetPositionY() + std::sin(angle) * range;
@@ -6437,6 +6442,22 @@ namespace
 
             me->GetMotionMaster()->Clear();
             me->GetMotionMaster()->MovePoint(2, x, y, z);
+            _movementLockMs = 1200;
+        }
+
+        float GetPreferredRangedRange(float baseRange) const
+        {
+            return std::clamp(baseRange - 4.0f, 11.0f, 22.0f);
+        }
+
+        void IssueChase(Unit* victim, float distance, uint32 lockMs)
+        {
+            if (!victim || _movementLockMs != 0)
+                return;
+
+            me->GetMotionMaster()->Clear();
+            me->GetMotionMaster()->MoveChase(victim, distance);
+            _movementLockMs = lockMs;
         }
 
         bool HasNearbySecondaryTarget(Unit* primaryVictim, float radius) const
@@ -6524,6 +6545,7 @@ namespace
         bool _initialized = false;
         uint32 _petInterceptMs = 0;
         uint32 _petInterceptCooldownMs = 0;
+        uint32 _movementLockMs = 0;
     };
 
     class npc_solo_arena_shadow : public CreatureScript
