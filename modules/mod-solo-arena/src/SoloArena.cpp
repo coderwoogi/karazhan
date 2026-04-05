@@ -762,6 +762,107 @@ namespace
         return true;
     }
 
+    uint8 GetNearestObjectiveRouteIndex(float x, float y)
+    {
+        float bestDistance = std::numeric_limits<float>::max();
+        uint8 bestIndex = 0;
+        for (uint8 i = 0; i < TRIAL_AB_ROUTE_POSITIONS.size(); ++i)
+        {
+            float distance = std::hypot(TRIAL_AB_ROUTE_POSITIONS[i][0] - x,
+                TRIAL_AB_ROUTE_POSITIONS[i][1] - y);
+            if (distance < bestDistance)
+            {
+                bestDistance = distance;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    bool BuildObjectiveTravelRoute(float currentX, float currentY,
+        uint8 targetNode, std::vector<uint8>& route)
+    {
+        route.clear();
+
+        if (targetNode >= BG_AB_DYNAMIC_NODES_COUNT)
+            return false;
+
+        static constexpr std::array<uint8, BG_AB_DYNAMIC_NODES_COUNT>
+            approachRouteIds = {{ 0, 3, 5, 7, 9 }};
+        static constexpr std::array<std::array<uint8, 4>, 12> routeGraph =
+        {{
+            {{ 1, 10, 255, 255 }},
+            {{ 0, 2, 6, 255 }},
+            {{ 1, 3, 4, 255 }},
+            {{ 2, 255, 255, 255 }},
+            {{ 2, 5, 8, 255 }},
+            {{ 4, 255, 255, 255 }},
+            {{ 1, 7, 255, 255 }},
+            {{ 6, 255, 255, 255 }},
+            {{ 4, 9, 255, 255 }},
+            {{ 8, 255, 255, 255 }},
+            {{ 0, 255, 255, 255 }},
+            {{ 4, 255, 255, 255 }}
+        }};
+
+        uint8 startRoute = GetNearestObjectiveRouteIndex(currentX, currentY);
+        uint8 targetRoute = approachRouteIds[targetNode];
+
+        if (startRoute == targetRoute)
+        {
+            route.push_back(targetRoute);
+            return true;
+        }
+
+        std::array<int8, 12> parent = {};
+        parent.fill(-1);
+        std::array<bool, 12> visited = {};
+        std::vector<uint8> queue;
+        queue.push_back(startRoute);
+        visited[startRoute] = true;
+
+        for (size_t idx = 0; idx < queue.size(); ++idx)
+        {
+            uint8 current = queue[idx];
+            if (current == targetRoute)
+                break;
+
+            for (uint8 next : routeGraph[current])
+            {
+                if (next == 255 || visited[next])
+                    continue;
+
+                visited[next] = true;
+                parent[next] = int8(current);
+                queue.push_back(next);
+            }
+        }
+
+        if (!visited[targetRoute])
+            return false;
+
+        std::vector<uint8> reversed;
+        for (int8 current = int8(targetRoute); current >= 0;
+            current = parent[uint8(current)])
+        {
+            reversed.push_back(uint8(current));
+            if (uint8(current) == startRoute)
+                break;
+        }
+
+        if (reversed.empty() || reversed.back() != startRoute)
+            return false;
+
+        route.assign(reversed.rbegin(), reversed.rend());
+        if (!route.empty() && route.front() == startRoute)
+            route.erase(route.begin());
+        if (route.empty())
+            route.push_back(targetRoute);
+
+        return true;
+    }
+
     Unit* SelectShadowPetTarget(Player* player)
     {
         if (!player)
@@ -2650,10 +2751,11 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     session.State = SessionState::Active;
 
     if ((bot->GetVictim() == player || player->GetVictim() == bot) &&
-        !bot->IsWithinDistInMap(player, 45.0f))
+        !bot->IsWithinDistInMap(player, 20.0f))
     {
         bot->CombatStop(true);
         bot->SetReactState(REACT_AGGRESSIVE);
+        bot->ClearEmoteState();
         player->CombatStopWithPets(true);
     }
 
@@ -2680,6 +2782,10 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.ShadowCapturingNode = -1;
             session.ShadowCaptureEndsAt = 0;
             session.ShadowTargetNode = -1;
+            session.ShadowRoute.clear();
+            session.ShadowRouteIndex = 0;
+            bot->ClearEmoteState();
+            bot->SetReactState(REACT_AGGRESSIVE);
             session.ObjectiveWorldStateDirty = true;
             SyncObjectiveNodeVisuals(session, objectiveBg);
             SyncObjectiveWorldStates(player, session, objectiveBg, now);
@@ -2690,6 +2796,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             bot->CombatStop(true);
             bot->StopMoving();
             bot->SetReactState(REACT_PASSIVE);
+            bot->SetEmoteState(EMOTE_STATE_USE_STANDING);
             if (banner)
                 bot->SetFacingToObject(banner);
             else
@@ -2700,14 +2807,16 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         }
     }
 
-    if (bot->IsWithinDistInMap(player, 28.0f))
+    if (bot->IsWithinDistInMap(player, 10.0f) && bot->IsWithinLOSInMap(player))
     {
+        bot->ClearEmoteState();
         StartShadowCombat(player, bot);
         return true;
     }
 
     bot->CombatStop(true);
     bot->SetReactState(REACT_AGGRESSIVE);
+    bot->ClearEmoteState();
 
     if (session.NextShadowNodeUpdateAt <= now)
     {
@@ -2734,6 +2843,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
                 if (GameObject* banner =
                     GetObjectiveNodeBanner(objectiveBg, node))
                     bot->SetFacingToObject(banner);
+                bot->SetEmoteState(EMOTE_STATE_USE_STANDING);
                 SendSystem(player, Acore::StringFormat(
                     "[전장 알림] 그림자가 {} 거점 깃발을 활성화하고 있습니다.",
                     GetObjectiveNodeName(node)));
@@ -2769,6 +2879,12 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             }
 
             session.ShadowTargetNode = bestNode;
+            session.ShadowRoute.clear();
+            session.ShadowRouteIndex = 0;
+            if (bestNode >= 0)
+                BuildObjectiveTravelRoute(bot->GetPositionX(),
+                    bot->GetPositionY(), uint8(bestNode),
+                    session.ShadowRoute);
         }
 
         if (session.ShadowTargetNode >= 0)
@@ -2780,16 +2896,40 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             float targetO = 0.0f;
             GetObjectiveNodeApproachLocation(node, targetX, targetY,
                 targetZ, targetO);
-            float travelX = 0.0f;
-            float travelY = 0.0f;
-            float travelZ = 0.0f;
-            if (GetObjectiveTravelPoint(bot->GetPositionX(),
-                    bot->GetPositionY(), node, travelX, travelY, travelZ))
+
+            if (session.ShadowRoute.empty())
             {
-                targetX = travelX;
-                targetY = travelY;
-                targetZ = travelZ;
+                BuildObjectiveTravelRoute(bot->GetPositionX(),
+                    bot->GetPositionY(), node, session.ShadowRoute);
+                session.ShadowRouteIndex = 0;
             }
+
+            if (session.ShadowRouteIndex < session.ShadowRoute.size())
+            {
+                uint8 routeIndex = session.ShadowRoute[
+                    session.ShadowRouteIndex];
+                targetX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
+                targetY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
+                targetZ = TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
+                if (bot->GetDistance2d(targetX, targetY) <= 5.0f)
+                {
+                    ++session.ShadowRouteIndex;
+                    if (session.ShadowRouteIndex < session.ShadowRoute.size())
+                    {
+                        routeIndex = session.ShadowRoute[
+                            session.ShadowRouteIndex];
+                        targetX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
+                        targetY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
+                        targetZ = TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
+                    }
+                    else
+                    {
+                        GetObjectiveNodeApproachLocation(node, targetX, targetY,
+                            targetZ, targetO);
+                    }
+                }
+            }
+
             if (Map* map = player->GetMap())
                 targetZ = ResolveArenaGroundZ(map, targetX, targetY, targetZ);
             bot->GetMotionMaster()->MovePoint(9000 + node,
@@ -3030,6 +3170,9 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
     bot->SetCanFly(false);
     bot->SetDisableGravity(false);
     bot->SetHover(false);
+    bot->SetWaterWalking(false);
+    bot->RemoveUnitMovementFlag(MOVEMENTFLAG_FLYING |
+        MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_DISABLE_GRAVITY);
 
     float groundZ = ResolveArenaGroundZ(player->GetMap(), bot->GetPositionX(),
         bot->GetPositionY(), bot->GetPositionZ());
@@ -3041,19 +3184,16 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
 
     if (bot->IsInWater())
     {
-        float routeX = 0.0f;
-        float routeY = 0.0f;
-        float routeZ = 0.0f;
-        if (session.ShadowTargetNode >= 0 &&
-            session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT &&
-            GetObjectiveTravelPoint(bot->GetPositionX(), bot->GetPositionY(),
-                uint8(session.ShadowTargetNode), routeX, routeY, routeZ))
-        {
-            routeZ = ResolveArenaGroundZ(player->GetMap(), routeX, routeY,
-                routeZ);
-            bot->NearTeleportTo(routeX, routeY, routeZ, bot->GetOrientation(),
-                true);
-        }
+        uint8 routeIndex = GetNearestObjectiveRouteIndex(bot->GetPositionX(),
+            bot->GetPositionY());
+        float routeX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
+        float routeY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
+        float routeZ = ResolveArenaGroundZ(player->GetMap(), routeX, routeY,
+            TRIAL_AB_ROUTE_POSITIONS[routeIndex][2]);
+        bot->NearTeleportTo(routeX, routeY, routeZ, bot->GetOrientation(),
+            true);
+        session.ShadowRoute.clear();
+        session.ShadowRouteIndex = 0;
     }
 }
 
@@ -3143,8 +3283,13 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
 
     if (session.Scenario == TrialScenario::Objective)
     {
+        session.ShadowTargetNode = -1;
+        session.ShadowCapturingNode = -1;
+        session.ShadowCaptureEndsAt = 0;
+        session.ShadowRoute.clear();
+        session.ShadowRouteIndex = 0;
         SendSystem(player,
-            "그림자가 중앙에 모습을 드러냈습니다.");
+            "그림자가 반대 진영 기지에서 움직이기 시작했습니다.");
     }
     else
     {
