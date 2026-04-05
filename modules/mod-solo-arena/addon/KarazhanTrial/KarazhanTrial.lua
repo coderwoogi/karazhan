@@ -81,6 +81,22 @@ local function FormatRemaining(targetTime)
   return string.format("%d초", math.max(0, targetTime - time()))
 end
 
+local function ShowCenterAlert(message)
+  if not message or message == "" then
+    return
+  end
+
+  local raidInfo = ChatTypeInfo and ChatTypeInfo["RAID_WARNING"]
+  if RaidNotice_AddMessage and RaidWarningFrame and raidInfo then
+    RaidNotice_AddMessage(RaidWarningFrame, message, raidInfo)
+    return
+  end
+
+  if UIErrorsFrame and UIErrorsFrame.AddMessage then
+    UIErrorsFrame:AddMessage(message, 1.0, 0.82, 0.18, 1.0)
+  end
+end
+
 local function GetStageNameById(stageId)
   local names = {
     [1] = "그림자 시련 1단계",
@@ -1439,6 +1455,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   end
 
   if parts[1] == "TIME" then
+    local previousPlayerRespawnAt = Trial.state.playerRespawnAt
+    local previousShadowRespawnAt = Trial.state.shadowRespawnAt
     Trial.state.preparationEndsAt = tonumber(parts[2]) or nil
     Trial.state.combatEndsAt = tonumber(parts[4]) or nil
     Trial.state.sessionState = tonumber(parts[6]) or SESSION_PENDING_SPAWN
@@ -1456,6 +1474,23 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
       RefreshStatusTimes()
       Trial.statusBox:Show()
     end
+
+    if Trial.state.playerRespawnAt and Trial.state.playerRespawnAt > time()
+      and previousPlayerRespawnAt ~= Trial.state.playerRespawnAt then
+      ShowCenterAlert("플레이어 부활까지 10초")
+    elseif previousPlayerRespawnAt and previousPlayerRespawnAt > 0
+      and not Trial.state.playerRespawnAt then
+      ShowCenterAlert("플레이어가 다시 부활했습니다")
+    end
+
+    if Trial.state.shadowRespawnAt and Trial.state.shadowRespawnAt > time()
+      and previousShadowRespawnAt ~= Trial.state.shadowRespawnAt then
+      ShowCenterAlert("그림자 부활까지 10초")
+    elseif previousShadowRespawnAt and previousShadowRespawnAt > 0
+      and not Trial.state.shadowRespawnAt then
+      ShowCenterAlert("그림자가 다시 부활했습니다")
+    end
+
     RefreshStatusBox()
     return
   end
