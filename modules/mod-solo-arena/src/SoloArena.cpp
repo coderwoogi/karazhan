@@ -1498,7 +1498,8 @@ namespace
             if (std::fabs(first.x - startX) <= 6.0f &&
                 std::fabs(first.y - startY) <= 6.0f)
             {
-                route.erase(route.begin());
+                if (route.size() > 1)
+                    route.erase(route.begin());
             }
         }
 
@@ -3617,11 +3618,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             }
 
             if (!hasMarkerRoute)
-            {
-                if (bot->GetDistance2d(targetX, targetY) <= 5.0f)
-                    bot->GetMotionMaster()->MovePoint(9000 + node,
-                        targetX, targetY, targetZ);
-            }
+                bot->GetMotionMaster()->MovePoint(9000 + node,
+                    targetX, targetY, targetZ);
 
             bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
             bot->SetSpeed(MOVE_RUN_BACK, OBJECTIVE_MOUNT_RUN_RATE, true);
