@@ -2931,7 +2931,11 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             }
 
             if (Map* map = player->GetMap())
+            {
+                map->CanReachPositionAndGetValidCoords(bot,
+                    targetX, targetY, targetZ, true, true);
                 targetZ = ResolveArenaGroundZ(map, targetX, targetY, targetZ);
+            }
             bot->GetMotionMaster()->MovePoint(9000 + node,
                 targetX, targetY, targetZ);
             bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
@@ -3203,6 +3207,9 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
     bool tooFarFromRoute = bot->GetDistance2d(expectedX, expectedY) > 45.0f;
     if (bot->IsInWater() || tooHigh || tooFarFromRoute)
     {
+        if (Map* map = player->GetMap())
+            map->CanReachPositionAndGetValidCoords(bot,
+                expectedX, expectedY, expectedGroundZ, true, true);
         bot->NearTeleportTo(expectedX, expectedY, expectedGroundZ,
             bot->GetOrientation(), true);
         bot->GetMotionMaster()->Clear();
@@ -5245,6 +5252,7 @@ namespace
                     _profile.PlayerGuid))
             {
                 SoloArenaMgr::Instance().UnregisterShadow(me->GetGUID());
+                me->DespawnOrUnsummon(Milliseconds(1));
                 return;
             }
 
