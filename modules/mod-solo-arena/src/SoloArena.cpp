@@ -3328,6 +3328,20 @@ void SoloArenaMgr::NormalizeObjectiveMovement(Player* player,
     player->SetSpeed(MOVE_SWIM, mountedRunRate, true);
 }
 
+void MatchObjectiveShadowSpeed(Player* player, Creature* bot)
+{
+    if (!player || !bot)
+        return;
+
+    float runRate = player->GetSpeedRate(MOVE_RUN);
+    float backRate = player->GetSpeedRate(MOVE_RUN_BACK);
+    float swimRate = player->GetSpeedRate(MOVE_SWIM);
+
+    bot->SetSpeed(MOVE_RUN, std::max(1.0f, runRate), true);
+    bot->SetSpeed(MOVE_RUN_BACK, std::max(1.0f, backRate), true);
+    bot->SetSpeed(MOVE_SWIM, std::max(1.0f, swimRate), true);
+}
+
 bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 {
     if (!player)
@@ -3498,6 +3512,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 
     EnsureObjectiveShadowGrounded(player, bot, session);
     SyncShadowPet(player, session, true);
+    MatchObjectiveShadowSpeed(player, bot);
     session.State = SessionState::Active;
 
     bool inShadowCombat = (bot->GetVictim() == player ||
@@ -3694,13 +3709,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             bot->GetMotionMaster()->MovePoint(9000 + node,
                 targetX, targetY, targetZ);
 
-            StageConfig const* currentStage = GetStage(session.StageId);
-            float objectiveRunRate = OBJECTIVE_MOUNT_RUN_RATE;
-            if (currentStage)
-                objectiveRunRate *= std::max(1.0f, currentStage->MoveSpeedRate);
-
-            bot->SetSpeed(MOVE_RUN, objectiveRunRate, true);
-            bot->SetSpeed(MOVE_RUN_BACK, objectiveRunRate, true);
+            MatchObjectiveShadowSpeed(player, bot);
         }
     }
 
