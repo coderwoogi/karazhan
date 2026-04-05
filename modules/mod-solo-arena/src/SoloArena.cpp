@@ -3175,6 +3175,7 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
     bot->SetDisableGravity(false);
     bot->SetHover(false);
     bot->SetWaterWalking(false);
+    bot->SetSwim(false);
     bot->RemoveUnitMovementFlag(MOVEMENTFLAG_FLYING |
         MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_DISABLE_GRAVITY);
 
@@ -3210,17 +3211,25 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
         if (Map* map = player->GetMap())
             map->CanReachPositionAndGetValidCoords(bot,
                 expectedX, expectedY, expectedGroundZ, true, true);
-        bot->NearTeleportTo(expectedX, expectedY, expectedGroundZ,
-            bot->GetOrientation(), true);
+
+        // Objective shadow should always recover by running back to the
+        // nearest road point, never by teleporting to a node.
         bot->GetMotionMaster()->Clear();
+        bot->StopMoving();
+        bot->CombatStop(true);
+        bot->SetReactState(REACT_AGGRESSIVE);
+        bot->ClearEmoteState();
         session.ShadowRoute.clear();
         session.ShadowRouteIndex = 0;
         if (session.ShadowTargetNode >= 0 &&
             session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT)
         {
-            BuildObjectiveTravelRoute(expectedX, expectedY,
+            BuildObjectiveTravelRoute(bot->GetPositionX(), bot->GetPositionY(),
                 uint8(session.ShadowTargetNode), session.ShadowRoute);
         }
+
+        bot->GetMotionMaster()->MovePoint(9800, expectedX, expectedY,
+            expectedGroundZ);
     }
 }
 
