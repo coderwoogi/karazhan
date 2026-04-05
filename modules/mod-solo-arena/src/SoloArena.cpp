@@ -2807,7 +2807,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         }
     }
 
-    if (bot->IsWithinDistInMap(player, 10.0f) && bot->IsWithinLOSInMap(player))
+    if (bot->IsWithinDistInMap(player, 6.0f) && bot->IsWithinLOSInMap(player))
     {
         bot->ClearEmoteState();
         StartShadowCombat(player, bot);
@@ -3174,26 +3174,46 @@ void SoloArenaMgr::EnsureObjectiveShadowGrounded(Player* player, Creature* bot,
     bot->RemoveUnitMovementFlag(MOVEMENTFLAG_FLYING |
         MOVEMENTFLAG_CAN_FLY | MOVEMENTFLAG_DISABLE_GRAVITY);
 
-    float groundZ = ResolveArenaGroundZ(player->GetMap(), bot->GetPositionX(),
-        bot->GetPositionY(), bot->GetPositionZ());
-    if (std::fabs(bot->GetPositionZ() - groundZ) > 3.0f)
-    {
-        bot->NearTeleportTo(bot->GetPositionX(), bot->GetPositionY(), groundZ,
-            bot->GetOrientation(), true);
-    }
+    float expectedX = bot->GetPositionX();
+    float expectedY = bot->GetPositionY();
+    float expectedZ = bot->GetPositionZ();
 
-    if (bot->IsInWater())
+    if (session.ShadowRouteIndex < session.ShadowRoute.size())
+    {
+        uint8 routeIndex = session.ShadowRoute[session.ShadowRouteIndex];
+        expectedX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
+        expectedY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
+        expectedZ = TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
+    }
+    else
     {
         uint8 routeIndex = GetNearestObjectiveRouteIndex(bot->GetPositionX(),
             bot->GetPositionY());
-        float routeX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
-        float routeY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
-        float routeZ = ResolveArenaGroundZ(player->GetMap(), routeX, routeY,
-            TRIAL_AB_ROUTE_POSITIONS[routeIndex][2]);
-        bot->NearTeleportTo(routeX, routeY, routeZ, bot->GetOrientation(),
-            true);
+        expectedX = TRIAL_AB_ROUTE_POSITIONS[routeIndex][0];
+        expectedY = TRIAL_AB_ROUTE_POSITIONS[routeIndex][1];
+        expectedZ = TRIAL_AB_ROUTE_POSITIONS[routeIndex][2];
+    }
+
+    float groundZ = ResolveArenaGroundZ(player->GetMap(), bot->GetPositionX(),
+        bot->GetPositionY(), bot->GetPositionZ());
+    float expectedGroundZ = ResolveArenaGroundZ(player->GetMap(), expectedX,
+        expectedY, expectedZ);
+
+    bool tooHigh = std::fabs(bot->GetPositionZ() - groundZ) > 3.0f;
+    bool tooFarFromRoute = bot->GetDistance2d(expectedX, expectedY) > 45.0f;
+    if (bot->IsInWater() || tooHigh || tooFarFromRoute)
+    {
+        bot->NearTeleportTo(expectedX, expectedY, expectedGroundZ,
+            bot->GetOrientation(), true);
+        bot->GetMotionMaster()->Clear();
         session.ShadowRoute.clear();
         session.ShadowRouteIndex = 0;
+        if (session.ShadowTargetNode >= 0 &&
+            session.ShadowTargetNode < BG_AB_DYNAMIC_NODES_COUNT)
+        {
+            BuildObjectiveTravelRoute(expectedX, expectedY,
+                uint8(session.ShadowTargetNode), session.ShadowRoute);
+        }
     }
 }
 
