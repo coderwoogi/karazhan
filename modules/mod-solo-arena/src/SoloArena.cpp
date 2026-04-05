@@ -1209,6 +1209,28 @@ namespace
         return markers;
     }
 
+    int32 GetNearestObjectiveMarkerIndex(
+        std::vector<ObjectivePathMarker> const& markers,
+        float x, float y)
+    {
+        float bestDistance = std::numeric_limits<float>::max();
+        int32 bestIndex = -1;
+
+        for (size_t i = 0; i < markers.size(); ++i)
+        {
+            float dx = x - markers[i].X;
+            float dy = y - markers[i].Y;
+            float distance = std::sqrt(dx * dx + dy * dy);
+            if (distance >= bestDistance)
+                continue;
+
+            bestDistance = distance;
+            bestIndex = int32(i);
+        }
+
+        return bestIndex;
+    }
+
     bool BuildObjectiveMarkerRoute(float startX, float startY, float startZ,
         float endX, float endY, float endZ, std::vector<G3D::Vector3>& route)
     {
@@ -1218,12 +1240,21 @@ namespace
         if (markers.empty())
             return false;
 
-        size_t const markerCount = markers.size();
-        size_t const startNode = markerCount;
-        size_t const endNode = markerCount + 1;
-        size_t const totalNodes = markerCount + 2;
+        int32 startIndex = GetNearestObjectiveMarkerIndex(markers, startX, startY);
+        int32 endIndex = GetNearestObjectiveMarkerIndex(markers, endX, endY);
+        if (startIndex < 0 || endIndex < 0)
+            return false;
 
-        std::vector<std::vector<std::pair<size_t, float>>> graph(totalNodes);
+        if (startIndex == endIndex)
+        {
+            route.emplace_back(markers[size_t(startIndex)].X,
+                markers[size_t(startIndex)].Y,
+                markers[size_t(startIndex)].Z);
+            return true;
+        }
+
+        size_t const markerCount = markers.size();
+        std::vector<std::vector<std::pair<size_t, float>>> graph(markerCount);
         auto linkNodes = [&](size_t a, size_t b, float ax, float ay, float az,
                              float bx, float by, float bz)
         {
@@ -1250,36 +1281,15 @@ namespace
             }
         }
 
-        for (size_t i = 0; i < markerCount; ++i)
-        {
-            float startDx = startX - markers[i].X;
-            float startDy = startY - markers[i].Y;
-            if (std::sqrt(startDx * startDx + startDy * startDy) <=
-                TRIAL_MARKER_ENDPOINT_DISTANCE)
-            {
-                linkNodes(startNode, i, startX, startY, startZ,
-                    markers[i].X, markers[i].Y, markers[i].Z);
-            }
-
-            float endDx = endX - markers[i].X;
-            float endDy = endY - markers[i].Y;
-            if (std::sqrt(endDx * endDx + endDy * endDy) <=
-                TRIAL_MARKER_ENDPOINT_DISTANCE)
-            {
-                linkNodes(i, endNode, markers[i].X, markers[i].Y, markers[i].Z,
-                    endX, endY, endZ);
-            }
-        }
-
-        std::vector<float> dist(totalNodes,
+        std::vector<float> dist(markerCount,
             std::numeric_limits<float>::max());
-        std::vector<int32> prev(totalNodes, -1);
+        std::vector<int32> prev(markerCount, -1);
         using QueueEntry = std::pair<float, size_t>;
         std::priority_queue<QueueEntry, std::vector<QueueEntry>,
             std::greater<QueueEntry>> queue;
 
-        dist[startNode] = 0.0f;
-        queue.push({ 0.0f, startNode });
+        dist[size_t(startIndex)] = 0.0f;
+        queue.push({ 0.0f, size_t(startIndex) });
 
         while (!queue.empty())
         {
@@ -1289,7 +1299,7 @@ namespace
             if (currentCost > dist[current])
                 continue;
 
-            if (current == endNode)
+            if (current == size_t(endIndex))
                 break;
 
             for (auto const& edge : graph[current])
@@ -1305,26 +1315,23 @@ namespace
             }
         }
 
-        if (prev[endNode] < 0)
+        if (prev[size_t(endIndex)] < 0)
             return false;
 
         std::vector<size_t> indexPath;
-        for (int32 cursor = int32(endNode); cursor >= 0; cursor = prev[cursor])
+        for (int32 cursor = endIndex; cursor >= 0; cursor = prev[size_t(cursor)])
         {
             indexPath.push_back(size_t(cursor));
-            if (size_t(cursor) == startNode)
+            if (cursor == startIndex)
                 break;
         }
 
-        if (indexPath.empty() || indexPath.back() != startNode)
+        if (indexPath.empty() || int32(indexPath.back()) != startIndex)
             return false;
 
         std::reverse(indexPath.begin(), indexPath.end());
         for (size_t idx : indexPath)
         {
-            if (idx >= markerCount)
-                continue;
-
             route.emplace_back(markers[idx].X, markers[idx].Y, markers[idx].Z);
         }
 
