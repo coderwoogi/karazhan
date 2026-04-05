@@ -1,5 +1,8 @@
 ﻿local addonName = ...
 
+local KBM_UI_PREFIX = "KARAZHAN_BONUS_MISSION_UI"
+local KBM_VOTE_PREFIX = "KARAZHAN_BONUS_MISSION_VOTE"
+
 local KBM = CreateFrame("Frame", "KarazhanBonusMissionFrame", UIParent)
 KBM:SetSize(420, 590)
 KBM:SetPoint("CENTER", UIParent, "CENTER", 155, -6)
@@ -206,17 +209,18 @@ end
 
 local function SendVote(choice)
   if IsInRaid and IsInRaid() then
-    SendAddonMessage("KBM_VOTE", choice, "RAID")
+    SendAddonMessage(KBM_VOTE_PREFIX, choice, "RAID")
     return
   end
 
   local partyCount = GetNumPartyMembers and GetNumPartyMembers() or 0
   if partyCount > 0 then
-    SendAddonMessage("KBM_VOTE", choice, "PARTY")
+    SendAddonMessage(KBM_VOTE_PREFIX, choice, "PARTY")
     return
   end
 
-  SendAddonMessage("KBM_VOTE", choice, "WHISPER", UnitName("player"))
+  SendAddonMessage(KBM_VOTE_PREFIX, choice, "WHISPER",
+    UnitName("player"))
 end
 
 KBM.parchment = KBM:CreateTexture(nil, "BACKGROUND")
@@ -822,7 +826,7 @@ KBM:RegisterEvent("CHAT_MSG_ADDON")
 KBM:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
-      RegisterAddonMessagePrefix("KBM_UI")
+    RegisterAddonMessagePrefix(KBM_UI_PREFIX)
     end
 
     SLASH_KARAZHANBONUSMISSION1 = "/kbm"
@@ -840,7 +844,7 @@ KBM:SetScript("OnEvent", function(self, event, prefix, message)
     return
   end
 
-  if prefix ~= "KBM_UI" or type(message) ~= "string" then
+  if prefix ~= KBM_UI_PREFIX or type(message) ~= "string" then
     return
   end
 

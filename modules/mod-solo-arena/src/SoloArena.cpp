@@ -44,6 +44,9 @@
 
 namespace
 {
+    char const* TRIAL_UI_PREFIX = "KARAZHAN_TRIAL_UI";
+    char const* TRIAL_CMD_PREFIX = "KARAZHAN_TRIAL_CMD";
+
     constexpr uint32 DEFAULT_ARENA_MAP_ID = 572;
     constexpr BattlegroundTypeId DEFAULT_ARENA_BG_TYPE = BATTLEGROUND_RL;
     constexpr uint32 DEFAULT_OBJECTIVE_MAP_ID = 529;
@@ -2374,7 +2377,7 @@ namespace
         payload << uint32(session.State) << "\t";
         payload << uint64(session.PlayerRespawnAt) << "\t";
         payload << uint64(session.ShadowRespawnAt);
-        SendAddonPayload(player, "TRIAL_UI", payload.str());
+        SendAddonPayload(player, TRIAL_UI_PREFIX, payload.str());
     }
 
     uint32 GetCombatDurationSec(ArenaSession const& session)
@@ -2443,30 +2446,33 @@ namespace
 
     bool HandleTrialAddonCommand(Player* player, std::string const& msg)
     {
-        if (!player || !StartsWith(msg, "TRIAL_CMD\t"))
+        std::string const cmdPrefix =
+            Acore::StringFormat("{}\t", TRIAL_CMD_PREFIX);
+
+        if (!player || !StartsWith(msg, cmdPrefix))
             return false;
 
-        if (StartsWith(msg, "TRIAL_CMD\tSTART\t"))
+        if (StartsWith(msg, cmdPrefix + "START\t"))
         {
-            std::string stageText = msg.substr(16);
+            std::string stageText = msg.substr(cmdPrefix.size() + 6);
             uint8 stageId = uint8(std::max(0, atoi(stageText.c_str())));
             SoloArenaMgr::Instance().StartChallenge(player, stageId);
             return true;
         }
 
-        if (msg == "TRIAL_CMD\tOPEN")
+        if (msg == cmdPrefix + "OPEN")
         {
             SoloArenaMgr::Instance().SendUi(player);
             return true;
         }
 
-        if (msg == "TRIAL_CMD\tABANDON")
+        if (msg == cmdPrefix + "ABANDON")
         {
             SoloArenaMgr::Instance().MarkAbandoned(player->GetGUID());
             return true;
         }
 
-        if (msg == "TRIAL_CMD\tRETURN")
+        if (msg == cmdPrefix + "RETURN")
         {
             SoloArenaMgr::Instance().ReturnPlayer(player);
             return true;
@@ -3021,7 +3027,7 @@ void SoloArenaMgr::SendUi(Player* player)
                 << uint64(0) << "\t" << uint64(0) << "\t"
                 << uint32(SessionState::PendingSpawn);
     }
-    SendAddonPayload(player, "TRIAL_UI", payload.str());
+    SendAddonPayload(player, TRIAL_UI_PREFIX, payload.str());
 }
 
 void SoloArenaMgr::SendResultPayload(Player* player,
@@ -3042,7 +3048,7 @@ void SoloArenaMgr::SendResultPayload(Player* player,
     payload << SanitizeAddonField(
         session.RankLabel.empty() ? "-" : session.RankLabel, 8) << "\t";
     payload << uint32(session.CombatDurationSec);
-    SendAddonPayload(player, "TRIAL_UI", payload.str());
+    SendAddonPayload(player, TRIAL_UI_PREFIX, payload.str());
 }
 
 void SoloArenaMgr::NotifyObjectiveFinishReason(Player* player,
@@ -6857,7 +6863,8 @@ namespace
             if (!player || language != LANG_ADDON)
                 return true;
 
-            if (!StartsWith(msg, "TRIAL_CMD\t"))
+            if (!StartsWith(msg,
+                    Acore::StringFormat("{}\t", TRIAL_CMD_PREFIX)))
                 return true;
 
             return !HandleTrialAddonCommand(player, msg);
@@ -6873,7 +6880,8 @@ namespace
             if (!player || language != LANG_ADDON)
                 return true;
 
-            if (!StartsWith(msg, "TRIAL_CMD\t"))
+            if (!StartsWith(msg,
+                    Acore::StringFormat("{}\t", TRIAL_CMD_PREFIX)))
                 return true;
 
             return !HandleTrialAddonCommand(player, msg);
@@ -6931,7 +6939,8 @@ namespace
                     copy >> to;
                     std::string msg = copy.ReadCString(false);
 
-                    if (StartsWith(msg, "TRIAL_CMD\t"))
+                    if (StartsWith(msg,
+                            Acore::StringFormat("{}\t", TRIAL_CMD_PREFIX)))
                     {
                         HandleTrialAddonCommand(viewer, msg);
                         return false;

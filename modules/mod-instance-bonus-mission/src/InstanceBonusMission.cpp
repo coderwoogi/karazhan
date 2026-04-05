@@ -27,6 +27,9 @@
 
 namespace
 {
+    char const* KBM_UI_PREFIX = "KARAZHAN_BONUS_MISSION_UI";
+    char const* KBM_VOTE_PREFIX = "KARAZHAN_BONUS_MISSION_VOTE";
+
     std::string const kBriefingPrefix = "[작전 브리핑] ";
     std::string const kMissionPrefix = "[추가 미션] ";
 
@@ -1077,14 +1080,14 @@ namespace
 
     void SendMissionUiClear(Player* player)
     {
-        SendAddonPayload(player, "KBM_UI", "CLEAR");
+        SendAddonPayload(player, KBM_UI_PREFIX, "CLEAR");
     }
 
     void SendMissionUiAlert(Player* player, std::string const& message)
     {
         SendAddonPayload(
             player,
-            "KBM_UI",
+            KBM_UI_PREFIX,
             Acore::StringFormat(
                 "ALERT\t{}",
                 SanitizeAddonField(message, 180)));
@@ -1114,16 +1117,16 @@ namespace
         payload << vote.required << "\t";
         payload << GetPlayerVoteToken(state, player);
 
-        SendAddonPayload(player, "KBM_UI", payload.str());
+        SendAddonPayload(player, KBM_UI_PREFIX, payload.str());
         SendAddonPayload(
             player,
-            "KBM_UI",
+            KBM_UI_PREFIX,
             Acore::StringFormat(
                 "BRIEFING\t{}",
                 SanitizeAddonField(state.briefing, 180)));
         SendAddonPayload(
             player,
-            "KBM_UI",
+            KBM_UI_PREFIX,
             Acore::StringFormat(
                 "ANNOUNCEMENT\t{}",
                 SanitizeAddonField(state.announcement, 180)));
@@ -2357,10 +2360,10 @@ public:
         if (language != LANG_ADDON)
             return true;
 
-        if (msg == "KBM_VOTE\tYES")
+        if (msg == Acore::StringFormat("{}\tYES", KBM_VOTE_PREFIX))
             return !ApplyMissionVote(player, true);
 
-        if (msg == "KBM_VOTE\tNO")
+        if (msg == Acore::StringFormat("{}\tNO", KBM_VOTE_PREFIX))
             return !ApplyMissionVote(player, false);
 
         return true;
@@ -2376,10 +2379,10 @@ public:
         if (language != LANG_ADDON)
             return true;
 
-        if (msg == "KBM_VOTE\tYES")
+        if (msg == Acore::StringFormat("{}\tYES", KBM_VOTE_PREFIX))
             return !ApplyMissionVote(player, true);
 
-        if (msg == "KBM_VOTE\tNO")
+        if (msg == Acore::StringFormat("{}\tNO", KBM_VOTE_PREFIX))
             return !ApplyMissionVote(player, false);
 
         return true;

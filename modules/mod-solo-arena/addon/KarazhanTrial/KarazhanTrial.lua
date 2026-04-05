@@ -1,6 +1,8 @@
 ﻿local addonName = ...
 
 local ARENA_INSTANCE_TYPE = "arena"
+local TRIAL_UI_PREFIX = "KARAZHAN_TRIAL_UI"
+local TRIAL_CMD_PREFIX = "KARAZHAN_TRIAL_CMD"
 local SESSION_PENDING_SPAWN = 0
 local SESSION_WAITING_FOR_START = 1
 local SESSION_ACTIVE = 2
@@ -178,7 +180,8 @@ local function NewState()
 end
 
 local function SendCommand(payload)
-  SendAddonMessage("TRIAL_CMD", payload, "WHISPER", UnitName("player"))
+  SendAddonMessage(TRIAL_CMD_PREFIX, payload, "WHISPER",
+    UnitName("player"))
 end
 
 local function DebugChat(message)
@@ -1428,8 +1431,8 @@ Trial:RegisterEvent("PLAYER_LEAVING_WORLD")
 Trial:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
-      RegisterAddonMessagePrefix("TRIAL_UI")
-      RegisterAddonMessagePrefix("TRIAL_CMD")
+    RegisterAddonMessagePrefix(TRIAL_UI_PREFIX)
+    RegisterAddonMessagePrefix(TRIAL_CMD_PREFIX)
     end
 
     SLASH_KARAZHANTRIAL1 = "/trial"
@@ -1458,7 +1461,7 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     return
   end
 
-  if prefix ~= "TRIAL_UI" or type(message) ~= "string" then
+  if prefix ~= TRIAL_UI_PREFIX or type(message) ~= "string" then
     return
   end
 
