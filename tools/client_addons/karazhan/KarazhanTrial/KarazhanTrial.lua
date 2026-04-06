@@ -44,6 +44,28 @@ local function CreateLabel(parent, template, size, r, g, b, justify)
   return fs
 end
 
+local function EnableWrap(fs, width, height, justify)
+  if not fs then
+    return
+  end
+  if width then
+    fs:SetWidth(width)
+  end
+  if height then
+    fs:SetHeight(height)
+  end
+  if justify then
+    fs:SetJustifyH(justify)
+  end
+  fs:SetJustifyV("TOP")
+  if fs.SetNonSpaceWrap then
+    fs:SetNonSpaceWrap(false)
+  end
+  if fs.SetWordWrap then
+    fs:SetWordWrap(true)
+  end
+end
+
 local function CreatePanel(parent, width, height)
   local frame = CreateFrame("Frame", nil, parent)
   frame:SetSize(width, height)
@@ -295,12 +317,12 @@ Trial.stageBadgeText:SetPoint("CENTER", Trial.stageBadge, "CENTER", 0, 0)
 Trial.stageTitle = CreateLabel(
   Trial.rightPane, "GameFontHighlightLarge", 22, 0.96, 0.92, 0.86)
 Trial.stageTitle:SetPoint("TOPLEFT", Trial.stageBadge, "TOPRIGHT", 14, -2)
-Trial.stageTitle:SetWidth(420)
+EnableWrap(Trial.stageTitle, 420, 48, "LEFT")
 
 Trial.stageMeta = CreateLabel(
   Trial.rightPane, "GameFontNormal", 12, 0.86, 0.76, 0.34)
 Trial.stageMeta:SetPoint("TOPLEFT", Trial.stageTitle, "BOTTOMLEFT", 0, -6)
-Trial.stageMeta:SetWidth(420)
+EnableWrap(Trial.stageMeta, 420, 34, "LEFT")
 
 Trial.stageDivider = Trial.rightPane:CreateTexture(nil, "ARTWORK")
 Trial.stageDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -339,16 +361,7 @@ Trial.stageDesc = CreateLabel(
   Trial.infoPane, "GameFontNormal", 13, 0.95, 0.82, 0.24)
 Trial.stageDesc:SetPoint("TOPLEFT", Trial.infoPane, "TOPLEFT", 0, -4)
 Trial.stageDesc:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -4)
-Trial.stageDesc:SetWidth(250)
-Trial.stageDesc:SetHeight(108)
-Trial.stageDesc:SetJustifyH("LEFT")
-Trial.stageDesc:SetJustifyV("TOP")
-if Trial.stageDesc.SetNonSpaceWrap then
-  Trial.stageDesc:SetNonSpaceWrap(false)
-end
-if Trial.stageDesc.SetWordWrap then
-  Trial.stageDesc:SetWordWrap(true)
-end
+EnableWrap(Trial.stageDesc, 250, 108, "LEFT")
 
 Trial.rewardListText = CreateLabel(
   Trial.infoPane, "GameFontNormal", 15, 0.96, 0.92, 0.86)
@@ -496,7 +509,7 @@ for i = 1, 6 do
 
   row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
   row.name:SetPoint("LEFT", row, "LEFT", 132, 0)
-  row.name:SetWidth(268)
+  EnableWrap(row.name, 268, 34, "LEFT")
 
   row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "LEFT")
   row.count:SetPoint("LEFT", row, "LEFT", 416, 0)
@@ -539,10 +552,7 @@ Trial.requirementText = CreateLabel(
   Trial.infoPane, "GameFontNormal", 12, 0.95, 0.82, 0.24)
 Trial.requirementText:SetPoint("TOPLEFT", Trial.requirementIconBg, "TOPRIGHT", 12, -2)
 Trial.requirementText:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -58)
-Trial.requirementText:SetJustifyH("LEFT")
-if Trial.requirementText.SetWordWrap then
-  Trial.requirementText:SetWordWrap(true)
-end
+EnableWrap(Trial.requirementText, 198, 40, "LEFT")
 
 Trial.rewardTitle = CreateLabel(
   Trial.infoPane, "GameFontHighlight", 13, 1.0, 0.84, 0.25)
@@ -553,10 +563,7 @@ Trial.rewardHint = CreateLabel(
   Trial.infoPane, "GameFontNormal", 12, 0.95, 0.82, 0.24)
 Trial.rewardHint:SetPoint("TOPLEFT", Trial.rewardTitle, "BOTTOMLEFT", 0, -8)
 Trial.rewardHint:SetPoint("TOPRIGHT", Trial.infoPane, "TOPRIGHT", 0, -8)
-Trial.rewardHint:SetJustifyH("LEFT")
-if Trial.rewardHint.SetWordWrap then
-  Trial.rewardHint:SetWordWrap(true)
-end
+EnableWrap(Trial.rewardHint, 238, 52, "LEFT")
 Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
 
 Trial.rewardView = CreatePanel(Trial.contentPane, 494, 330)
@@ -634,17 +641,17 @@ Trial.resultTitle:SetText("시련 결과")
 Trial.resultStage = CreateLabel(
   Trial.resultFrame, "GameFontHighlight", 15, 0.96, 0.92, 0.86, "CENTER")
 Trial.resultStage:SetPoint("TOP", Trial.resultTitle, "BOTTOM", 0, -14)
-Trial.resultStage:SetWidth(300)
+EnableWrap(Trial.resultStage, 300, 40, "CENTER")
 
 Trial.resultSummary = CreateLabel(
   Trial.resultFrame, "GameFontNormalLarge", 16, 0.95, 0.82, 0.24, "CENTER")
 Trial.resultSummary:SetPoint("TOP", Trial.resultStage, "BOTTOM", 0, -16)
-Trial.resultSummary:SetWidth(280)
+EnableWrap(Trial.resultSummary, 280, 44, "CENTER")
 
 Trial.resultTime = CreateLabel(
   Trial.resultFrame, "GameFontNormal", 13, 0.90, 0.90, 0.90, "CENTER")
 Trial.resultTime:SetPoint("TOP", Trial.resultSummary, "BOTTOM", 0, -16)
-Trial.resultTime:SetWidth(280)
+EnableWrap(Trial.resultTime, 280, 26, "CENTER")
 
 Trial.returnButton = CreateFrame(
   "Button", nil, Trial.resultFrame, "UIPanelButtonTemplate")
@@ -737,7 +744,7 @@ for i = 1, 8 do
 
   row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
   row.name:SetPoint("LEFT", row, "LEFT", 136, 0)
-  row.name:SetWidth(212)
+  EnableWrap(row.name, 212, 32, "LEFT")
 
   row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "CENTER")
   row.count:SetPoint("LEFT", row, "LEFT", 390, 0)
@@ -1249,7 +1256,13 @@ local function CreateStageButton(index)
   button.text:SetPoint("LEFT", button, "LEFT", 12, 0)
   button.text:SetPoint("RIGHT", button, "RIGHT", -12, 0)
   button.text:SetJustifyH("LEFT")
-  button.text:SetJustifyV("MIDDLE")
+  button.text:SetJustifyV("TOP")
+  if button.text.SetNonSpaceWrap then
+    button.text:SetNonSpaceWrap(false)
+  end
+  if button.text.SetWordWrap then
+    button.text:SetWordWrap(true)
+  end
   button.text:SetTextColor(1.0, 0.84, 0.25)
   button.text:SetText("단계 로딩")
 
