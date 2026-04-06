@@ -1499,7 +1499,7 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
 
     if Trial.state.playerRespawnAt and Trial.state.playerRespawnAt > time()
       and previousPlayerRespawnAt ~= Trial.state.playerRespawnAt then
-      ShowCenterAlert("플레이어 부활까지 10초")
+      ShowCenterAlert("플레이어 부활까지 15초")
     elseif previousPlayerRespawnAt and previousPlayerRespawnAt > 0
       and not Trial.state.playerRespawnAt then
       ShowCenterAlert("플레이어가 다시 부활했습니다")
@@ -1507,7 +1507,7 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
 
     if Trial.state.shadowRespawnAt and Trial.state.shadowRespawnAt > time()
       and previousShadowRespawnAt ~= Trial.state.shadowRespawnAt then
-      ShowCenterAlert("그림자 부활까지 10초")
+      ShowCenterAlert("그림자 부활까지 15초")
     elseif previousShadowRespawnAt and previousShadowRespawnAt > 0
       and not Trial.state.shadowRespawnAt then
       ShowCenterAlert("그림자가 다시 부활했습니다")
