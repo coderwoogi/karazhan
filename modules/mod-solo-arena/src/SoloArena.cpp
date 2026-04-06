@@ -3625,6 +3625,7 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     {
         session.ObjectiveAllNodesCaptured = true;
         MarkVictory(player->GetGUID());
+        FinishSession(player, session);
         SendSystem(player,
             "1600점을 먼저 달성했습니다. 시련에서 승리했습니다.");
         return false;
@@ -3865,14 +3866,11 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
     if (session.ObjectiveResourceScores[shadowObjectiveTeam] >=
         OBJECTIVE_WIN_RESOURCES)
     {
-        session.Result = ArenaResult::Failure;
-        session.State = SessionState::PendingFinish;
-        session.FailedAt = now;
-        session.EndedAt = session.FailedAt;
-        session.FinishDelayMs = 1;
+        MarkFailure(player->GetGUID());
         LogEvent(player, session, "OBJECTIVE_SHADOW_WON");
         NotifyObjectiveFinishReason(player,
             "그림자가 먼저 1600점을 달성했습니다");
+        FinishSession(player, session);
         return false;
     }
 
