@@ -1,6 +1,7 @@
 ﻿#include "ArenaScript.h"
 #include "AllGameObjectScript.h"
 #include "AllSpellScript.h"
+#include "AllBattlegroundScript.h"
 #include "Battleground.h"
 #include "BattlegroundAB.h"
 #include "BattlegroundMgr.h"
@@ -2045,6 +2046,7 @@ namespace
         void UnregisterShadow(ObjectGuid const& creatureGuid);
         bool IsManagedShadow(Creature const* creature) const;
         bool IsManagedArenaInstance(uint32 instanceId) const;
+        bool IsManagedObjectiveInstance(uint32 instanceId) const;
 
     private:
         bool SpawnShadow(Player* player, ArenaSession& session);
@@ -4199,6 +4201,28 @@ bool SoloArenaMgr::IsManagedArenaInstance(uint32 instanceId) const
 {
     return _managedArenaInstances.find(instanceId) !=
         _managedArenaInstances.end();
+}
+
+bool SoloArenaMgr::IsManagedObjectiveInstance(uint32 instanceId) const
+{
+    if (!IsManagedArenaInstance(instanceId))
+        return false;
+
+    for (auto const& [_, session] : _sessions)
+    {
+        if (session.Scenario != TrialScenario::Objective)
+            continue;
+
+        if (session.ArenaInstanceId != instanceId)
+            continue;
+
+        if (session.State == SessionState::AwaitingReturn)
+            continue;
+
+        return true;
+    }
+
+    return false;
 }
 
 bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
@@ -7036,6 +7060,29 @@ namespace
         }
     };
 
+    class SoloArenaAllBattlegroundScript : public AllBattlegroundScript
+    {
+    public:
+        SoloArenaAllBattlegroundScript()
+            : AllBattlegroundScript("SoloArenaAllBattlegroundScript",
+                { ALLBATTLEGROUNDHOOK_ON_BEFORE_BATTLEGROUND_END })
+        {
+        }
+
+        bool OnBeforeBattlegroundEnd(Battleground* bg,
+            TeamId /*winnerTeamId*/) override
+        {
+            if (!bg || bg->GetBgTypeID() != BATTLEGROUND_AB)
+                return true;
+
+            if (SoloArenaMgr::Instance().IsManagedObjectiveInstance(
+                    bg->GetInstanceID()))
+                return false;
+
+            return true;
+        }
+    };
+
     class SoloArenaServerScript : public ServerScript
     {
     public:
@@ -7176,6 +7223,7 @@ void AddSoloArenaScripts()
     new SoloArenaPlayerScript();
     new SoloArenaArenaScript();
     new SoloArenaAllGameObjectScript();
+    new SoloArenaAllBattlegroundScript();
     new SoloArenaServerScript();
     new SoloArenaAllSpellScript();
     new SoloArenaUnitScript();
