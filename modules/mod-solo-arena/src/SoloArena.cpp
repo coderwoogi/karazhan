@@ -6,6 +6,8 @@
 #include "BattlegroundAB.h"
 #include "BattlegroundMgr.h"
 #include "Chat.h"
+#include "ChatCommand.h"
+#include "CommandScript.h"
 #include "Config.h"
 #include "DatabaseEnv.h"
 #include "Duration.h"
@@ -43,6 +45,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+using namespace Acore::ChatCommands;
 
 namespace
 {
@@ -777,6 +781,20 @@ namespace
             session.ObjectiveNextResourceTickAt[teamIndex] = now +
                 BG_AB_TickIntervals[bases].count() / IN_MILLISECONDS;
         }
+    }
+
+    void PushObjectiveResourceWorldStates(BattlegroundAB* bg,
+        ArenaSession const& session)
+    {
+        if (!bg)
+            return;
+
+        bg->UpdateWorldState(
+            WORLD_STATE_BATTLEGROUND_AB_RESOURCES_ALLIANCE,
+            session.ObjectiveResourceScores[TEAM_ALLIANCE]);
+        bg->UpdateWorldState(
+            WORLD_STATE_BATTLEGROUND_AB_RESOURCES_HORDE,
+            session.ObjectiveResourceScores[TEAM_HORDE]);
     }
 
     void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
@@ -2024,11 +2042,15 @@ namespace
         std::vector<StageMechanicConfig> GetMechanics(uint8 stageId) const;
         bool HasSession(ObjectGuid const& playerGuid) const;
         ArenaSession const* GetSession(ObjectGuid const& playerGuid) const;
+        ArenaSession* GetMutableSession(ObjectGuid const& playerGuid);
         bool IsCombatActive(ObjectGuid const& playerGuid) const;
         bool IsObjectiveRaceActive(ObjectGuid const& playerGuid) const;
         bool StartChallenge(Player* player, uint8 stageId);
         bool ReturnPlayer(Player* player);
         bool TryHandleObjectiveFlagUse(Player* player, GameObject* go);
+        bool ShowObjectiveScore(ChatHandler* handler, Player* target);
+        bool SetObjectiveScore(ChatHandler* handler, Player* target,
+            bool shadowScore, uint32 score);
         void SendUi(Player* player);
         void Update(uint32 diff);
         void OnPlayerMapChanged(Player* player);
@@ -2681,6 +2703,15 @@ ArenaSession const* SoloArenaMgr::GetSession(ObjectGuid const& playerGuid) const
     return &itr->second;
 }
 
+ArenaSession* SoloArenaMgr::GetMutableSession(ObjectGuid const& playerGuid)
+{
+    auto itr = _sessions.find(playerGuid.GetCounter());
+    if (itr == _sessions.end())
+        return nullptr;
+
+    return &itr->second;
+}
+
 std::vector<StageMechanicConfig> SoloArenaMgr::GetMechanics(
     uint8 stageId) const
 {
@@ -3055,6 +3086,75 @@ bool SoloArenaMgr::TryHandleObjectiveFlagUse(Player* player, GameObject* go)
     LogEvent(player, session, "OBJ_NODE_CAP_START_PLAYER",
         GetObjectiveNodeName(uint8(node)));
     SendTrialTimePayload(player, session, true);
+    return true;
+}
+
+bool SoloArenaMgr::ShowObjectiveScore(ChatHandler* handler, Player* target)
+{
+    if (!handler || !target)
+        return false;
+
+    ArenaSession* session = GetMutableSession(target->GetGUID());
+    if (!session || session->Scenario != TrialScenario::Objective)
+    {
+        handler->PSendSysMessage("{}",
+            "대상은 진행 중인 아라시 시련 세션이 아닙니다.");
+        return false;
+    }
+
+    TeamId playerTeam = session->Team == TEAM_ALLIANCE ?
+        TEAM_ALLIANCE : TEAM_HORDE;
+    TeamId shadowTeam = playerTeam == TEAM_ALLIANCE ?
+        TEAM_HORDE : TEAM_ALLIANCE;
+
+    handler->PSendSysMessage(
+        "{}",
+        Acore::StringFormat(
+            "[{}] 시련 점수 - 플레이어: {} / 그림자: {}",
+            target->GetName(),
+            session->ObjectiveResourceScores[playerTeam],
+            session->ObjectiveResourceScores[shadowTeam]));
+    return true;
+}
+
+bool SoloArenaMgr::SetObjectiveScore(ChatHandler* handler, Player* target,
+    bool shadowScore, uint32 score)
+{
+    if (!handler || !target)
+        return false;
+
+    ArenaSession* session = GetMutableSession(target->GetGUID());
+    if (!session || session->Scenario != TrialScenario::Objective)
+    {
+        handler->PSendSysMessage("{}",
+            "대상은 진행 중인 아라시 시련 세션이 아닙니다.");
+        return false;
+    }
+
+    TeamId playerTeam = session->Team == TEAM_ALLIANCE ?
+        TEAM_ALLIANCE : TEAM_HORDE;
+    TeamId scoreTeam = shadowScore ?
+        Battleground::GetOtherTeamId(playerTeam) : playerTeam;
+
+    session->ObjectiveResourceScores[scoreTeam] = score;
+    session->ObjectiveNextResourceTickAt[scoreTeam] = 0;
+    session->ObjectiveWorldStateDirty = true;
+    session->NextObjectiveWorldStateSyncAt = 0;
+
+    if (Battleground* bg = target->GetBattleground())
+        if (BattlegroundAB* objectiveBg = dynamic_cast<BattlegroundAB*>(bg))
+            PushObjectiveResourceWorldStates(objectiveBg, *session);
+
+    handler->PSendSysMessage(
+        "{}",
+        Acore::StringFormat(
+            "[{}] 시련 {} 점수를 {}로 변경했습니다.",
+            target->GetName(),
+            shadowScore ? "그림자" : "플레이어",
+            score));
+
+    ShowObjectiveScore(handler, target);
+    SendTrialTimePayload(target, *session, true);
     return true;
 }
 
@@ -7081,6 +7181,83 @@ namespace
         }
     };
 
+    class SoloArenaCommandScript : public CommandScript
+    {
+    public:
+        SoloArenaCommandScript()
+            : CommandScript("SoloArenaCommandScript")
+        {
+        }
+
+        ChatCommandTable GetCommands() const override
+        {
+            static ChatCommandTable trialScoreSetCommandTable =
+            {
+                { "player", HandleTrialScorePlayerCommand,
+                    SEC_GAMEMASTER, Console::No },
+                { "shadow", HandleTrialScoreShadowCommand,
+                    SEC_GAMEMASTER, Console::No }
+            };
+
+            static ChatCommandTable trialScoreCommandTable =
+            {
+                { "show", HandleTrialScoreShowCommand,
+                    SEC_GAMEMASTER, Console::No },
+                { "player", HandleTrialScorePlayerCommand,
+                    SEC_GAMEMASTER, Console::No },
+                { "shadow", HandleTrialScoreShadowCommand,
+                    SEC_GAMEMASTER, Console::No },
+                { "set", trialScoreSetCommandTable }
+            };
+
+            static ChatCommandTable trialCommandTable =
+            {
+                { "score", trialScoreCommandTable }
+            };
+
+            static ChatCommandTable commandTable =
+            {
+                { "trial", trialCommandTable }
+            };
+
+            return commandTable;
+        }
+
+        static Player* GetCommandTarget(ChatHandler* handler)
+        {
+            if (!handler)
+                return nullptr;
+
+            if (Player* selected = handler->getSelectedPlayer())
+                return selected;
+
+            if (WorldSession* session = handler->GetSession())
+                return session->GetPlayer();
+
+            return nullptr;
+        }
+
+        static bool HandleTrialScoreShowCommand(ChatHandler* handler)
+        {
+            return SoloArenaMgr::Instance().ShowObjectiveScore(handler,
+                GetCommandTarget(handler));
+        }
+
+        static bool HandleTrialScorePlayerCommand(ChatHandler* handler,
+            uint32 score)
+        {
+            return SoloArenaMgr::Instance().SetObjectiveScore(handler,
+                GetCommandTarget(handler), false, score);
+        }
+
+        static bool HandleTrialScoreShadowCommand(ChatHandler* handler,
+            uint32 score)
+        {
+            return SoloArenaMgr::Instance().SetObjectiveScore(handler,
+                GetCommandTarget(handler), true, score);
+        }
+    };
+
     class SoloArenaServerScript : public ServerScript
     {
     public:
@@ -7222,6 +7399,7 @@ void AddSoloArenaScripts()
     new SoloArenaArenaScript();
     new SoloArenaAllGameObjectScript();
     new SoloArenaAllBattlegroundScript();
+    new SoloArenaCommandScript();
     new SoloArenaServerScript();
     new SoloArenaAllSpellScript();
     new SoloArenaUnitScript();
