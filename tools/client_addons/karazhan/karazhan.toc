@@ -9,6 +9,7 @@ HeroStoneUI\HeroStoneUI.lua
 ItemEnhancement\Data.lua
 ItemEnhancement\Core.lua
 ItemEnhancement\Tooltip.lua
+EtherealForgeUI\EtherealForgeUI.lua
 KarazhanBonusMission\KarazhanBonusMission.lua
 KarazhanTrial\KarazhanTrial.lua
 TeleportMasterUI\TeleportMasterUI.lua

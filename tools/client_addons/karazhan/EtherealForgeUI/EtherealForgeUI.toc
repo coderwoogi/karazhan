@@ -1,0 +1,8 @@
+﻿## Interface: 30300
+## Title: Ethereal Forge UI
+## Author: coderwoogi
+## Version: 1.0.0
+## Notes: 달라란 강화사 에테르 전용 강화 UI
+## OptionalDeps: ItemEnhancement
+
+EtherealForgeUI.lua
