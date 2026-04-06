@@ -181,6 +181,8 @@ end
 local function NewState()
   return {
     highestCleared = 0,
+    dailyEntriesUsed = 0,
+    dailyEntryLimit = 5,
     stages = {},
     selected = 1,
     inProgress = false,
@@ -776,14 +778,13 @@ local function GetStageDescription(stage)
   local stageId = tonumber(stage.stageId) or 0
   if stageId >= 4 and stageId <= 6 then
     local lines = {
-      "아라시 분지에서 그림자와 거점 경쟁을 진행합니다.",
-      "승리 조건: 먼저 1600점을 달성",
-      "진행 방식: 깃발을 직접 활성화하고 자원 점수를 확보",
-      "그림자도 거점을 점령하며 동일한 점수 규칙을 따릅니다.",
-      "일일 입장 제한: 하루 최대 5회",
-      string.format("체력 배율 %.2f / 공격 배율 %.2f", stage.health, stage.damage),
-      string.format("스킬 주기 %dms / 이동 속도 %.2f", stage.spellInterval, stage.moveSpeed),
-    }
+        "아라시 분지에서 그림자와 거점 경쟁을 진행합니다.",
+        "승리 조건: 먼저 1600점을 달성",
+        "진행 방식: 깃발을 직접 활성화하고 자원 점수를 확보",
+        "그림자도 거점을 점령하며 동일한 점수 규칙을 따릅니다.",
+        string.format("체력 배율 %.2f / 공격 배율 %.2f", stage.health, stage.damage),
+        string.format("스킬 주기 %dms / 이동 속도 %.2f", stage.spellInterval, stage.moveSpeed),
+      }
 
     if stage.mechanicName and stage.mechanicName ~= "" then
       table.insert(lines, "주요 기믹: " .. stage.mechanicName)
@@ -794,7 +795,6 @@ local function GetStageDescription(stage)
 
   local lines = {
     "언더시티 투기장에서 당신의 그림자와 1:1 결투를 치릅니다.",
-    "일일 입장 제한: 하루 최대 5회",
     string.format("체력 배율 %.2f / 공격 배율 %.2f", stage.health, stage.damage),
     string.format("스킬 주기 %dms / 이동 속도 %.2f", stage.spellInterval, stage.moveSpeed),
   }
@@ -1278,7 +1278,13 @@ for i = 1, 10 do
 end
 
 local function RefreshList()
-  Trial.leftSub:SetText("해금 " .. tostring(#Trial.state.stages) .. "개")
+  local remaining = math.max(0,
+    (Trial.state.dailyEntryLimit or 5) - (Trial.state.dailyEntriesUsed or 0))
+  Trial.leftSub:SetText(string.format(
+    "입장 제한 %d회 / 최대 %d회",
+    remaining,
+    Trial.state.dailyEntryLimit or 5
+  ))
 
   for i, button in ipairs(Trial.buttons) do
     local stage = Trial.state.stages[i]
@@ -1324,9 +1330,11 @@ local function ShowResult()
 end
 
 local function ApplyOpenPayload(highestCleared, encoded, inProgress,
-  preparationEndsAt, combatEndsAt, sessionState)
+  preparationEndsAt, combatEndsAt, sessionState, dailyEntriesUsed, dailyEntryLimit)
   Trial.state = NewState()
   Trial.state.highestCleared = tonumber(highestCleared) or 0
+  Trial.state.dailyEntriesUsed = tonumber(dailyEntriesUsed) or 0
+  Trial.state.dailyEntryLimit = tonumber(dailyEntryLimit) or 5
   Trial.state.inProgress = tonumber(inProgress) == 1
   Trial.state.pendingArena = Trial.state.inProgress
   Trial.state.preparationEndsAt = tonumber(preparationEndsAt) or nil
@@ -1400,7 +1408,7 @@ Trial:SetScript("OnHide", function()
 end)
 
 local function ApplyOpen(parts)
-  ApplyOpenPayload(parts[2], parts[3], parts[4], parts[5], parts[7], parts[9])
+  ApplyOpenPayload(parts[2], parts[3], parts[4], parts[5], parts[7], parts[9], parts[10], parts[11])
 end
 
 Trial.rewardButton:SetScript("OnClick", function()
@@ -1485,7 +1493,7 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   end
 
   if tonumber(parts[1]) then
-    ApplyOpenPayload(parts[1], parts[2], parts[3], parts[4], parts[6], parts[8])
+    ApplyOpenPayload(parts[1], parts[2], parts[3], parts[4], parts[6], parts[8], parts[9], parts[10])
     return
   end
 

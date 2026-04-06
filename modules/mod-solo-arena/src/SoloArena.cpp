@@ -3171,6 +3171,7 @@ void SoloArenaMgr::SendUi(Player* player)
         }
 
     uint8 highestStage = GetHighestStageCleared(player);
+    uint32 todayEntriesUsed = GetTodayEntryCount(player);
     uint8 maxUnlockedStage = highestStage + 1;
 
     std::ostringstream entries;
@@ -3213,20 +3214,24 @@ void SoloArenaMgr::SendUi(Player* player)
     payload << uint32(highestStage) << "\t";
     payload << entries.str() << "\t";
     payload << (HasSession(player->GetGUID()) ? 1 : 0) << "\t";
-    if (ArenaSession const* session = GetSession(player->GetGUID()))
-    {
-        payload << uint64(session->PreparationEndsAt) << "\t";
-        payload << uint64(session->CombatStartedAt) << "\t";
-        payload << uint64(session->CombatEndsAt) << "\t";
-        payload << uint64(session->EndedAt) << "\t";
-        payload << uint32(session->State);
-    }
-    else
-    {
-        payload << uint64(0) << "\t" << uint64(0) << "\t"
-                << uint64(0) << "\t" << uint64(0) << "\t"
-                << uint32(SessionState::PendingSpawn);
-    }
+      if (ArenaSession const* session = GetSession(player->GetGUID()))
+      {
+          payload << uint64(session->PreparationEndsAt) << "\t";
+          payload << uint64(session->CombatStartedAt) << "\t";
+          payload << uint64(session->CombatEndsAt) << "\t";
+          payload << uint64(session->EndedAt) << "\t";
+          payload << uint32(session->State) << "\t";
+          payload << todayEntriesUsed << "\t";
+          payload << TRIAL_DAILY_LIMIT;
+      }
+      else
+      {
+          payload << uint64(0) << "\t" << uint64(0) << "\t"
+                  << uint64(0) << "\t" << uint64(0) << "\t"
+                  << uint32(SessionState::PendingSpawn) << "\t"
+                  << todayEntriesUsed << "\t"
+                  << TRIAL_DAILY_LIMIT;
+      }
     SendAddonPayload(player, TRIAL_UI_PREFIX, payload.str());
 }
 
