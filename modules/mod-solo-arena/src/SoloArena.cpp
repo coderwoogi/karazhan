@@ -1,4 +1,5 @@
 ﻿#include "ArenaScript.h"
+#include "AllGameObjectScript.h"
 #include "AllSpellScript.h"
 #include "Battleground.h"
 #include "BattlegroundAB.h"
@@ -265,6 +266,8 @@ namespace
                 {{ 255, 255, 255, 255, 255 }};
         int8 ShadowTargetNode = -1;
         int8 ShadowCurrentSector = -1;
+        std::array<uint64, BG_AB_DYNAMIC_NODES_COUNT>
+            PlayerNodeCaptureEndsAt = {};
         std::array<uint64, BG_AB_DYNAMIC_NODES_COUNT>
             ShadowNodeActivationEndsAt = {};
         std::array<uint64, BG_AB_DYNAMIC_NODES_COUNT>
@@ -658,6 +661,16 @@ namespace
             now < session.ShadowNodeCaptureEndsAt[node];
     }
 
+    bool IsObjectiveNodePlayerCapturing(ArenaSession const& session, uint8 node,
+        uint64 now)
+    {
+        if (node >= BG_AB_DYNAMIC_NODES_COUNT)
+            return false;
+
+        return session.PlayerNodeCaptureEndsAt[node] != 0 &&
+            now < session.PlayerNodeCaptureEndsAt[node];
+    }
+
     void SyncObjectiveWorldStates(Player* player, ArenaSession& session,
         BattlegroundAB* bg, uint64 now)
     {
@@ -668,9 +681,15 @@ namespace
 
         for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
         {
-            bool capturing = IsObjectiveNodeShadowCapturing(session, node, now);
+            bool playerCapturing = IsObjectiveNodePlayerCapturing(session, node,
+                now);
+            bool shadowCapturing = IsObjectiveNodeShadowCapturing(session, node,
+                now);
+            bool capturing = playerCapturing || shadowCapturing;
             ObjectiveNodeOwner owner = session.ObjectiveNodeOwners[node];
-            if (capturing)
+            if (playerCapturing)
+                owner = ObjectiveNodeOwner::Player;
+            else if (shadowCapturing)
                 owner = ObjectiveNodeOwner::Shadow;
 
             uint8 state = GetObjectiveNodeStateValue(owner, session.Team,
@@ -770,6 +789,39 @@ namespace
         o = Position::NormalizeOrientation(std::atan2(
             BG_AB_NodePositions[node][1] - y,
             BG_AB_NodePositions[node][0] - x));
+    }
+
+    bool IsObjectiveTrialFlag(GameObject* go)
+    {
+        if (!go)
+            return false;
+
+        switch (go->GetEntry())
+        {
+            case BG_AB_OBJECTID_NODE_BANNER_0:
+            case BG_AB_OBJECTID_NODE_BANNER_1:
+            case BG_AB_OBJECTID_NODE_BANNER_2:
+            case BG_AB_OBJECTID_NODE_BANNER_3:
+            case BG_AB_OBJECTID_NODE_BANNER_4:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    int8 GetObjectiveNodeForFlagUse(Player* player, GameObject* go)
+    {
+        if (!player || !go)
+            return -1;
+
+        for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
+        {
+            if (player->GetDistance2d(BG_AB_NodePositions[node][0],
+                    BG_AB_NodePositions[node][1]) < 12.0f)
+                return int8(node);
+        }
+
+        return -1;
     }
 
     bool GetObjectiveTravelPoint(float currentX, float currentY,
@@ -1975,6 +2027,7 @@ namespace
         bool IsObjectiveRaceActive(ObjectGuid const& playerGuid) const;
         bool StartChallenge(Player* player, uint8 stageId);
         bool ReturnPlayer(Player* player);
+        bool TryHandleObjectiveFlagUse(Player* player, GameObject* go);
         void SendUi(Player* player);
         void Update(uint32 diff);
         void OnPlayerMapChanged(Player* player);
@@ -2958,6 +3011,51 @@ bool SoloArenaMgr::ReturnPlayer(Player* player)
     return true;
 }
 
+bool SoloArenaMgr::TryHandleObjectiveFlagUse(Player* player, GameObject* go)
+{
+    if (!player || !go || !IsObjectiveTrialFlag(go))
+        return false;
+
+    auto itr = _sessions.find(player->GetGUID().GetCounter());
+    if (itr == _sessions.end())
+        return false;
+
+    ArenaSession& session = itr->second;
+    if (!IsObjectiveTrialStage(session.StageId))
+        return false;
+
+    if (session.State == SessionState::PendingFinish ||
+        session.State == SessionState::AwaitingReturn)
+    {
+        return true;
+    }
+
+    int8 node = GetObjectiveNodeForFlagUse(player, go);
+    if (node < 0 || node >= BG_AB_DYNAMIC_NODES_COUNT)
+        return true;
+
+    uint64 now = std::time(nullptr);
+    if (session.ObjectiveNodeOwners[node] == ObjectiveNodeOwner::Player ||
+        IsObjectiveNodePlayerCapturing(session, uint8(node), now))
+    {
+        return true;
+    }
+
+    session.ShadowNodeActivationEndsAt[node] = 0;
+    session.ShadowNodeCaptureEndsAt[node] = 0;
+    session.PlayerNodeCaptureEndsAt[node] = now +
+        BG_AB_FLAG_CAPTURING_TIME.count() / IN_MILLISECONDS;
+    session.ObjectiveWorldStateDirty = true;
+
+    SendSystem(player, Acore::StringFormat(
+        "[전장 알림] 당신이 {} 거점 깃발을 활성화했습니다.",
+        GetObjectiveNodeName(uint8(node))));
+    LogEvent(player, session, "OBJ_NODE_CAP_START_PLAYER",
+        GetObjectiveNodeName(uint8(node)));
+    SendTrialTimePayload(player, session, true);
+    return true;
+}
+
 void SoloArenaMgr::SendUi(Player* player)
 {
     if (!SoloArenaConfig::Instance().IsEnabled() || !player)
@@ -3503,25 +3601,6 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         UpdateMechanics(player, session);
     }
 
-    if (objectiveBg && session.NextObjectiveNodeScanAt <= now)
-    {
-        session.NextObjectiveNodeScanAt = now + 1;
-        for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
-        {
-            GameObject* playerBanner = objectiveBg->GetBGObject(
-                node * BG_AB_OBJECTS_PER_NODE +
-                (player->GetTeamId() == TEAM_ALLIANCE ?
-                    BG_AB_NODE_STATE_ALLY_OCCUPIED :
-                    BG_AB_NODE_STATE_HORDE_OCCUPIED));
-            if (playerBanner && playerBanner->isSpawned() &&
-                session.ObjectiveNodeOwners[node] != ObjectiveNodeOwner::Player)
-            {
-                session.ObjectiveNodeOwners[node] = ObjectiveNodeOwner::Player;
-                session.ObjectiveWorldStateDirty = true;
-            }
-        }
-    }
-
     if (objectiveBg)
     {
         SyncObjectiveNodeVisuals(session, objectiveBg);
@@ -3576,6 +3655,17 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 
     for (uint8 node = 0; node < BG_AB_DYNAMIC_NODES_COUNT; ++node)
     {
+        if (session.PlayerNodeCaptureEndsAt[node] != 0 &&
+            now >= time_t(session.PlayerNodeCaptureEndsAt[node]))
+        {
+            session.ObjectiveNodeOwners[node] = ObjectiveNodeOwner::Player;
+            session.PlayerNodeCaptureEndsAt[node] = 0;
+            session.ObjectiveWorldStateDirty = true;
+            SyncObjectiveNodeVisuals(session, objectiveBg);
+            if (objectiveBg)
+                SyncObjectiveWorldStates(player, session, objectiveBg, now);
+        }
+
         if (session.ShadowNodeActivationEndsAt[node] != 0)
         {
             if (now >= time_t(session.ShadowNodeActivationEndsAt[node]))
@@ -3922,6 +4012,7 @@ bool SoloArenaMgr::RespawnObjectiveShadow(ObjectGuid const& playerGuid)
     session.BotGuid = ObjectGuid::Empty;
     session.PetGuid = ObjectGuid::Empty;
     session.ShadowTargetNode = -1;
+    session.PlayerNodeCaptureEndsAt.fill(0);
     session.ShadowNodeActivationEndsAt.fill(0);
     session.ShadowNodeCaptureEndsAt.fill(0);
     session.ShadowMarkerRoute.clear();
@@ -3975,6 +4066,7 @@ void SoloArenaMgr::ProcessObjectiveRespawns(Player* player,
         session.BotGuid = ObjectGuid::Empty;
         session.PetGuid = ObjectGuid::Empty;
         session.ShadowTargetNode = -1;
+        session.PlayerNodeCaptureEndsAt.fill(0);
         session.ShadowNodeActivationEndsAt.fill(0);
         session.ShadowNodeCaptureEndsAt.fill(0);
         session.ShadowMarkerRoute.clear();
@@ -4175,6 +4267,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         session.ShadowCurrentSector =
             Battleground::GetOtherTeamId(session.Team) == TEAM_ALLIANCE ?
                 0 : 6;
+        session.PlayerNodeCaptureEndsAt.fill(0);
         session.ShadowNodeActivationEndsAt.fill(0);
         session.ShadowNodeCaptureEndsAt.fill(0);
         session.ShadowRoute.clear();
@@ -6908,6 +7001,21 @@ namespace
         }
     };
 
+    class SoloArenaAllGameObjectScript : public AllGameObjectScript
+    {
+    public:
+        SoloArenaAllGameObjectScript()
+            : AllGameObjectScript("SoloArenaAllGameObjectScript")
+        {
+        }
+
+        bool CanGameObjectGossipHello(Player* player, GameObject* go) override
+        {
+            return SoloArenaMgr::Instance().TryHandleObjectiveFlagUse(
+                player, go);
+        }
+    };
+
     class SoloArenaServerScript : public ServerScript
     {
     public:
@@ -7047,6 +7155,7 @@ void AddSoloArenaScripts()
     new SoloArenaWorldScript();
     new SoloArenaPlayerScript();
     new SoloArenaArenaScript();
+    new SoloArenaAllGameObjectScript();
     new SoloArenaServerScript();
     new SoloArenaAllSpellScript();
     new SoloArenaUnitScript();
