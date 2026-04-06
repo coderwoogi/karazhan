@@ -5230,7 +5230,7 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
     if (session.Scenario == TrialScenario::Objective &&
         session.StageId >= 4 && session.StageId <= 6)
     {
-        switch (urand(1, 6))
+        switch (urand(1, 7))
         {
             case 1:
             {
@@ -5262,18 +5262,22 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
             }
             case 4:
             {
-                float x = 0.0f;
-                float y = 0.0f;
-                float z = 0.0f;
-                float o = 0.0f;
-                GetObjectiveStartLocation(session.Team, x, y, z, o);
-                z = ResolveArenaGroundZ(player->GetMap(), x, y, z);
-                player->TeleportTo(session.ArenaMapId, x, y, z, o,
-                    TELE_TO_GM_MODE);
+                player->SetHealth(player->GetMaxHealth());
+
+                for (uint8 powerIndex = 0; powerIndex < MAX_POWERS; ++powerIndex)
+                {
+                    Powers powerType = Powers(powerIndex);
+                    uint32 maxPower = player->GetMaxPower(powerType);
+                    if (maxPower == 0)
+                        continue;
+
+                    player->SetPower(powerType, maxPower);
+                }
+
                 SendSystem(player,
-                    "마법진이 뒤틀립니다. 시작 위치로 되돌아갑니다.");
+                    "마법진이 회복됩니다. 체력과 마나가 완전히 충전되었습니다.");
                 LogEvent(player, session, "MECHANIC_TRIGGERED",
-                    "랜덤 마법진: 시작 위치 복귀");
+                    "랜덤 마법진: 체력/마나 완전 회복");
                 break;
             }
             case 5:
@@ -5282,6 +5286,22 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
                 float y = 0.0f;
                 float z = 0.0f;
                 float o = 0.0f;
+                GetObjectiveStartLocation(session.Team, x, y, z, o);
+                z = ResolveArenaGroundZ(player->GetMap(), x, y, z);
+                player->TeleportTo(session.ArenaMapId, x, y, z, o,
+                    TELE_TO_GM_MODE);
+                  SendSystem(player,
+                      "마법진이 뒤틀립니다. 시작 위치로 되돌아갑니다.");
+                  LogEvent(player, session, "MECHANIC_TRIGGERED",
+                      "랜덤 마법진: 시작 위치 복귀");
+                  break;
+              }
+              case 6:
+              {
+                  float x = 0.0f;
+                  float y = 0.0f;
+                  float z = 0.0f;
+                  float o = 0.0f;
                 GetRandomObjectiveFlagLocation(x, y, z, o);
                 z = ResolveArenaGroundZ(player->GetMap(), x, y, z) + 60.0f;
                 player->TeleportTo(session.ArenaMapId, x, y, z, o,
@@ -5290,16 +5310,16 @@ void SoloArenaMgr::ApplyMechanicEffect(Player* player, ArenaSession& session,
                     true);
                 SendSystem(player,
                     "마법진이 폭발합니다. 거점 상공으로 이동하며 낙하산이 펼쳐집니다.");
-                LogEvent(player, session, "MECHANIC_TRIGGERED",
-                    "랜덤 마법진: 거점 상공 이동");
-                break;
-            }
-            case 6:
-            default:
-            {
-                float x = 0.0f;
-                float y = 0.0f;
-                float z = 0.0f;
+                  LogEvent(player, session, "MECHANIC_TRIGGERED",
+                      "랜덤 마법진: 거점 상공 이동");
+                  break;
+              }
+              case 7:
+              default:
+              {
+                  float x = 0.0f;
+                  float y = 0.0f;
+                  float z = 0.0f;
                 float o = 0.0f;
                 GetRandomObjectiveFlagLocation(x, y, z, o);
                 z = ResolveArenaGroundZ(player->GetMap(), x, y, z);
