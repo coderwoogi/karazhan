@@ -70,21 +70,29 @@ static void AddEnhanceConfigPreview(Player* player, uint32 action,
     if (!config)
         return;
 
+    auto addMaterialPreview = [&](uint32 itemId, uint32 count)
+    {
+        if (itemId == 0 || count == 0)
+            return;
+
+        std::string materialName = sItemKarazhanMgr->GetItemNameLocale(
+            itemId, player);
+        std::ostringstream materialMsg;
+        materialMsg << "  재료: |Hitem:" << itemId
+                    << ":0:0:0:0:0:0:0|h[" << materialName
+                    << "]|h x" << count;
+        AddGossipItemFor(player, GOSSIP_ICON_DOT, materialMsg.str(),
+            GOSSIP_SENDER_MAIN, action);
+    };
+
     std::ostringstream costMsg;
     costMsg << "  비용: " << config->goldCost << " 골드";
     AddGossipItemFor(player, GOSSIP_ICON_DOT, costMsg.str(),
         GOSSIP_SENDER_MAIN, action);
 
-    if (config->material1 > 0 && config->material1Count > 0)
-    {
-        std::string materialName = sItemKarazhanMgr->GetItemNameLocale(
-            config->material1, player);
-        std::ostringstream materialMsg;
-        materialMsg << "  재료: " << materialName << " x"
-                    << config->material1Count;
-        AddGossipItemFor(player, GOSSIP_ICON_DOT, materialMsg.str(),
-            GOSSIP_SENDER_MAIN, action);
-    }
+    addMaterialPreview(config->material1, config->material1Count);
+    addMaterialPreview(config->material2, config->material2Count);
+    addMaterialPreview(config->material3, config->material3Count);
 
     std::ostringstream successMsg;
     successMsg << "  성공: " << std::fixed << std::setprecision(1)
