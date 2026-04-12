@@ -24,6 +24,56 @@ namespace
     constexpr uint8 ENHANCE_TYPE_HEALER = 3;
     constexpr uint8 ENHANCE_TYPE_TANK = 4;
     constexpr uint8 ENHANCE_TYPE_ALL_STATS = 5;
+    char const* FORGE_UI_PREFIX = "KARAZHAN_FORGE_UI";
+}
+
+static std::string SanitizeForgeField(std::string text, size_t maxLen)
+{
+    std::replace(text.begin(), text.end(), '\t', ' ');
+    std::replace(text.begin(), text.end(), '\n', ' ');
+    std::replace(text.begin(), text.end(), '\r', ' ');
+    std::replace(text.begin(), text.end(), '^', '/');
+    std::replace(text.begin(), text.end(), '|', '/');
+
+    if (text.size() > maxLen)
+        text.resize(maxLen);
+
+    return text;
+}
+
+static void SendForgeUiPayload(Player* player, std::string const& payload)
+{
+    if (!player || !player->GetSession())
+        return;
+
+    std::string fullMessage =
+        Acore::StringFormat("{}\t{}", FORGE_UI_PREFIX, payload);
+
+    WorldPacket data(SMSG_MESSAGECHAT, 100);
+    data << uint8(CHAT_MSG_WHISPER);
+    data << int32(LANG_ADDON);
+    data << player->GetGUID();
+    data << uint32(0);
+    data << player->GetGUID();
+    data << uint32(fullMessage.length() + 1);
+    data << fullMessage;
+    data << uint8(0);
+    player->GetSession()->SendPacket(&data);
+}
+
+static void SendForgeResultPayload(Player* player, std::string const& resultType,
+    std::string const& itemName, uint8 currentLevel, uint8 targetLevel,
+    char const* typeName, std::string const& message)
+{
+    std::ostringstream payload;
+    payload << "RESULT\t"
+            << resultType << "\t"
+            << SanitizeForgeField(itemName, 64) << "\t"
+            << uint32(currentLevel) << "\t"
+            << uint32(targetLevel) << "\t"
+            << SanitizeForgeField(typeName ? typeName : "", 16) << "\t"
+            << SanitizeForgeField(message, 160);
+    SendForgeUiPayload(player, payload.str());
 }
 
 ItemKarazhanMgr::ItemKarazhanMgr()
@@ -971,7 +1021,9 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         // ========================================
         // STEP 6: ?끸쁾???щ컮瑜?StoreNewItem ?몄텧 ?끸쁾??
         // ========================================
-        int32 randomPropId = 2164 + pending.targetLevel;
+        int32 randomPropId = pending.backup.randomPropertyId;
+        if (pending.config.randomPropertyId != 0)
+            randomPropId = pending.config.randomPropertyId;
 
         ItemPosCountVec dest;
         // ??CanStoreItem ?щ컮瑜??쒓렇?덉쿂: (bag, slot, dest, entry, count)
@@ -1000,6 +1052,10 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         uint32 newGuid = newItem->GetGUID().GetCounter();
         LOG_INFO("module", "Karazhan: New item created - GUID:{}, RandomProp:{}",
                  newGuid, randomPropId);
+
+        if (randomPropId < 0 && pending.backup.randomSuffix != 0)
+            newItem->SetUInt32Value(ITEM_FIELD_PROPERTY_SEED,
+                pending.backup.randomSuffix);
 
         // ========================================
         // STEP 7: 蹂듭썝
@@ -1035,8 +1091,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         // ========================================
         // STEP 8: Apply enhancement enchant
         // ========================================
-        uint32 spellId = GetEnhanceSpellId(pending.targetLevel,
-            pending.enhanceType);
+        uint32 spellId = pending.config.spellId;
         if (spellId > 0)
         {
             if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
@@ -1084,26 +1139,16 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         // ========================================
         // STEP 11: 硫붿떆吏
         // ========================================
-        if (WorldSession* session = player->GetSession())
-        {
-            ChatHandler handler(session);
-            handler.PSendSysMessage("|cff00ff00==============================================|r");
-            handler.PSendSysMessage("|cff00ff00[강화 성공!]|r");
-            
-            std::string msg = Acore::StringFormat(
-                "|cffffcc00{}|r |cff00ff00+{}|r -> |cffff00ff+{}|r ({})",
-                itemName, pending.currentLevel, pending.targetLevel,
-                GetEnhanceTypeName(pending.enhanceType)
-            );
-            handler.PSendSysMessage(msg.c_str());
-
-            if (wasEquipped)
-            {
-                handler.PSendSysMessage("|cffffcc00강화된 아이템이 가방으로 이동했습니다.|r");
-            }
-
-            handler.PSendSysMessage("|cff00ff00==============================================|r");
-        }
+        SendForgeResultPayload(
+            player,
+            "SUCCESS",
+            itemName,
+            pending.currentLevel,
+            pending.targetLevel,
+            GetEnhanceTypeName(pending.enhanceType),
+            wasEquipped
+                ? "강화 성공, 강화된 아이템이 가방으로 이동했습니다."
+                : "강화 성공");
 
         LOG_INFO("module", "Karazhan: ===== ENHANCEMENT SUCCESS =====");
     }
@@ -1120,10 +1165,14 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
 
         UpdateItemEnhanceStats(pending.oldItemGuid, EnhanceResult::FAIL, pending.config.goldCost);
 
-        if (WorldSession* session = player->GetSession())
-        {
-            ChatHandler(session).PSendSysMessage("|cffff0000[강화 실패] 단계 유지|r");
-        }
+        SendForgeResultPayload(
+            player,
+            "FAIL",
+            itemName,
+            pending.currentLevel,
+            pending.targetLevel,
+            GetEnhanceTypeName(pending.enhanceType),
+            "강화 실패, 현재 단계가 유지되었습니다.");
 
         LOG_INFO("module", "Karazhan: Enhancement FAIL");
     }
@@ -1135,10 +1184,14 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         player->DestroyItem(pending.bag, pending.slot, true);
         DeleteItemEnhance(pending.oldItemGuid);
 
-        if (WorldSession* session = player->GetSession())
-        {
-            ChatHandler(session).PSendSysMessage("|cffff0000[아이템 파괴!]|r");
-        }
+        SendForgeResultPayload(
+            player,
+            "DESTROYED",
+            itemName,
+            pending.currentLevel,
+            pending.targetLevel,
+            GetEnhanceTypeName(pending.enhanceType),
+            "강화 실패로 아이템이 파괴되었습니다.");
 
         LOG_WARN("module", "Karazhan: Enhancement DESTROYED");
     }
