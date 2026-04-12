@@ -291,6 +291,42 @@ Trial.leftBg:SetVertexColor(0.02, 0.02, 0.02, 0.55)
 Trial.leftBg:SetPoint("TOPLEFT", Trial.leftPane, "TOPLEFT", 0, -30)
 Trial.leftBg:SetPoint("BOTTOMRIGHT", Trial.leftPane, "BOTTOMRIGHT", 0, 0)
 
+Trial.leftScroll = CreateFrame(
+  "ScrollFrame", "KarazhanTrialStageScroll", Trial.leftPane,
+  "UIPanelScrollFrameTemplate")
+Trial.leftScroll:SetPoint("TOPLEFT", Trial.leftPane, "TOPLEFT", 0, -30)
+Trial.leftScroll:SetPoint("BOTTOMRIGHT", Trial.leftPane, "BOTTOMRIGHT", -28, 0)
+Trial.leftScroll:EnableMouseWheel(true)
+
+Trial.leftScrollChild = CreateFrame("Frame", nil, Trial.leftScroll)
+Trial.leftScrollChild:SetWidth(244)
+Trial.leftScrollChild:SetHeight(1)
+Trial.leftScroll:SetScrollChild(Trial.leftScrollChild)
+
+Trial.leftScrollBar = _G["KarazhanTrialStageScrollScrollBar"]
+if Trial.leftScrollBar then
+  Trial.leftScrollBar:ClearAllPoints()
+  Trial.leftScrollBar:SetPoint("TOPLEFT", Trial.leftScroll, "TOPRIGHT", 4, -16)
+  Trial.leftScrollBar:SetPoint("BOTTOMLEFT", Trial.leftScroll, "BOTTOMRIGHT", 4, 16)
+end
+
+Trial.leftScroll:SetScript("OnMouseWheel", function(self, delta)
+  local scrollBar = Trial.leftScrollBar
+  if not scrollBar then
+    return
+  end
+
+  local step = 56
+  local nextValue = scrollBar:GetValue() - (delta * step)
+  local minValue, maxValue = scrollBar:GetMinMaxValues()
+  if nextValue < minValue then
+    nextValue = minValue
+  elseif nextValue > maxValue then
+    nextValue = maxValue
+  end
+  scrollBar:SetValue(nextValue)
+end)
+
 Trial.rightPane = CreateFrame("Frame", nil, Trial)
 Trial.rightPane:SetPoint("TOPRIGHT", Trial, "TOPRIGHT", -24, -54)
 Trial.rightPane:SetSize(534, 452)
@@ -1204,11 +1240,12 @@ local function SelectStage(index)
 end
 
 local function CreateStageButton(index)
-  local button = CreateFrame("Button", nil, Trial.leftPane)
-  button:SetSize(252, 52)
-  button:SetPoint("TOPLEFT", Trial.leftPane, "TOPLEFT", 8, -38 - ((index - 1) * 56))
+  local button = CreateFrame("Button", nil, Trial.leftScrollChild)
+  button:SetSize(236, 52)
+  button:SetPoint("TOPLEFT", Trial.leftScrollChild, "TOPLEFT", 4,
+    -((index - 1) * 56))
   button:SetFrameStrata("DIALOG")
-  button:SetFrameLevel(Trial.leftPane:GetFrameLevel() + 10)
+  button:SetFrameLevel(Trial.leftScrollChild:GetFrameLevel() + 10)
   button:EnableMouse(true)
   button:Hide()
   button.index = index
@@ -1273,8 +1310,10 @@ local function CreateStageButton(index)
   return button
 end
 
-for i = 1, 10 do
-  Trial.buttons[i] = CreateStageButton(i)
+local function EnsureStageButtons(count)
+  for i = #Trial.buttons + 1, count do
+    Trial.buttons[i] = CreateStageButton(i)
+  end
 end
 
 local function RefreshList()
@@ -1285,6 +1324,8 @@ local function RefreshList()
     remaining,
     Trial.state.dailyEntryLimit or 5
   ))
+
+  EnsureStageButtons(#Trial.state.stages)
 
   for i, button in ipairs(Trial.buttons) do
     local stage = Trial.state.stages[i]
@@ -1302,6 +1343,12 @@ local function RefreshList()
     else
       button:Hide()
     end
+  end
+
+  local listHeight = math.max(1, #Trial.state.stages * 56)
+  Trial.leftScrollChild:SetHeight(listHeight)
+  if Trial.leftScrollBar then
+    Trial.leftScrollBar:SetValue(0)
   end
 
   if #Trial.state.stages > 0 then
