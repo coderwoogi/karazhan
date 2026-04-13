@@ -185,6 +185,12 @@ namespace
         Shadow = 2
     };
 
+    enum class ShadowArchetype : uint8
+    {
+        Melee = 0,
+        Caster = 1
+    };
+
     enum CloneVisualSpells : uint32
     {
         SPELL_COPY_MAINHAND = 41055,
@@ -338,6 +344,7 @@ namespace
         uint8 PlayerGender = GENDER_MALE;
         uint8 SheathState = 1;
         uint8 Level = 1;
+        ShadowArchetype Archetype = ShadowArchetype::Caster;
         Powers PowerType = POWER_MANA;
         uint32 MaxHealth = 1;
         uint32 MaxPower = 0;
@@ -346,7 +353,11 @@ namespace
         float CastSpeedRate = 1.0f;
         float AverageItemLevel = 1.0f;
         int32 Armor = 0;
+        int32 AttackPowerBonus = 0;
         int32 SpellPowerBonus = 0;
+        float CritChancePct = 0.0f;
+        uint32 HasteRating = 0;
+        uint32 ArmorPenetrationRating = 0;
         std::array<int32, MAX_STATS> Stats = {};
         std::array<int32, MAX_SPELL_SCHOOL> Resistances = {};
         std::array<uint32, MAX_ATTACK> AttackTimeMs = {};
@@ -358,6 +369,18 @@ namespace
         bool CanDualWield = false;
         float DamageMultiplier = 1.0f;
         uint32 SpellIntervalMs = 4000;
+        bool UseStageStatTable = false;
+    };
+
+    struct ShadowStageStats
+    {
+        uint32 GearScore = 0;
+        uint32 MaxHealth = 1;
+        int32 AttackPower = 0;
+        int32 SpellPower = 0;
+        float CritChancePct = 0.0f;
+        uint32 HasteRating = 0;
+        uint32 ArmorPenetrationRating = 0;
     };
 
     struct SpellPackage
@@ -406,6 +429,110 @@ namespace
         TacticalSpell CrowdControl;
         TacticalSpell Area;
     };
+
+    ShadowArchetype GetShadowArchetype(uint8 playerClass, uint32 activeSpec)
+    {
+        switch (playerClass)
+        {
+            case CLASS_WARRIOR:
+            case CLASS_ROGUE:
+            case CLASS_HUNTER:
+            case CLASS_DEATH_KNIGHT:
+                return ShadowArchetype::Melee;
+            case CLASS_PALADIN:
+                return activeSpec == TALENT_TREE_PALADIN_HOLY ?
+                    ShadowArchetype::Caster : ShadowArchetype::Melee;
+            case CLASS_DRUID:
+                return activeSpec == TALENT_TREE_DRUID_FERAL_COMBAT ?
+                    ShadowArchetype::Melee : ShadowArchetype::Caster;
+            case CLASS_SHAMAN:
+                return activeSpec == TALENT_TREE_SHAMAN_ENHANCEMENT ?
+                    ShadowArchetype::Melee : ShadowArchetype::Caster;
+            default:
+                return ShadowArchetype::Caster;
+        }
+    }
+
+    bool IsMeleeArchetype(ShadowProfile const& profile)
+    {
+        return profile.Archetype == ShadowArchetype::Melee;
+    }
+
+    ShadowStageStats const& GetShadowStageStats(uint8 stageId,
+        ShadowArchetype archetype)
+    {
+        static std::array<ShadowStageStats, 10> const meleeStats =
+        {{
+            { 4300, 22000, 3000, 0, 25.0f, 0, 200 },
+            { 4600, 24000, 3500, 0, 28.0f, 0, 300 },
+            { 4900, 26000, 4000, 0, 30.0f, 0, 400 },
+            { 5200, 28000, 4600, 0, 32.0f, 0, 500 },
+            { 5500, 30000, 5200, 0, 35.0f, 0, 600 },
+            { 5800, 32000, 5800, 0, 38.0f, 0, 700 },
+            { 6000, 34000, 6300, 0, 40.0f, 0, 800 },
+            { 6300, 36000, 6800, 0, 42.0f, 0, 900 },
+            { 6500, 38000, 7200, 0, 45.0f, 0, 1000 },
+            { 6500, 38000, 7200, 0, 45.0f, 0, 1000 }
+        }};
+
+        static std::array<ShadowStageStats, 10> const casterStats =
+        {{
+            { 4300, 20000, 0, 1800, 20.0f, 300, 0 },
+            { 4600, 22000, 0, 2100, 22.0f, 400, 0 },
+            { 4900, 24000, 0, 2400, 25.0f, 500, 0 },
+            { 5200, 26000, 0, 2800, 27.0f, 600, 0 },
+            { 5500, 28000, 0, 3200, 30.0f, 700, 0 },
+            { 5800, 30000, 0, 3500, 32.0f, 800, 0 },
+            { 6000, 32000, 0, 3800, 35.0f, 900, 0 },
+            { 6300, 34000, 0, 4200, 37.0f, 1000, 0 },
+            { 6500, 36000, 0, 4500, 40.0f, 1100, 0 },
+            { 6500, 36000, 0, 4500, 40.0f, 1100, 0 }
+        }};
+
+        size_t index = std::clamp<size_t>(
+            stageId > 0 ? size_t(stageId - 1) : 0, 0, 9);
+        return archetype == ShadowArchetype::Melee ?
+            meleeStats[index] : casterStats[index];
+    }
+
+    float ArmorPenetrationPercent(uint32 rating)
+    {
+        return std::clamp(float(rating) / 13.99f, 0.0f, 100.0f);
+    }
+
+    float HastePercent(uint32 rating)
+    {
+        return std::max(0.0f, float(rating) / 32.79f);
+    }
+
+    float ShadowCritMultiplier(ShadowProfile const& profile)
+    {
+        float critChance = std::clamp(profile.CritChancePct, 0.0f, 100.0f) /
+            100.0f;
+        if (critChance <= 0.0f)
+            return 1.0f;
+
+        return IsMeleeArchetype(profile) ? 1.0f + critChance :
+            1.0f + (critChance * 0.5f);
+    }
+
+    float ShadowArmorPenMultiplier(ShadowProfile const& profile)
+    {
+        if (!IsMeleeArchetype(profile) ||
+            profile.ArmorPenetrationRating == 0)
+        {
+            return 1.0f;
+        }
+
+        return 1.0f + ((ArmorPenetrationPercent(
+            profile.ArmorPenetrationRating) / 100.0f) * 0.25f);
+    }
+
+    float ShadowCastSpeedRate(uint32 hasteRating)
+    {
+        float hastePct = HastePercent(hasteRating) / 100.0f;
+        return std::clamp(1.0f / (1.0f + hastePct), 0.55f, 1.0f);
+    }
 
     bool IsGapCloserSpell(uint32 spellId)
     {
@@ -1778,6 +1905,8 @@ namespace
         profile.PlayerGender = player->getGender();
         profile.SheathState = player->GetSheath();
         profile.Level = player->GetLevel();
+        profile.Archetype = GetShadowArchetype(profile.PlayerClass,
+            profile.ActiveSpec);
         profile.PowerType = player->getPowerType();
         profile.MaxHealth = std::max<uint32>(1u, player->GetMaxHealth());
         profile.MaxPower = player->GetMaxPower(profile.PowerType);
@@ -1834,6 +1963,29 @@ namespace
                 EQUIPMENT_SLOT_RANGED))
         {
             profile.RangedEntry = ranged->GetEntry();
+        }
+
+        if (stage.StageId >= 1 && stage.StageId <= 10)
+        {
+            ShadowStageStats const& stats = GetShadowStageStats(stage.StageId,
+                profile.Archetype);
+            profile.UseStageStatTable = true;
+            profile.AverageItemLevel = float(stats.GearScore);
+            profile.MaxHealth = stats.MaxHealth;
+            profile.CritChancePct = stats.CritChancePct;
+
+            if (profile.Archetype == ShadowArchetype::Melee)
+            {
+                profile.AttackPowerBonus = stats.AttackPower;
+                profile.ArmorPenetrationRating =
+                    stats.ArmorPenetrationRating;
+            }
+            else
+            {
+                profile.SpellPowerBonus = stats.SpellPower;
+                profile.HasteRating = stats.HasteRating;
+                profile.CastSpeedRate = ShadowCastSpeedRate(stats.HasteRating);
+            }
         }
 
         return profile;
@@ -4453,45 +4605,112 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
     uint32 maxHealth = std::max<uint32>(5000u,
         static_cast<uint32>(profile.MaxHealth *
             stage.HealthMultiplier));
+    if (profile.UseStageStatTable)
+        maxHealth = std::max<uint32>(5000u, profile.MaxHealth);
     summon->SetMaxHealth(maxHealth);
     summon->SetHealth(maxHealth);
 
     uint32 baseAttackTime = profile.AttackTimeMs[BASE_ATTACK] ?
         std::min(profile.AttackTimeMs[BASE_ATTACK], stage.AttackTimeMs) :
         stage.AttackTimeMs;
+    if (profile.UseStageStatTable && !IsMeleeArchetype(profile) &&
+        profile.HasteRating != 0)
+    {
+        float hasteRate = ShadowCastSpeedRate(profile.HasteRating);
+        baseAttackTime = std::max<uint32>(1000u,
+            uint32(float(baseAttackTime) * hasteRate));
+    }
+
     summon->SetAttackTime(BASE_ATTACK, baseAttackTime);
-    summon->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE,
-        std::max(1.0f, profile.WeaponMinDamage[BASE_ATTACK] *
-            stage.DamageMultiplier));
-    summon->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE,
-        std::max(2.0f, profile.WeaponMaxDamage[BASE_ATTACK] *
-            stage.DamageMultiplier));
+    float mainMinDamage = std::max(1.0f,
+        profile.WeaponMinDamage[BASE_ATTACK] * stage.DamageMultiplier);
+    float mainMaxDamage = std::max(2.0f,
+        profile.WeaponMaxDamage[BASE_ATTACK] * stage.DamageMultiplier);
+
+    if (profile.UseStageStatTable && IsMeleeArchetype(profile))
+    {
+        float averageDamage = std::max(90.0f,
+            (float(profile.AttackPowerBonus) / 14.0f) *
+            (float(baseAttackTime) / 1000.0f));
+        averageDamage *= ShadowCritMultiplier(profile);
+        averageDamage *= ShadowArmorPenMultiplier(profile);
+        float spread = std::max(30.0f, averageDamage * 0.10f);
+        mainMinDamage = std::max(1.0f, averageDamage - spread);
+        mainMaxDamage = std::max(mainMinDamage + 1.0f,
+            averageDamage + spread);
+    }
+
+    summon->SetBaseWeaponDamage(BASE_ATTACK, MINDAMAGE, mainMinDamage);
+    summon->SetBaseWeaponDamage(BASE_ATTACK, MAXDAMAGE, mainMaxDamage);
     summon->UpdateDamagePhysical(BASE_ATTACK);
 
     if (profile.AttackTimeMs[OFF_ATTACK] != 0)
     {
-        summon->SetAttackTime(OFF_ATTACK,
-            std::min(profile.AttackTimeMs[OFF_ATTACK], stage.AttackTimeMs));
-        summon->SetBaseWeaponDamage(OFF_ATTACK, MINDAMAGE,
-            std::max(1.0f, profile.WeaponMinDamage[OFF_ATTACK] *
-                stage.DamageMultiplier));
-        summon->SetBaseWeaponDamage(OFF_ATTACK, MAXDAMAGE,
-            std::max(2.0f, profile.WeaponMaxDamage[OFF_ATTACK] *
-                stage.DamageMultiplier));
+        uint32 offAttackTime = std::min(profile.AttackTimeMs[OFF_ATTACK],
+            stage.AttackTimeMs);
+        float offMinDamage = std::max(1.0f,
+            profile.WeaponMinDamage[OFF_ATTACK] * stage.DamageMultiplier);
+        float offMaxDamage = std::max(2.0f,
+            profile.WeaponMaxDamage[OFF_ATTACK] * stage.DamageMultiplier);
+
+        if (profile.UseStageStatTable && IsMeleeArchetype(profile))
+        {
+            float averageDamage = std::max(60.0f,
+                (float(profile.AttackPowerBonus) / 14.0f) *
+                (float(offAttackTime) / 1000.0f) * 0.75f);
+            averageDamage *= ShadowCritMultiplier(profile);
+            averageDamage *= ShadowArmorPenMultiplier(profile);
+            float spread = std::max(20.0f, averageDamage * 0.10f);
+            offMinDamage = std::max(1.0f, averageDamage - spread);
+            offMaxDamage = std::max(offMinDamage + 1.0f,
+                averageDamage + spread);
+        }
+
+        summon->SetAttackTime(OFF_ATTACK, offAttackTime);
+        summon->SetBaseWeaponDamage(OFF_ATTACK, MINDAMAGE, offMinDamage);
+        summon->SetBaseWeaponDamage(OFF_ATTACK, MAXDAMAGE, offMaxDamage);
         summon->UpdateDamagePhysical(OFF_ATTACK);
     }
 
     if (profile.AttackTimeMs[RANGED_ATTACK] != 0)
     {
-        summon->SetAttackTime(RANGED_ATTACK,
-            std::min(profile.AttackTimeMs[RANGED_ATTACK], stage.AttackTimeMs));
+        uint32 rangedAttackTime = std::min(profile.AttackTimeMs[RANGED_ATTACK],
+            stage.AttackTimeMs);
+        float rangedMinDamage = std::max(1.0f,
+            profile.WeaponMinDamage[RANGED_ATTACK] * stage.DamageMultiplier);
+        float rangedMaxDamage = std::max(2.0f,
+            profile.WeaponMaxDamage[RANGED_ATTACK] * stage.DamageMultiplier);
+
+        if (profile.UseStageStatTable &&
+            profile.PlayerClass == CLASS_HUNTER)
+        {
+            float averageDamage = std::max(80.0f,
+                (float(profile.AttackPowerBonus) / 14.0f) *
+                (float(rangedAttackTime) / 1000.0f));
+            averageDamage *= ShadowCritMultiplier(profile);
+            averageDamage *= ShadowArmorPenMultiplier(profile);
+            float spread = std::max(25.0f, averageDamage * 0.10f);
+            rangedMinDamage = std::max(1.0f, averageDamage - spread);
+            rangedMaxDamage = std::max(rangedMinDamage + 1.0f,
+                averageDamage + spread);
+        }
+
+        summon->SetAttackTime(RANGED_ATTACK, rangedAttackTime);
         summon->SetBaseWeaponDamage(RANGED_ATTACK, MINDAMAGE,
-            std::max(1.0f, profile.WeaponMinDamage[RANGED_ATTACK] *
-                stage.DamageMultiplier));
+            rangedMinDamage);
         summon->SetBaseWeaponDamage(RANGED_ATTACK, MAXDAMAGE,
-            std::max(2.0f, profile.WeaponMaxDamage[RANGED_ATTACK] *
-                stage.DamageMultiplier));
+            rangedMaxDamage);
         summon->UpdateDamagePhysical(RANGED_ATTACK);
+    }
+
+    if (profile.UseStageStatTable && IsMeleeArchetype(profile))
+    {
+        summon->SetInt32Value(UNIT_FIELD_ATTACK_POWER,
+            std::max<int32>(0, profile.AttackPowerBonus));
+        summon->SetInt32Value(UNIT_FIELD_ATTACK_POWER_MODS, 0);
+        summon->SetFloatValue(UNIT_FIELD_ATTACK_POWER_MULTIPLIER, 0.0f);
+        summon->UpdateAttackPowerAndDamage(false);
+        summon->UpdateAttackPowerAndDamage(true);
     }
 
     summon->SetFloatValue(UNIT_MOD_CAST_SPEED,
@@ -6232,7 +6451,17 @@ namespace
             return 0;
 
         float baseDamage = (me->GetMaxHealth() / 18.0f) * factor;
-        baseDamage += float(profile.SpellPowerBonus) * 0.65f * factor;
+        if (IsMeleeArchetype(profile))
+        {
+            baseDamage += float(profile.AttackPowerBonus) * 0.45f * factor;
+            baseDamage *= ShadowArmorPenMultiplier(profile);
+        }
+        else
+        {
+            baseDamage += float(profile.SpellPowerBonus) * 0.65f * factor;
+        }
+
+        baseDamage *= ShadowCritMultiplier(profile);
         baseDamage *= profile.DamageMultiplier;
         return std::max<uint32>(150u, static_cast<uint32>(baseDamage));
     }
