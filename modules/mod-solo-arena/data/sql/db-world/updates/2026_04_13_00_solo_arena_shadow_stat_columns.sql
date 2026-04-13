@@ -1,24 +1,154 @@
-ALTER TABLE `solo_arena_stage`
-    ADD COLUMN IF NOT EXISTS `melee_target_gs` INT UNSIGNED NOT NULL
-        DEFAULT 0 AFTER `preparation_ms`,
-    ADD COLUMN IF NOT EXISTS `melee_health` INT UNSIGNED NOT NULL
-        DEFAULT 1 AFTER `melee_target_gs`,
-    ADD COLUMN IF NOT EXISTS `melee_attack_power` INT NOT NULL
-        DEFAULT 0 AFTER `melee_health`,
-    ADD COLUMN IF NOT EXISTS `melee_crit_pct` FLOAT NOT NULL
-        DEFAULT 0 AFTER `melee_attack_power`,
-    ADD COLUMN IF NOT EXISTS `melee_armor_pen_rating` INT UNSIGNED NOT NULL
-        DEFAULT 0 AFTER `melee_crit_pct`,
-    ADD COLUMN IF NOT EXISTS `caster_target_gs` INT UNSIGNED NOT NULL
-        DEFAULT 0 AFTER `melee_armor_pen_rating`,
-    ADD COLUMN IF NOT EXISTS `caster_health` INT UNSIGNED NOT NULL
-        DEFAULT 1 AFTER `caster_target_gs`,
-    ADD COLUMN IF NOT EXISTS `caster_spell_power` INT NOT NULL
-        DEFAULT 0 AFTER `caster_health`,
-    ADD COLUMN IF NOT EXISTS `caster_crit_pct` FLOAT NOT NULL
-        DEFAULT 0 AFTER `caster_spell_power`,
-    ADD COLUMN IF NOT EXISTS `caster_haste_rating` INT UNSIGNED NOT NULL
-        DEFAULT 0 AFTER `caster_crit_pct`;
+SET @dbname := DATABASE();
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'melee_target_gs'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `melee_target_gs` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `preparation_ms`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'melee_health'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `melee_health` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `melee_target_gs`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'melee_attack_power'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `melee_attack_power` INT NOT NULL DEFAULT 0 AFTER `melee_health`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'melee_crit_pct'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `melee_crit_pct` FLOAT NOT NULL DEFAULT 0 AFTER `melee_attack_power`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'melee_armor_pen_rating'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `melee_armor_pen_rating` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `melee_crit_pct`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'caster_target_gs'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `caster_target_gs` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `melee_armor_pen_rating`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'caster_health'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `caster_health` INT UNSIGNED NOT NULL DEFAULT 1 AFTER `caster_target_gs`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'caster_spell_power'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `caster_spell_power` INT NOT NULL DEFAULT 0 AFTER `caster_health`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'caster_crit_pct'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `caster_crit_pct` FLOAT NOT NULL DEFAULT 0 AFTER `caster_spell_power`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+SET @sql := IF(
+    EXISTS(
+        SELECT 1
+        FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = @dbname
+          AND TABLE_NAME = 'solo_arena_stage'
+          AND COLUMN_NAME = 'caster_haste_rating'
+    ),
+    'SELECT 1',
+    'ALTER TABLE `solo_arena_stage` ADD COLUMN `caster_haste_rating` INT UNSIGNED NOT NULL DEFAULT 0 AFTER `caster_crit_pct`'
+);
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 UPDATE `solo_arena_stage`
 SET
