@@ -7464,7 +7464,9 @@ namespace
 
             static ChatCommandTable trialCommandTable =
             {
-                { "score", trialScoreCommandTable }
+                { "score", trialScoreCommandTable },
+                { "reload", HandleTrialReloadCommand,
+                    SEC_GAMEMASTER, Console::Yes }
             };
 
             static ChatCommandTable commandTable =
@@ -7507,6 +7509,18 @@ namespace
         {
             return SoloArenaMgr::Instance().SetObjectiveScore(handler,
                 GetCommandTarget(handler), true, score);
+        }
+
+        static bool HandleTrialReloadCommand(ChatHandler* handler)
+        {
+            SoloArenaMgr::Instance().LoadStages();
+            SoloArenaMgr::Instance().LoadMechanics();
+
+            if (handler)
+                handler->SendSysMessage(
+                    "시련 단계/보상 데이터를 다시 불러왔습니다.");
+
+            return true;
         }
     };
 
