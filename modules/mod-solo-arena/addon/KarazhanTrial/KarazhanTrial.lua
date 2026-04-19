@@ -635,18 +635,20 @@ Trial.purchaseView:Hide()
 
 Trial.purchaseTitle = CreateLabel(
   Trial.purchaseView, "GameFontHighlightLarge", 18, 1.0, 0.84, 0.25, "CENTER")
-Trial.purchaseTitle:SetPoint("TOP", Trial.purchaseView, "TOP", 0, -16)
+Trial.purchaseTitle:SetPoint("TOP", Trial.purchaseView, "TOP", 0, -14)
+Trial.purchaseTitle:SetWidth(420)
 Trial.purchaseTitle:SetText("시련 구매")
 
 Trial.purchaseMeta = CreateLabel(
   Trial.purchaseView, "GameFontNormal", 12, 0.86, 0.76, 0.34, "CENTER")
 Trial.purchaseMeta:SetPoint("TOP", Trial.purchaseTitle, "BOTTOM", 0, -6)
+EnableWrap(Trial.purchaseMeta, 420, 28, "CENTER")
 Trial.purchaseMeta:SetText("오늘의 장물아비 재료 3종을 모아 티켓을 구매합니다.")
 
 Trial.purchaseOffers = {}
 for i = 1, 2 do
-  local card = CreatePanel(Trial.purchaseView, 454, 118)
-  card:SetPoint("TOPLEFT", Trial.purchaseView, "TOPLEFT", 20, -48 - ((i - 1) * 126))
+  local card = CreatePanel(Trial.purchaseView, 454, 110)
+  card:SetPoint("TOPLEFT", Trial.purchaseView, "TOPLEFT", 20, -74 - ((i - 1) * 116))
 
   card.iconBg = CreatePanel(card, 42, 42)
   card.iconBg:SetPoint("TOPLEFT", card, "TOPLEFT", 14, -12)
@@ -682,7 +684,7 @@ for i = 1, 2 do
     local requirementRow = CreateFrame("Frame", nil, card)
     requirementRow:SetSize(282, 20)
     requirementRow:SetPoint("TOPLEFT", card, "TOPLEFT", 14,
-      -58 - ((rowIndex - 1) * 18))
+      -54 - ((rowIndex - 1) * 18))
 
     requirementRow.iconBg = CreatePanel(requirementRow, 18, 18)
     requirementRow.iconBg:SetPoint("LEFT", requirementRow, "LEFT", 0, 0)
@@ -737,8 +739,6 @@ Trial.start:SetSize(140, 28)
 Trial.start:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -18, 16)
 Trial.start:SetText("도전 시작")
 
-Trial.purchaseToggleButton:SetPoint("BOTTOMRIGHT", Trial.start, "TOPRIGHT", 0, 10)
-
 Trial.cancel = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
 Trial.cancel:SetSize(100, 28)
 Trial.cancel:SetPoint("RIGHT", Trial.start, "LEFT", -10, 0)
@@ -767,6 +767,21 @@ Trial.extraTicketButton:SetScript("OnLeave", function()
 end)
 
 Trial.rewardButton:SetPoint("RIGHT", Trial.extraTicketButton, "LEFT", -10, 0)
+
+local function SetPurchaseToggleButtonLayout(isBackMode)
+  Trial.purchaseToggleButton:ClearAllPoints()
+  if isBackMode then
+    Trial.purchaseToggleButton:SetSize(100, 28)
+    Trial.purchaseToggleButton:SetPoint(
+      "BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -18, 16)
+  else
+    Trial.purchaseToggleButton:SetSize(140, 24)
+    Trial.purchaseToggleButton:SetPoint(
+      "BOTTOMRIGHT", Trial.start, "TOPRIGHT", 0, 10)
+  end
+end
+
+SetPurchaseToggleButtonLayout(false)
 
 Trial.statusBox = CreatePanel(UIParent, 280, 118)
 Trial.statusBox:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 54)
@@ -1523,6 +1538,7 @@ local function OpenPurchaseView()
   Trial.rewardButton:Hide()
   Trial.extraTicketButton:Hide()
   Trial.purchaseToggleButton:SetText("뒤로가기")
+  SetPurchaseToggleButtonLayout(true)
   RefreshPurchaseView()
 end
 
@@ -1542,6 +1558,7 @@ local function ClosePurchaseView()
   Trial.rewardButton:Show()
   Trial.extraTicketButton:Show()
   Trial.purchaseToggleButton:SetText("구매하기")
+  SetPurchaseToggleButtonLayout(false)
   RefreshSelection()
 end
 
@@ -1591,6 +1608,7 @@ local function ResetTrialDetailView()
   Trial.rewardButton:SetText("보상확인")
   Trial.rewardButton:Show()
   Trial.purchaseToggleButton:SetText("구매하기")
+  SetPurchaseToggleButtonLayout(false)
   Trial.rewardModalDismiss:Hide()
 end
 
