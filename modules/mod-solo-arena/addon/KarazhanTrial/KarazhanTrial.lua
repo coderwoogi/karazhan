@@ -293,7 +293,7 @@ Trial.leftSub:SetPoint("TOPRIGHT", Trial.leftPane, "TOPRIGHT", -6, 0)
 Trial.leftSub:SetText("")
 
 Trial.purchaseToggleButton = CreateFrame(
-  "Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
+  "Button", nil, Trial, "UIPanelButtonTemplate")
 Trial.purchaseToggleButton:SetSize(140, 24)
 Trial.purchaseToggleButton:SetText("구매하기")
 
