@@ -1094,10 +1094,11 @@ local function ParsePurchasePayload(encoded)
     local offer = {
       productItemEntry = tonumber(parts[1]) or 0,
       purchasedToday = tonumber(parts[2]) or 0,
+      productName = parts[3] or "",
       requirements = {},
     }
 
-    local requirementText = parts[3] or ""
+    local requirementText = parts[4] or ""
     if requirementText ~= "" then
       for _, reqText in ipairs(Split(requirementText, ",")) do
         local reqParts = Split(reqText, ":")
@@ -1107,6 +1108,7 @@ local function ParsePurchasePayload(encoded)
           table.insert(offer.requirements, {
             itemEntry = itemEntry,
             itemCount = itemCount,
+            itemName = reqParts[3] or "",
           })
         end
       end
@@ -1144,8 +1146,11 @@ local function RefreshPurchaseView()
   for i, card in ipairs(Trial.purchaseOffers) do
     local offer = Trial.state.purchaseOffers[i]
     if offer then
-      local itemName = GetItemInfo(offer.productItemEntry)
+      local itemName = offer.productName
+      if not itemName or itemName == "" then
+        itemName = GetItemInfo(offer.productItemEntry)
         or GetDefaultItemName(offer.productItemEntry)
+      end
       card.iconBg.itemEntry = offer.productItemEntry
       card.icon:SetTexture(GetItemIcon(offer.productItemEntry)
         or "Interface\\Icons\\INV_Misc_QuestionMark")
@@ -1155,8 +1160,11 @@ local function RefreshPurchaseView()
         local requirement = offer.requirements and offer.requirements[rowIndex]
         if requirement then
           local ownedCount = GetItemCount(requirement.itemEntry) or 0
-          local requirementName = GetItemInfo(requirement.itemEntry)
+          local requirementName = requirement.itemName
+          if not requirementName or requirementName == "" then
+            requirementName = GetItemInfo(requirement.itemEntry)
             or GetDefaultItemName(requirement.itemEntry)
+          end
           local color = ownedCount >= requirement.itemCount
             and "|cFF00FF00" or "|cFFFF4040"
           requirementRow.iconBg.itemEntry = requirement.itemEntry

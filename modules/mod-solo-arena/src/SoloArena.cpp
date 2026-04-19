@@ -83,6 +83,7 @@ namespace
     constexpr uint32 DAILY_PURCHASE_REQUIREMENT_COUNT = 3;
     constexpr uint32 DAILY_PURCHASE_REQUIREMENT_MIN = 5;
     constexpr uint32 DAILY_PURCHASE_REQUIREMENT_MAX = 10;
+    constexpr uint32 DAILY_PURCHASE_VENDOR_ENTRY = 190027;
     constexpr uint32 TRIAL_PATH_MARKER_ENTRY = 190025;
     constexpr uint32 TRIAL_DAILY_LIMIT = 5;
     constexpr uint8 MAX_STAGE_MECHANIC_SLOTS = 16;
@@ -181,12 +182,14 @@ namespace
     {
         uint32 ItemEntry = 0;
         uint32 Count = 0;
+        std::string Name;
     };
 
     struct DailyTicketOffer
     {
         uint32 ProductItemEntry = 0;
         uint32 PurchasedToday = 0;
+        std::string ProductName;
         std::vector<DailyPurchaseRequirement> Requirements;
     };
 
@@ -2320,6 +2323,45 @@ namespace
             text.resize(maxLen);
 
         return text;
+    }
+
+    std::string GetLocalizedItemName(uint32 itemEntry)
+    {
+        std::string itemName = "이름 로딩 중";
+
+        if (ItemTemplate const* itemTemplate = sObjectMgr->GetItemTemplate(itemEntry))
+        {
+            itemName = itemTemplate->Name1;
+
+            if (ItemLocale const* itemLocale = sObjectMgr->GetItemLocale(itemEntry))
+            {
+                if (itemLocale->Name.size() > std::size_t(LOCALE_koKR) &&
+                    !itemLocale->Name[LOCALE_koKR].empty())
+                    itemName = itemLocale->Name[LOCALE_koKR];
+            }
+        }
+
+        if (itemName.empty() || itemName == "이름 로딩 중")
+        {
+            if (QueryResult itemNameResult = WorldDatabase.Query(
+                "SELECT COALESCE(("
+                "SELECT Name FROM item_template_locale "
+                "WHERE ID = {} AND locale = 'koKR' LIMIT 1"
+                "), ("
+                "SELECT name FROM item_template WHERE entry = {} LIMIT 1"
+                "))",
+                itemEntry, itemEntry))
+            {
+                Field* itemNameFields = itemNameResult->Fetch();
+                if (itemNameFields && !itemNameFields[0].IsNull())
+                    itemName = itemNameFields[0].Get<std::string>();
+            }
+        }
+
+        std::replace(itemName.begin(), itemName.end(), '^', '-');
+        std::replace(itemName.begin(), itemName.end(), ':', '-');
+        std::replace(itemName.begin(), itemName.end(), ',', ' ');
+        return SanitizeAddonField(itemName, 64);
     }
 
     void SendAddonPayload(
@@ -5195,10 +5237,11 @@ std::vector<uint32> SoloArenaMgr::LoadBlackMarketRequirementCandidates() const
 {
     std::vector<uint32> entries;
     QueryResult result = WorldDatabase.Query(
-        "SELECT DISTINCT item_entry "
-        "FROM blackmarket_vendor_items "
-        "WHERE remaining_count > 0 "
-        "ORDER BY item_entry");
+        "SELECT DISTINCT item "
+        "FROM npc_vendor "
+        "WHERE entry = {} "
+        "ORDER BY item",
+        DAILY_PURCHASE_VENDOR_ENTRY);
 
     if (!result)
         return entries;
@@ -5247,6 +5290,7 @@ std::vector<DailyPurchaseRequirement> SoloArenaMgr::BuildDailyPurchaseRequiremen
         DailyPurchaseRequirement requirement;
         requirement.ItemEntry = candidates[i];
         requirement.Count = countDist(rng);
+        requirement.Name = GetLocalizedItemName(requirement.ItemEntry);
         requirements.push_back(requirement);
     }
 
@@ -5259,6 +5303,7 @@ DailyTicketOffer SoloArenaMgr::BuildDailyTicketOffer(Player* player,
     DailyTicketOffer offer;
     offer.ProductItemEntry = productItemEntry;
     offer.PurchasedToday = GetTodayPurchaseCount(player, productItemEntry);
+    offer.ProductName = GetLocalizedItemName(productItemEntry);
     offer.Requirements = BuildDailyPurchaseRequirements(productItemEntry);
     return offer;
 }
@@ -5279,12 +5324,16 @@ std::string SoloArenaMgr::BuildDailyPurchasePayload(Player* player) const
             payload << "|";
         firstOffer = false;
 
-        payload << offer.ProductItemEntry << "^" << offer.PurchasedToday << "^";
+        payload << offer.ProductItemEntry << "^"
+                << offer.PurchasedToday << "^"
+                << offer.ProductName << "^";
         for (size_t i = 0; i < offer.Requirements.size(); ++i)
         {
             if (i > 0)
                 payload << ",";
-            payload << offer.Requirements[i].ItemEntry << ":" << offer.Requirements[i].Count;
+            payload << offer.Requirements[i].ItemEntry
+                    << ":" << offer.Requirements[i].Count
+                    << ":" << offer.Requirements[i].Name;
         }
     }
 
