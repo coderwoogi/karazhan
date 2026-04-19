@@ -4587,8 +4587,18 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
             stage.HealthMultiplier));
     if (profile.UseStageStatTable)
         maxHealth = std::max<uint32>(5000u, profile.MaxHealth);
+    summon->SetCreateHealth(maxHealth);
+    summon->SetStatFlatModifier(UNIT_MOD_HEALTH, BASE_VALUE,
+        float(maxHealth));
     summon->SetMaxHealth(maxHealth);
     summon->SetHealth(maxHealth);
+
+    if (profile.PowerType == POWER_MANA)
+    {
+        summon->SetCreateMana(profile.MaxPower);
+        summon->SetStatFlatModifier(UNIT_MOD_MANA, BASE_VALUE,
+            float(profile.MaxPower));
+    }
 
     uint32 baseAttackTime = profile.AttackTimeMs[BASE_ATTACK] ?
         std::min(profile.AttackTimeMs[BASE_ATTACK], stage.AttackTimeMs) :
@@ -4685,6 +4695,12 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
 
     if (profile.UseStageStatTable && IsMeleeArchetype(profile))
     {
+        float attackPower = float(std::max<int32>(0,
+            profile.AttackPowerBonus));
+        summon->SetStatFlatModifier(UNIT_MOD_ATTACK_POWER, BASE_VALUE,
+            attackPower);
+        summon->SetStatFlatModifier(UNIT_MOD_ATTACK_POWER_RANGED,
+            BASE_VALUE, attackPower);
         summon->SetInt32Value(UNIT_FIELD_ATTACK_POWER,
             std::max<int32>(0, profile.AttackPowerBonus));
         summon->SetInt32Value(UNIT_FIELD_ATTACK_POWER_MODS, 0);
@@ -7624,7 +7640,12 @@ namespace
     {
     public:
         SoloArenaUnitScript() : UnitScript("SoloArenaUnitScript", true,
-            { UNITHOOK_ON_DAMAGE })
+            {
+                UNITHOOK_ON_DAMAGE,
+                UNITHOOK_MODIFY_MELEE_DAMAGE,
+                UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN,
+                UNITHOOK_ON_BEFORE_ROLL_MELEE_OUTCOME_AGAINST
+            })
         {
         }
 
@@ -7654,6 +7675,90 @@ namespace
 
             damage = std::max<uint32>(damage + 1,
                 uint32(float(damage) * 1.25f));
+        }
+
+        void ModifyMeleeDamage(Unit* target, Unit* attacker,
+            uint32& damage) override
+        {
+            ShadowProfile const* profile = nullptr;
+            if (!target || !attacker || damage == 0 ||
+                !GetManagedShadowProfile(attacker, profile) || !profile ||
+                !profile->UseStageStatTable || !IsMeleeArchetype(*profile))
+            {
+                return;
+            }
+
+            damage = std::max<uint32>(1u, uint32(std::round(
+                float(damage) * ShadowArmorPenMultiplier(*profile))));
+        }
+
+        void ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage,
+            SpellInfo const* spellInfo) override
+        {
+            ShadowProfile const* profile = nullptr;
+            if (!target || !attacker || damage <= 0 || !spellInfo ||
+                !GetManagedShadowProfile(attacker, profile) || !profile ||
+                !profile->UseStageStatTable)
+            {
+                return;
+            }
+
+            float adjustedDamage = float(damage);
+            if (IsMeleeArchetype(*profile))
+            {
+                adjustedDamage *= ShadowArmorPenMultiplier(*profile);
+            }
+            else
+            {
+                adjustedDamage += float(profile->SpellPowerBonus) * 0.35f;
+            }
+
+            if (profile->CritChancePct > 0.0f &&
+                roll_chance_f(std::clamp(profile->CritChancePct, 0.0f,
+                    100.0f)))
+            {
+                adjustedDamage *= 1.5f;
+            }
+
+            damage = std::max<int32>(1, int32(std::round(adjustedDamage)));
+        }
+
+        void OnBeforeRollMeleeOutcomeAgainst(Unit const* attacker,
+            Unit const* victim, WeaponAttackType /*attType*/,
+            int32& /*attackerMaxSkillValueForLevel*/,
+            int32& /*victimMaxSkillValueForLevel*/,
+            int32& /*attackerWeaponSkill*/,
+            int32& /*victimDefenseSkill*/, int32& crit_chance,
+            int32& /*miss_chance*/, int32& /*dodge_chance*/,
+            int32& /*parry_chance*/, int32& /*block_chance*/) override
+        {
+            ShadowProfile const* profile = nullptr;
+            if (!victim || !attacker || !GetManagedShadowProfile(attacker,
+                    profile) || !profile || !profile->UseStageStatTable ||
+                !IsMeleeArchetype(*profile))
+            {
+                return;
+            }
+
+            float extraCrit = std::max(0.0f, profile->CritChancePct - 5.0f);
+            crit_chance += int32(extraCrit * 100.0f);
+        }
+
+    private:
+        static bool GetManagedShadowProfile(Unit const* unit,
+            ShadowProfile const*& profileOut)
+        {
+            profileOut = nullptr;
+            if (!unit)
+                return false;
+
+            Creature const* creature = unit->ToCreature();
+            if (!creature)
+                return false;
+
+            profileOut = SoloArenaMgr::Instance().GetShadowProfile(
+                creature->GetGUID());
+            return profileOut != nullptr;
         }
     };
 }
