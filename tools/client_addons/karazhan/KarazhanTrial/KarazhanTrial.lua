@@ -1079,7 +1079,7 @@ local function GetDefaultItemName(itemEntry)
   if itemEntry == TRIAL_EXTRA_TICKET_ITEM then
     return "시련 암표"
   end
-  return "아이템 " .. tostring(itemEntry or 0)
+  return "이름 확인 중"
 end
 
 local function ParsePurchasePayload(encoded)

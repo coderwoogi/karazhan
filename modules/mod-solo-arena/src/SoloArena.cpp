@@ -5195,7 +5195,10 @@ std::vector<uint32> SoloArenaMgr::LoadBlackMarketRequirementCandidates() const
 {
     std::vector<uint32> entries;
     QueryResult result = WorldDatabase.Query(
-        "SELECT DISTINCT item_entry FROM blackmarket_item_pool ORDER BY item_entry");
+        "SELECT DISTINCT item_entry "
+        "FROM blackmarket_vendor_items "
+        "WHERE remaining_count > 0 "
+        "ORDER BY item_entry");
 
     if (!result)
         return entries;
