@@ -7642,7 +7642,6 @@ namespace
         SoloArenaUnitScript() : UnitScript("SoloArenaUnitScript", true,
             {
                 UNITHOOK_ON_DAMAGE,
-                UNITHOOK_MODIFY_MELEE_DAMAGE,
                 UNITHOOK_MODIFY_SPELL_DAMAGE_TAKEN,
                 UNITHOOK_ON_BEFORE_ROLL_MELEE_OUTCOME_AGAINST
             })
@@ -7659,37 +7658,48 @@ namespace
                 player = ObjectAccessor::FindConnectedPlayer(
                     attacker->GetOwnerGUID());
 
-            if (!player)
-                return;
+            if (player)
+            {
+                ArenaSession const* session =
+                    SoloArenaMgr::Instance().GetSession(player->GetGUID());
+                if (session && session->PlayerDamageBuffEndsAt != 0 &&
+                    uint64(std::time(nullptr)) <
+                        session->PlayerDamageBuffEndsAt &&
+                    victim->GetGUID() == session->BotGuid)
+                {
+                    damage = std::max<uint32>(damage + 1,
+                        uint32(float(damage) * 1.25f));
+                    return;
+                }
+            }
 
-            ArenaSession const* session = SoloArenaMgr::Instance().GetSession(
-                player->GetGUID());
-            if (!session || session->PlayerDamageBuffEndsAt == 0)
-                return;
-
-            if (uint64(std::time(nullptr)) >= session->PlayerDamageBuffEndsAt)
-                return;
-
-            if (victim->GetGUID() != session->BotGuid)
-                return;
-
-            damage = std::max<uint32>(damage + 1,
-                uint32(float(damage) * 1.25f));
-        }
-
-        void ModifyMeleeDamage(Unit* target, Unit* attacker,
-            uint32& damage) override
-        {
-            ShadowProfile const* profile = nullptr;
-            if (!target || !attacker || damage == 0 ||
-                !GetManagedShadowProfile(attacker, profile) || !profile ||
-                !profile->UseStageStatTable || !IsMeleeArchetype(*profile))
+            ShadowProfile const* shadowProfile = nullptr;
+            if (!GetManagedShadowProfile(attacker, shadowProfile) ||
+                !shadowProfile || !shadowProfile->UseStageStatTable)
             {
                 return;
             }
 
-            damage = std::max<uint32>(1u, uint32(std::round(
-                float(damage) * ShadowArmorPenMultiplier(*profile))));
+            float scale = 1.0f;
+            if (IsMeleeArchetype(*shadowProfile))
+            {
+                scale += std::clamp(float(shadowProfile->AttackPowerBonus) /
+                    10000.0f, 0.0f, 1.0f) * 0.25f;
+                scale += std::clamp(float(
+                    shadowProfile->ArmorPenetrationRating) / 1400.0f,
+                    0.0f, 1.0f) * 0.12f;
+            }
+            else
+            {
+                scale += std::clamp(float(shadowProfile->SpellPowerBonus) /
+                    6000.0f, 0.0f, 1.0f) * 0.35f;
+                scale += std::clamp(HastePercent(
+                    shadowProfile->HasteRating) / 100.0f, 0.0f,
+                    1.0f) * 0.10f;
+            }
+
+            damage = std::max<uint32>(damage + 1,
+                uint32(std::round(float(damage) * scale)));
         }
 
         void ModifySpellDamageTaken(Unit* target, Unit* attacker, int32& damage,
@@ -7703,24 +7713,13 @@ namespace
                 return;
             }
 
-            float adjustedDamage = float(damage);
-            if (IsMeleeArchetype(*profile))
-            {
-                adjustedDamage *= ShadowArmorPenMultiplier(*profile);
-            }
-            else
-            {
-                adjustedDamage += float(profile->SpellPowerBonus) * 0.35f;
-            }
-
             if (profile->CritChancePct > 0.0f &&
                 roll_chance_f(std::clamp(profile->CritChancePct, 0.0f,
                     100.0f)))
             {
-                adjustedDamage *= 1.5f;
+                damage = std::max<int32>(1,
+                    int32(std::round(float(damage) * 1.5f)));
             }
-
-            damage = std::max<int32>(1, int32(std::round(adjustedDamage)));
         }
 
         void OnBeforeRollMeleeOutcomeAgainst(Unit const* attacker,
