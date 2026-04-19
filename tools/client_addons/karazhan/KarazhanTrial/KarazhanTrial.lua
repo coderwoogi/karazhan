@@ -293,9 +293,8 @@ Trial.leftSub:SetPoint("TOPRIGHT", Trial.leftPane, "TOPRIGHT", -6, 0)
 Trial.leftSub:SetText("")
 
 Trial.purchaseToggleButton = CreateFrame(
-  "Button", nil, Trial.leftPane, "UIPanelButtonTemplate")
-Trial.purchaseToggleButton:SetSize(92, 24)
-Trial.purchaseToggleButton:SetPoint("BOTTOMRIGHT", Trial.leftPane, "BOTTOMRIGHT", -2, -2)
+  "Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
+Trial.purchaseToggleButton:SetSize(140, 24)
 Trial.purchaseToggleButton:SetText("구매하기")
 
 Trial.leftDivider = Trial.leftPane:CreateTexture(nil, "ARTWORK")
@@ -646,7 +645,7 @@ Trial.purchaseMeta:SetText("오늘의 장물아비 재료 3종을 모아 티켓�
 
 Trial.purchaseOffers = {}
 for i = 1, 2 do
-  local card = CreatePanel(Trial.purchaseView, 454, 110)
+  local card = CreatePanel(Trial.purchaseView, 454, 118)
   card:SetPoint("TOPLEFT", Trial.purchaseView, "TOPLEFT", 20, -48 - ((i - 1) * 126))
 
   card.iconBg = CreatePanel(card, 42, 42)
@@ -678,10 +677,42 @@ for i = 1, 2 do
   card.status:SetPoint("TOPLEFT", card.title, "BOTTOMLEFT", 0, -4)
   card.status:SetWidth(210)
 
-  card.requirements = CreateLabel(card, "GameFontNormal", 12, 0.96, 0.92, 0.86)
-  card.requirements:SetPoint("TOPLEFT", card, "TOPLEFT", 14, -60)
-  card.requirements:SetPoint("TOPRIGHT", card, "TOPRIGHT", -130, -60)
-  EnableWrap(card.requirements, 300, 44, "LEFT")
+  card.requirementRows = {}
+  for rowIndex = 1, 3 do
+    local requirementRow = CreateFrame("Frame", nil, card)
+    requirementRow:SetSize(282, 20)
+    requirementRow:SetPoint("TOPLEFT", card, "TOPLEFT", 14,
+      -58 - ((rowIndex - 1) * 18))
+
+    requirementRow.iconBg = CreatePanel(requirementRow, 18, 18)
+    requirementRow.iconBg:SetPoint("LEFT", requirementRow, "LEFT", 0, 0)
+    requirementRow.iconBg.itemEntry = nil
+    requirementRow.iconBg:EnableMouse(true)
+    requirementRow.iconBg:SetScript("OnEnter", function(self)
+      if not self.itemEntry or self.itemEntry <= 0 then
+        return
+      end
+      GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+      GameTooltip:SetHyperlink("item:" .. tostring(self.itemEntry))
+      GameTooltip:Show()
+    end)
+    requirementRow.iconBg:SetScript("OnLeave", function()
+      GameTooltip:Hide()
+    end)
+
+    requirementRow.icon = requirementRow.iconBg:CreateTexture(nil, "ARTWORK")
+    requirementRow.icon:SetPoint("TOPLEFT", requirementRow.iconBg, "TOPLEFT", 2, -2)
+    requirementRow.icon:SetPoint("BOTTOMRIGHT", requirementRow.iconBg,
+      "BOTTOMRIGHT", -2, 2)
+    requirementRow.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+
+    requirementRow.text = CreateLabel(
+      requirementRow, "GameFontNormal", 11, 0.96, 0.92, 0.86, "LEFT")
+    requirementRow.text:SetPoint("LEFT", requirementRow.iconBg, "RIGHT", 8, 0)
+    requirementRow.text:SetPoint("RIGHT", requirementRow, "RIGHT", 0, 0)
+
+    card.requirementRows[rowIndex] = requirementRow
+  end
 
   card.buyButton = CreateFrame("Button", nil, card, "UIPanelButtonTemplate")
   card.buyButton:SetSize(108, 28)
@@ -705,6 +736,8 @@ Trial.start = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate
 Trial.start:SetSize(140, 28)
 Trial.start:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -18, 16)
 Trial.start:SetText("도전 시작")
+
+Trial.purchaseToggleButton:SetPoint("BOTTOMRIGHT", Trial.start, "TOPRIGHT", 0, 10)
 
 Trial.cancel = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
 Trial.cancel:SetSize(100, 28)
@@ -1118,21 +1151,30 @@ local function RefreshPurchaseView()
         or "Interface\\Icons\\INV_Misc_QuestionMark")
       card.title:SetText(itemName)
 
-      local lines = {}
-      for _, requirement in ipairs(offer.requirements or {}) do
-        local ownedCount = GetItemCount(requirement.itemEntry) or 0
-        local requirementName = GetItemInfo(requirement.itemEntry)
-          or GetDefaultItemName(requirement.itemEntry)
-        local color = ownedCount >= requirement.itemCount and "|cFF00FF00" or "|cFFFF4040"
-        table.insert(lines, string.format(
-          "%s%s|r %d / %d",
-          color,
-          requirementName,
-          ownedCount,
-          requirement.itemCount
-        ))
+      for rowIndex, requirementRow in ipairs(card.requirementRows) do
+        local requirement = offer.requirements and offer.requirements[rowIndex]
+        if requirement then
+          local ownedCount = GetItemCount(requirement.itemEntry) or 0
+          local requirementName = GetItemInfo(requirement.itemEntry)
+            or GetDefaultItemName(requirement.itemEntry)
+          local color = ownedCount >= requirement.itemCount
+            and "|cFF00FF00" or "|cFFFF4040"
+          requirementRow.iconBg.itemEntry = requirement.itemEntry
+          requirementRow.icon:SetTexture(GetItemIcon(requirement.itemEntry)
+            or "Interface\\Icons\\INV_Misc_QuestionMark")
+          requirementRow.text:SetText(string.format(
+            "%s%s|r %d / %d",
+            color,
+            requirementName,
+            ownedCount,
+            requirement.itemCount
+          ))
+          requirementRow:Show()
+        else
+          requirementRow.iconBg.itemEntry = nil
+          requirementRow:Hide()
+        end
       end
-      card.requirements:SetText(table.concat(lines, "\n"))
 
       local canBuy, reason = GetPurchaseOfferStatus(offer)
       card.buyButton.productItemEntry = offer.productItemEntry
@@ -1151,6 +1193,10 @@ local function RefreshPurchaseView()
       end
       card:Show()
     else
+      for _, requirementRow in ipairs(card.requirementRows) do
+        requirementRow.iconBg.itemEntry = nil
+        requirementRow:Hide()
+      end
       card:Hide()
     end
   end
