@@ -9,6 +9,8 @@ local SESSION_ACTIVE = 2
 local SESSION_PENDING_FINISH = 3
 local SESSION_AWAITING_RETURN = 4
 local TRIAL_TICKET_ITEM = 600022
+local TRIAL_EXTRA_TICKET_ITEM = 600023
+local EXTRA_TICKET_LOCK_MESSAGE = "일일 제한 횟수를 모두 소진해야 사용 가능합니다."
 local RANK_SORT_ORDER = {
   S = 1,
   A = 2,
@@ -183,6 +185,8 @@ local function NewState()
     highestCleared = 0,
     dailyEntriesUsed = 0,
     dailyEntryLimit = 5,
+    dailyBonusEntries = 0,
+    purchaseOffers = {},
     stages = {},
     selected = 1,
     inProgress = false,
@@ -219,6 +223,16 @@ StaticPopupDialogs["KARAZHAN_TRIAL_ABANDON_CONFIRM"] = {
   OnAccept = function()
     SendCommand("ABANDON")
   end,
+  timeout = 0,
+  whileDead = true,
+  hideOnEscape = true,
+  preferredIndex = STATICPOPUP_NUMDIALOGS,
+}
+
+StaticPopupDialogs["KARAZHAN_TRIAL_EXTRA_TICKET_CONFIRM"] = {
+  text = "시련 암표를 사용하겠습니까?",
+  button1 = ACCEPT,
+  button2 = CANCEL,
   timeout = 0,
   whileDead = true,
   hideOnEscape = true,
@@ -277,6 +291,12 @@ Trial.leftSub = CreateLabel(
   Trial.leftPane, "GameFontNormal", 11, 0.68, 0.68, 0.68, "RIGHT")
 Trial.leftSub:SetPoint("TOPRIGHT", Trial.leftPane, "TOPRIGHT", -6, 0)
 Trial.leftSub:SetText("")
+
+Trial.purchaseToggleButton = CreateFrame(
+  "Button", nil, Trial.leftPane, "UIPanelButtonTemplate")
+Trial.purchaseToggleButton:SetSize(92, 24)
+Trial.purchaseToggleButton:SetPoint("BOTTOMRIGHT", Trial.leftPane, "BOTTOMRIGHT", -2, -2)
+Trial.purchaseToggleButton:SetText("구매하기")
 
 Trial.leftDivider = Trial.leftPane:CreateTexture(nil, "ARTWORK")
 Trial.leftDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -609,9 +629,72 @@ Trial.rewardView:SetPoint("TOPLEFT", Trial.contentPane, "TOPLEFT", 0, 0)
 Trial.rewardView:SetPoint("BOTTOMRIGHT", Trial.contentPane, "BOTTOMRIGHT", 0, 0)
 Trial.rewardView:Hide()
 
+Trial.purchaseView = CreatePanel(Trial.contentPane, 494, 330)
+Trial.purchaseView:SetPoint("TOPLEFT", Trial.contentPane, "TOPLEFT", 0, 0)
+Trial.purchaseView:SetPoint("BOTTOMRIGHT", Trial.contentPane, "BOTTOMRIGHT", 0, 0)
+Trial.purchaseView:Hide()
+
+Trial.purchaseTitle = CreateLabel(
+  Trial.purchaseView, "GameFontHighlightLarge", 18, 1.0, 0.84, 0.25, "CENTER")
+Trial.purchaseTitle:SetPoint("TOP", Trial.purchaseView, "TOP", 0, -16)
+Trial.purchaseTitle:SetText("시련 구매")
+
+Trial.purchaseMeta = CreateLabel(
+  Trial.purchaseView, "GameFontNormal", 12, 0.86, 0.76, 0.34, "CENTER")
+Trial.purchaseMeta:SetPoint("TOP", Trial.purchaseTitle, "BOTTOM", 0, -6)
+Trial.purchaseMeta:SetText("오늘의 장물아비 재료 3종을 모아 티켓을 구매합니다.")
+
+Trial.purchaseOffers = {}
+for i = 1, 2 do
+  local card = CreatePanel(Trial.purchaseView, 454, 110)
+  card:SetPoint("TOPLEFT", Trial.purchaseView, "TOPLEFT", 20, -48 - ((i - 1) * 126))
+
+  card.iconBg = CreatePanel(card, 42, 42)
+  card.iconBg:SetPoint("TOPLEFT", card, "TOPLEFT", 14, -12)
+  card.iconBg.itemEntry = nil
+  card.iconBg:EnableMouse(true)
+  card.iconBg:SetScript("OnEnter", function(self)
+    if not self.itemEntry or self.itemEntry <= 0 then
+      return
+    end
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+    GameTooltip:SetHyperlink("item:" .. tostring(self.itemEntry))
+    GameTooltip:Show()
+  end)
+  card.iconBg:SetScript("OnLeave", function()
+    GameTooltip:Hide()
+  end)
+
+  card.icon = card.iconBg:CreateTexture(nil, "ARTWORK")
+  card.icon:SetPoint("TOPLEFT", card.iconBg, "TOPLEFT", 4, -4)
+  card.icon:SetPoint("BOTTOMRIGHT", card.iconBg, "BOTTOMRIGHT", -4, 4)
+  card.icon:SetTexture("Interface\\Icons\\INV_Misc_QuestionMark")
+
+  card.title = CreateLabel(card, "GameFontHighlight", 14, 1.0, 0.84, 0.25)
+  card.title:SetPoint("TOPLEFT", card.iconBg, "TOPRIGHT", 12, -2)
+  card.title:SetWidth(210)
+
+  card.status = CreateLabel(card, "GameFontNormal", 11, 0.82, 0.82, 0.82)
+  card.status:SetPoint("TOPLEFT", card.title, "BOTTOMLEFT", 0, -4)
+  card.status:SetWidth(210)
+
+  card.requirements = CreateLabel(card, "GameFontNormal", 12, 0.96, 0.92, 0.86)
+  card.requirements:SetPoint("TOPLEFT", card, "TOPLEFT", 14, -60)
+  card.requirements:SetPoint("TOPRIGHT", card, "TOPRIGHT", -130, -60)
+  EnableWrap(card.requirements, 300, 44, "LEFT")
+
+  card.buyButton = CreateFrame("Button", nil, card, "UIPanelButtonTemplate")
+  card.buyButton:SetSize(108, 28)
+  card.buyButton:SetPoint("RIGHT", card, "RIGHT", -16, 0)
+  card.buyButton:SetText("구매")
+  card.buyButton.productItemEntry = 0
+
+  Trial.purchaseOffers[i] = card
+end
+
 Trial.rewardButton = CreateFrame(
   "Button", nil, Trial, "UIPanelButtonTemplate")
-Trial.rewardButton:SetSize(120, 28)
+Trial.rewardButton:SetSize(110, 28)
 Trial.rewardButton:SetText("보상확인")
 Trial.rewardButton:SetFrameStrata("FULLSCREEN_DIALOG")
 Trial.rewardButton:SetFrameLevel(Trial:GetFrameLevel() + 200)
@@ -619,18 +702,38 @@ Trial.rewardButton:EnableMouse(true)
 Trial.rewardButton:RegisterForClicks("LeftButtonUp")
 
 Trial.start = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
-Trial.start:SetSize(160, 28)
+Trial.start:SetSize(140, 28)
 Trial.start:SetPoint("BOTTOMRIGHT", Trial.rightPane, "BOTTOMRIGHT", -18, 16)
 Trial.start:SetText("도전 시작")
 
 Trial.cancel = CreateFrame("Button", nil, Trial.rightPane, "UIPanelButtonTemplate")
-Trial.cancel:SetSize(120, 28)
+Trial.cancel:SetSize(100, 28)
 Trial.cancel:SetPoint("RIGHT", Trial.start, "LEFT", -10, 0)
 Trial.cancel:SetText("닫기")
 Trial.cancel:SetScript("OnClick", function()
   Trial:Hide()
 end)
-Trial.rewardButton:SetPoint("RIGHT", Trial.cancel, "LEFT", -10, 0)
+
+Trial.extraTicketButton = CreateFrame(
+  "Button", nil, Trial, "UIPanelButtonTemplate")
+Trial.extraTicketButton:SetSize(130, 28)
+Trial.extraTicketButton:SetText("시련 암표 사용")
+Trial.extraTicketButton.disabledReason = nil
+Trial.extraTicketButton:SetPoint("RIGHT", Trial.cancel, "LEFT", -10, 0)
+Trial.extraTicketButton:SetScript("OnEnter", function(self)
+  GameTooltip:SetOwner(self, "ANCHOR_TOP")
+  if self.disabledReason and self.disabledReason ~= "" then
+    GameTooltip:SetText(self.disabledReason, 1.0, 0.82, 0.18, true)
+  else
+    GameTooltip:SetHyperlink("item:" .. tostring(TRIAL_EXTRA_TICKET_ITEM))
+  end
+  GameTooltip:Show()
+end)
+Trial.extraTicketButton:SetScript("OnLeave", function()
+  GameTooltip:Hide()
+end)
+
+Trial.rewardButton:SetPoint("RIGHT", Trial.extraTicketButton, "LEFT", -10, 0)
 
 Trial.statusBox = CreatePanel(UIParent, 280, 118)
 Trial.statusBox:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 54)
@@ -805,6 +908,7 @@ Trial.rewardModalDismiss:SetText("뒤로가기")
 Trial.rewardModalDismiss:SetScript("OnClick", function() end)
 
 Trial.rewardViewOpen = false
+Trial.purchaseViewOpen = false
 
 local function GetStageDescription(stage)
   if not stage then
@@ -928,6 +1032,158 @@ local function GetRequirementText()
   return string.format("%s x 1개", itemName)
 end
 
+local function GetRemainingEntries()
+  return math.max(0,
+    (Trial.state.dailyEntryLimit or 5)
+    + (Trial.state.dailyBonusEntries or 0)
+    - (Trial.state.dailyEntriesUsed or 0))
+end
+
+local function GetDefaultItemName(itemEntry)
+  if itemEntry == TRIAL_TICKET_ITEM then
+    return "시련 입장권"
+  end
+  if itemEntry == TRIAL_EXTRA_TICKET_ITEM then
+    return "시련 암표"
+  end
+  return "아이템 " .. tostring(itemEntry or 0)
+end
+
+local function ParsePurchasePayload(encoded)
+  local offers = {}
+  encoded = encoded or ""
+  if encoded == "" then
+    return offers
+  end
+
+  for _, offerText in ipairs(Split(encoded, "|")) do
+    local parts = Split(offerText, "^")
+    local offer = {
+      productItemEntry = tonumber(parts[1]) or 0,
+      purchasedToday = tonumber(parts[2]) or 0,
+      requirements = {},
+    }
+
+    local requirementText = parts[3] or ""
+    if requirementText ~= "" then
+      for _, reqText in ipairs(Split(requirementText, ",")) do
+        local reqParts = Split(reqText, ":")
+        local itemEntry = tonumber(reqParts[1]) or 0
+        local itemCount = tonumber(reqParts[2]) or 0
+        if itemEntry > 0 and itemCount > 0 then
+          table.insert(offer.requirements, {
+            itemEntry = itemEntry,
+            itemCount = itemCount,
+          })
+        end
+      end
+    end
+
+    table.insert(offers, offer)
+  end
+
+  return offers
+end
+
+local function GetPurchaseOfferStatus(offer)
+  if not offer or not offer.productItemEntry or offer.productItemEntry == 0 then
+    return false, "오늘의 구매 조건을 불러오지 못했습니다."
+  end
+
+  if offer.purchasedToday and offer.purchasedToday > 0 then
+    return false, "오늘은 이미 구매했습니다."
+  end
+
+  if not offer.requirements or #offer.requirements == 0 then
+    return false, "오늘의 구매 조건을 불러오지 못했습니다."
+  end
+
+  for _, requirement in ipairs(offer.requirements) do
+    if (GetItemCount(requirement.itemEntry) or 0) < (requirement.itemCount or 0) then
+      return false, "재료가 부족합니다."
+    end
+  end
+
+  return true, nil
+end
+
+local function RefreshPurchaseView()
+  for i, card in ipairs(Trial.purchaseOffers) do
+    local offer = Trial.state.purchaseOffers[i]
+    if offer then
+      local itemName = GetItemInfo(offer.productItemEntry)
+        or GetDefaultItemName(offer.productItemEntry)
+      card.iconBg.itemEntry = offer.productItemEntry
+      card.icon:SetTexture(GetItemIcon(offer.productItemEntry)
+        or "Interface\\Icons\\INV_Misc_QuestionMark")
+      card.title:SetText(itemName)
+
+      local lines = {}
+      for _, requirement in ipairs(offer.requirements or {}) do
+        local ownedCount = GetItemCount(requirement.itemEntry) or 0
+        local requirementName = GetItemInfo(requirement.itemEntry)
+          or GetDefaultItemName(requirement.itemEntry)
+        local color = ownedCount >= requirement.itemCount and "|cFF00FF00" or "|cFFFF4040"
+        table.insert(lines, string.format(
+          "%s%s|r %d / %d",
+          color,
+          requirementName,
+          ownedCount,
+          requirement.itemCount
+        ))
+      end
+      card.requirements:SetText(table.concat(lines, "\n"))
+
+      local canBuy, reason = GetPurchaseOfferStatus(offer)
+      card.buyButton.productItemEntry = offer.productItemEntry
+      if canBuy then
+        card.status:SetText("오늘 구매 가능")
+        card.buyButton:Enable()
+        card.buyButton:SetText("구매")
+      else
+        card.status:SetText(reason or "구매 불가")
+        card.buyButton:Disable()
+        if offer.purchasedToday and offer.purchasedToday > 0 then
+          card.buyButton:SetText("구매 완료")
+        else
+          card.buyButton:SetText("구매 불가")
+        end
+      end
+      card:Show()
+    else
+      card:Hide()
+    end
+  end
+end
+
+local function GetExtraTicketStatus()
+  if Trial.state.inProgress or Trial.state.pendingArena then
+    return false, "시련 진행 중에는 사용할 수 없습니다."
+  end
+
+  if GetRemainingEntries() > 0 then
+    return false, EXTRA_TICKET_LOCK_MESSAGE
+  end
+
+  if (GetItemCount(TRIAL_EXTRA_TICKET_ITEM) or 0) < 1 then
+    return false, "시련 암표가 필요합니다."
+  end
+
+  return true, nil
+end
+
+local function RefreshExtraTicketButton()
+  local enabled, reason = GetExtraTicketStatus()
+  Trial.extraTicketButton.disabledReason = reason
+  if enabled then
+    Trial.extraTicketButton:Enable()
+    Trial.extraTicketButton:SetAlpha(1.0)
+  else
+    Trial.extraTicketButton:Disable()
+    Trial.extraTicketButton:SetAlpha(0.55)
+  end
+end
+
 local function RefreshStatusTimes()
   if Trial.state.sessionState == SESSION_ACTIVE and Trial.state.combatEndsAt then
     Trial.currentTimeText:SetText(
@@ -966,6 +1222,11 @@ local function RefreshStatusBox()
 end
 
 local function RefreshSelection()
+  if Trial.purchaseViewOpen then
+    RefreshPurchaseView()
+    return
+  end
+
   local stage = Trial.state.stages[Trial.state.selected]
   if not stage then
     Trial.stageBadgeText:SetText("-")
@@ -978,6 +1239,7 @@ local function RefreshSelection()
     Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
     Trial.rewardButton:Disable()
     Trial.start:Disable()
+    RefreshExtraTicketButton()
     return
   end
 
@@ -997,6 +1259,8 @@ local function RefreshSelection()
   else
     Trial.start:Enable()
   end
+
+  RefreshExtraTicketButton()
 end
 
 local function RefreshRewardModal()
@@ -1147,6 +1411,10 @@ Trial.rewardListScroll:SetScript("OnVerticalScroll", function(self, offset)
 end)
 
 local function OpenRewardModal()
+  if Trial.purchaseViewOpen then
+    Trial.purchaseViewOpen = false
+    Trial.purchaseView:Hide()
+  end
   local stage = Trial.state.stages[Trial.state.selected]
   if not stage then
     return
@@ -1169,9 +1437,58 @@ local function OpenRewardModal()
   RefreshRewardListRows(stage)
   Trial.start:Hide()
   Trial.cancel:Hide()
+  Trial.extraTicketButton:Hide()
   Trial.rewardButton:SetText("뒤로가기")
   Trial.rewardButton:Show()
   Trial.rewardModalDismiss:Hide()
+end
+
+local function OpenPurchaseView()
+  if Trial.rewardViewOpen then
+    CloseRewardModal()
+  end
+
+  Trial.purchaseViewOpen = true
+  Trial.stageBadgeText:SetText("P")
+  Trial.stageTitle:SetText("시련 구매")
+  Trial.stageMeta:SetText("장물아비 재료를 모아 오늘의 티켓을 구매합니다.")
+  Trial.modelPane:Hide()
+  Trial.infoPane:Hide()
+  Trial.requirementTitle:Hide()
+  Trial.requirementIconBg:Hide()
+  Trial.requirementText:Hide()
+  Trial.rewardTitle:Hide()
+  Trial.rewardHint:Hide()
+  Trial.stageDesc:Hide()
+  Trial.rewardView:Hide()
+  Trial.rewardListText:Hide()
+  Trial.rewardListPane:Hide()
+  Trial.purchaseView:Show()
+  Trial.start:Hide()
+  Trial.cancel:Hide()
+  Trial.rewardButton:Hide()
+  Trial.extraTicketButton:Hide()
+  Trial.purchaseToggleButton:SetText("뒤로가기")
+  RefreshPurchaseView()
+end
+
+local function ClosePurchaseView()
+  Trial.purchaseViewOpen = false
+  Trial.purchaseView:Hide()
+  Trial.modelPane:Show()
+  Trial.infoPane:Show()
+  Trial.stageDesc:Show()
+  Trial.requirementTitle:Show()
+  Trial.requirementIconBg:Show()
+  Trial.requirementText:Show()
+  Trial.rewardTitle:Show()
+  Trial.rewardHint:Show()
+  Trial.start:Show()
+  Trial.cancel:Show()
+  Trial.rewardButton:Show()
+  Trial.extraTicketButton:Show()
+  Trial.purchaseToggleButton:SetText("구매하기")
+  RefreshSelection()
 end
 
 local function CloseRewardModal()
@@ -1190,14 +1507,17 @@ local function CloseRewardModal()
   Trial.rewardView:Hide()
   Trial.start:Show()
   Trial.cancel:Show()
+  Trial.extraTicketButton:Show()
   Trial.rewardButton:SetText("보상확인")
   Trial.rewardButton:Show()
+  Trial.purchaseToggleButton:SetText("구매하기")
   Trial.rewardModalDismiss:Hide()
   RefreshSelection()
 end
 
 local function ResetTrialDetailView()
   Trial.rewardViewOpen = false
+  Trial.purchaseViewOpen = false
   Trial.modelPane:Show()
   Trial.infoPane:Show()
   Trial.stageDesc:Show()
@@ -1210,10 +1530,13 @@ local function ResetTrialDetailView()
   Trial.rewardListPane:Hide()
   Trial.rewardListEmpty:Hide()
   Trial.rewardView:Hide()
+  Trial.purchaseView:Hide()
   Trial.start:Show()
   Trial.cancel:Show()
+  Trial.extraTicketButton:Show()
   Trial.rewardButton:SetText("보상확인")
   Trial.rewardButton:Show()
+  Trial.purchaseToggleButton:SetText("구매하기")
   Trial.rewardModalDismiss:Hide()
 end
 
@@ -1317,12 +1640,11 @@ local function EnsureStageButtons(count)
 end
 
 local function RefreshList()
-  local remaining = math.max(0,
-    (Trial.state.dailyEntryLimit or 5) - (Trial.state.dailyEntriesUsed or 0))
+  local remaining = GetRemainingEntries()
   Trial.leftSub:SetText(string.format(
     "입장 제한 %d회 / 최대 %d회",
     remaining,
-    Trial.state.dailyEntryLimit or 5
+    5
   ))
 
   EnsureStageButtons(#Trial.state.stages)
@@ -1362,6 +1684,10 @@ local function RefreshList()
   end
 
   RefreshStatusBox()
+  RefreshExtraTicketButton()
+  if Trial.purchaseViewOpen then
+    RefreshPurchaseView()
+  end
 end
 
 local function ShowResult()
@@ -1377,11 +1703,13 @@ local function ShowResult()
 end
 
 local function ApplyOpenPayload(highestCleared, encoded, inProgress,
-  preparationEndsAt, combatEndsAt, sessionState, dailyEntriesUsed, dailyEntryLimit)
+  preparationEndsAt, combatEndsAt, sessionState, dailyEntriesUsed, dailyEntryLimit, dailyBonusEntries, purchasePayload)
   Trial.state = NewState()
   Trial.state.highestCleared = tonumber(highestCleared) or 0
   Trial.state.dailyEntriesUsed = tonumber(dailyEntriesUsed) or 0
   Trial.state.dailyEntryLimit = tonumber(dailyEntryLimit) or 5
+  Trial.state.dailyBonusEntries = tonumber(dailyBonusEntries) or 0
+  Trial.state.purchaseOffers = ParsePurchasePayload(purchasePayload)
   Trial.state.inProgress = tonumber(inProgress) == 1
   Trial.state.pendingArena = Trial.state.inProgress
   Trial.state.preparationEndsAt = tonumber(preparationEndsAt) or nil
@@ -1455,7 +1783,7 @@ Trial:SetScript("OnHide", function()
 end)
 
 local function ApplyOpen(parts)
-  ApplyOpenPayload(parts[2], parts[3], parts[4], parts[5], parts[7], parts[9], parts[10], parts[11])
+  ApplyOpenPayload(parts[2], parts[3], parts[4], parts[5], parts[7], parts[9], parts[10], parts[11], parts[12], parts[13])
 end
 
 Trial.rewardButton:SetScript("OnClick", function()
@@ -1463,6 +1791,14 @@ Trial.rewardButton:SetScript("OnClick", function()
     CloseRewardModal()
   else
     OpenRewardModal()
+  end
+end)
+
+Trial.purchaseToggleButton:SetScript("OnClick", function()
+  if Trial.purchaseViewOpen then
+    ClosePurchaseView()
+  else
+    OpenPurchaseView()
   end
 end)
 
@@ -1481,6 +1817,21 @@ Trial.start:SetScript("OnClick", function()
   RefreshStatusBox()
 end)
 
+Trial.extraTicketButton:SetScript("OnClick", function()
+  local enabled, reason = GetExtraTicketStatus()
+  if not enabled then
+    ShowCenterAlert(reason or EXTRA_TICKET_LOCK_MESSAGE)
+    RefreshExtraTicketButton()
+    return
+  end
+
+  StaticPopupDialogs["KARAZHAN_TRIAL_EXTRA_TICKET_CONFIRM"].OnAccept = function()
+    SendCommand("USE_EXTRA_TICKET")
+    Trial:Hide()
+  end
+  StaticPopup_Show("KARAZHAN_TRIAL_EXTRA_TICKET_CONFIRM")
+end)
+
 Trial.returnButton:SetScript("OnClick", function()
   SendCommand("RETURN")
   Trial.state.resultShown = false
@@ -1491,11 +1842,21 @@ Trial.returnButton:SetScript("OnClick", function()
   RefreshStatusBox()
 end)
 
+for _, card in ipairs(Trial.purchaseOffers) do
+  card.buyButton:SetScript("OnClick", function(self)
+    if not self.productItemEntry or self.productItemEntry == 0 then
+      return
+    end
+    SendCommand("BUY\t" .. tostring(self.productItemEntry))
+  end)
+end
+
 Trial:RegisterEvent("PLAYER_LOGIN")
 Trial:RegisterEvent("CHAT_MSG_ADDON")
 Trial:RegisterEvent("PLAYER_ENTERING_WORLD")
 Trial:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 Trial:RegisterEvent("PLAYER_LEAVING_WORLD")
+Trial:RegisterEvent("BAG_UPDATE_DELAYED")
 Trial:SetScript("OnEvent", function(self, event, prefix, message)
   if event == "PLAYER_LOGIN" then
     if RegisterAddonMessagePrefix then
@@ -1529,6 +1890,14 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     return
   end
 
+  if event == "BAG_UPDATE_DELAYED" then
+    RefreshExtraTicketButton()
+    if Trial.purchaseViewOpen then
+      RefreshPurchaseView()
+    end
+    return
+  end
+
   if prefix ~= TRIAL_UI_PREFIX or type(message) ~= "string" then
     return
   end
@@ -1540,7 +1909,7 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   end
 
   if tonumber(parts[1]) then
-    ApplyOpenPayload(parts[1], parts[2], parts[3], parts[4], parts[6], parts[8], parts[9], parts[10])
+    ApplyOpenPayload(parts[1], parts[2], parts[3], parts[4], parts[6], parts[8], parts[9], parts[10], parts[11], parts[12])
     return
   end
 

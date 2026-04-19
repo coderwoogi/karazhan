@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <limits>
+#include <random>
 #include <queue>
 #include <unordered_map>
 #include <unordered_set>
@@ -78,6 +79,10 @@ namespace
     constexpr uint32 TRIAL_RANDOM_SPELL_ROCKET_BOOTS = 51582;
     constexpr uint32 TRIAL_RANDOM_SPELL_PARACHUTE_BUFF = 44795;
     constexpr uint32 TRIAL_TICKET_ITEM = 600022;
+    constexpr uint32 TRIAL_EXTRA_TICKET_ITEM = 600023;
+    constexpr uint32 DAILY_PURCHASE_REQUIREMENT_COUNT = 3;
+    constexpr uint32 DAILY_PURCHASE_REQUIREMENT_MIN = 5;
+    constexpr uint32 DAILY_PURCHASE_REQUIREMENT_MAX = 10;
     constexpr uint32 TRIAL_PATH_MARKER_ENTRY = 190025;
     constexpr uint32 TRIAL_DAILY_LIMIT = 5;
     constexpr uint8 MAX_STAGE_MECHANIC_SLOTS = 16;
@@ -170,6 +175,19 @@ namespace
         Active = 2,
         PendingFinish = 3,
         AwaitingReturn = 4
+    };
+
+    struct DailyPurchaseRequirement
+    {
+        uint32 ItemEntry = 0;
+        uint32 Count = 0;
+    };
+
+    struct DailyTicketOffer
+    {
+        uint32 ProductItemEntry = 0;
+        uint32 PurchasedToday = 0;
+        std::vector<DailyPurchaseRequirement> Requirements;
     };
 
     enum class TrialScenario : uint8
@@ -2164,6 +2182,8 @@ namespace
         bool IsCombatActive(ObjectGuid const& playerGuid) const;
         bool IsObjectiveRaceActive(ObjectGuid const& playerGuid) const;
         bool StartChallenge(Player* player, uint8 stageId);
+        bool UseExtraEntryTicket(Player* player);
+        bool PurchaseDailyTicket(Player* player, uint32 productItemEntry);
         bool ReturnPlayer(Player* player);
         bool TryHandleObjectiveFlagUse(Player* player, GameObject* go);
         bool ShowObjectiveScore(ChatHandler* handler, Player* target);
@@ -2210,6 +2230,15 @@ namespace
         void SaveStageRecord(Player* player, ArenaSession const& session);
         void GrantStageRewards(Player* player, ArenaSession const& session);
         uint32 GetTodayEntryCount(Player* player) const;
+        uint32 GetTodayBonusEntryCount(Player* player) const;
+        uint32 GetTodayPurchaseCount(Player* player, uint32 itemEntry) const;
+        uint32 GetCurrentDailyEntryLimit(Player* player) const;
+        std::vector<uint32> LoadBlackMarketRequirementCandidates() const;
+        std::vector<DailyPurchaseRequirement> BuildDailyPurchaseRequirements(
+            uint32 productItemEntry) const;
+        DailyTicketOffer BuildDailyTicketOffer(Player* player,
+            uint32 productItemEntry) const;
+        std::string BuildDailyPurchasePayload(Player* player) const;
         void LogRun(Player* player, ArenaSession const& session);
         void LogEvent(Player* player, ArenaSession const& session,
             std::string const& eventType, std::string const& note = "");
@@ -2667,6 +2696,20 @@ namespace
             return true;
         }
 
+        if (msg == cmdPrefix + "USE_EXTRA_TICKET")
+        {
+            SoloArenaMgr::Instance().UseExtraEntryTicket(player);
+            return true;
+        }
+
+        if (StartsWith(msg, cmdPrefix + "BUY\t"))
+        {
+            std::string itemText = msg.substr(cmdPrefix.size() + 4);
+            uint32 itemEntry = uint32(std::max(0, atoi(itemText.c_str())));
+            SoloArenaMgr::Instance().PurchaseDailyTicket(player, itemEntry);
+            return true;
+        }
+
         if (msg == cmdPrefix + "RETURN")
         {
             SoloArenaMgr::Instance().ReturnPlayer(player);
@@ -2911,10 +2954,10 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         return false;
     }
 
-    if (GetTodayEntryCount(player) >= TRIAL_DAILY_LIMIT)
+    if (GetTodayEntryCount(player) >= GetCurrentDailyEntryLimit(player))
     {
         SendSystem(player,
-            "오늘의 시련 입장 가능 횟수 5회를 모두 사용했습니다.");
+            "오늘의 시련 입장 가능 횟수를 모두 사용했습니다.");
         return false;
     }
 
@@ -3304,6 +3347,8 @@ void SoloArenaMgr::SendUi(Player* player)
 
     uint8 highestStage = GetHighestStageCleared(player);
     uint32 todayEntriesUsed = GetTodayEntryCount(player);
+    uint32 todayBonusEntries = GetTodayBonusEntryCount(player);
+    std::string purchasePayload = BuildDailyPurchasePayload(player);
     uint8 maxUnlockedStage = highestStage + 1;
 
     std::ostringstream entries;
@@ -3354,7 +3399,9 @@ void SoloArenaMgr::SendUi(Player* player)
           payload << uint64(session->EndedAt) << "\t";
           payload << uint32(session->State) << "\t";
           payload << todayEntriesUsed << "\t";
-          payload << TRIAL_DAILY_LIMIT;
+          payload << TRIAL_DAILY_LIMIT << "\t";
+          payload << todayBonusEntries << "\t";
+          payload << purchasePayload;
       }
       else
       {
@@ -3362,7 +3409,9 @@ void SoloArenaMgr::SendUi(Player* player)
                   << uint64(0) << "\t" << uint64(0) << "\t"
                   << uint32(SessionState::PendingSpawn) << "\t"
                   << todayEntriesUsed << "\t"
-                  << TRIAL_DAILY_LIMIT;
+                  << TRIAL_DAILY_LIMIT << "\t"
+                  << todayBonusEntries << "\t"
+                  << purchasePayload;
       }
     SendAddonPayload(player, TRIAL_UI_PREFIX, payload.str());
 }
@@ -5101,6 +5150,256 @@ uint32 SoloArenaMgr::GetTodayEntryCount(Player* player) const
         return 0;
 
     return result->Fetch()[0].Get<uint32>();
+}
+
+uint32 SoloArenaMgr::GetTodayBonusEntryCount(Player* player) const
+{
+    if (!player)
+        return 0;
+
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT bonus_entries "
+        "FROM solo_arena_daily_bonus "
+        "WHERE guid = {} AND use_date = CURDATE()",
+        player->GetGUID().GetCounter());
+
+    if (!result)
+        return 0;
+
+    return result->Fetch()[0].Get<uint32>();
+}
+
+uint32 SoloArenaMgr::GetTodayPurchaseCount(Player* player, uint32 itemEntry) const
+{
+    if (!player || itemEntry == 0)
+        return 0;
+
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT purchase_count "
+        "FROM solo_arena_daily_purchase "
+        "WHERE guid = {} AND purchase_date = CURDATE() AND item_entry = {}",
+        player->GetGUID().GetCounter(), itemEntry);
+
+    if (!result)
+        return 0;
+
+    return result->Fetch()[0].Get<uint32>();
+}
+
+uint32 SoloArenaMgr::GetCurrentDailyEntryLimit(Player* player) const
+{
+    return TRIAL_DAILY_LIMIT + GetTodayBonusEntryCount(player);
+}
+
+std::vector<uint32> SoloArenaMgr::LoadBlackMarketRequirementCandidates() const
+{
+    std::vector<uint32> entries;
+    QueryResult result = WorldDatabase.Query(
+        "SELECT DISTINCT item_entry FROM blackmarket_item_pool ORDER BY item_entry");
+
+    if (!result)
+        return entries;
+
+    do
+    {
+        uint32 itemEntry = result->Fetch()[0].Get<uint32>();
+        if (itemEntry != 0 && itemEntry != TRIAL_TICKET_ITEM &&
+            itemEntry != TRIAL_EXTRA_TICKET_ITEM)
+        {
+            entries.push_back(itemEntry);
+        }
+    } while (result->NextRow());
+
+    return entries;
+}
+
+std::vector<DailyPurchaseRequirement> SoloArenaMgr::BuildDailyPurchaseRequirements(
+    uint32 productItemEntry) const
+{
+    std::vector<DailyPurchaseRequirement> requirements;
+    std::vector<uint32> candidates = LoadBlackMarketRequirementCandidates();
+    if (candidates.size() < DAILY_PURCHASE_REQUIREMENT_COUNT)
+        return requirements;
+
+    std::time_t now = std::time(nullptr);
+    std::tm localTime {};
+#ifdef _WIN32
+    localtime_s(&localTime, &now);
+#else
+    localtime_r(&now, &localTime);
+#endif
+
+    uint32 dateSeed = uint32((localTime.tm_year + 1900) * 10000
+        + (localTime.tm_mon + 1) * 100
+        + localTime.tm_mday);
+    std::mt19937 rng(dateSeed ^ (productItemEntry * 2654435761u));
+
+    std::shuffle(candidates.begin(), candidates.end(), rng);
+    std::uniform_int_distribution<uint32> countDist(
+        DAILY_PURCHASE_REQUIREMENT_MIN,
+        DAILY_PURCHASE_REQUIREMENT_MAX);
+
+    for (size_t i = 0; i < DAILY_PURCHASE_REQUIREMENT_COUNT; ++i)
+    {
+        DailyPurchaseRequirement requirement;
+        requirement.ItemEntry = candidates[i];
+        requirement.Count = countDist(rng);
+        requirements.push_back(requirement);
+    }
+
+    return requirements;
+}
+
+DailyTicketOffer SoloArenaMgr::BuildDailyTicketOffer(Player* player,
+    uint32 productItemEntry) const
+{
+    DailyTicketOffer offer;
+    offer.ProductItemEntry = productItemEntry;
+    offer.PurchasedToday = GetTodayPurchaseCount(player, productItemEntry);
+    offer.Requirements = BuildDailyPurchaseRequirements(productItemEntry);
+    return offer;
+}
+
+std::string SoloArenaMgr::BuildDailyPurchasePayload(Player* player) const
+{
+    std::vector<uint32> productEntries = {
+        TRIAL_TICKET_ITEM,
+        TRIAL_EXTRA_TICKET_ITEM
+    };
+
+    std::ostringstream payload;
+    bool firstOffer = true;
+    for (uint32 productItemEntry : productEntries)
+    {
+        DailyTicketOffer offer = BuildDailyTicketOffer(player, productItemEntry);
+        if (!firstOffer)
+            payload << "|";
+        firstOffer = false;
+
+        payload << offer.ProductItemEntry << "^" << offer.PurchasedToday << "^";
+        for (size_t i = 0; i < offer.Requirements.size(); ++i)
+        {
+            if (i > 0)
+                payload << ",";
+            payload << offer.Requirements[i].ItemEntry << ":" << offer.Requirements[i].Count;
+        }
+    }
+
+    return payload.str();
+}
+
+bool SoloArenaMgr::PurchaseDailyTicket(Player* player, uint32 productItemEntry)
+{
+    if (!player)
+        return false;
+
+    if (productItemEntry != TRIAL_TICKET_ITEM &&
+        productItemEntry != TRIAL_EXTRA_TICKET_ITEM)
+    {
+        SendSystem(player, "구매할 수 없는 물건입니다.");
+        return false;
+    }
+
+    if (GetTodayPurchaseCount(player, productItemEntry) > 0)
+    {
+        SendSystem(player, "오늘은 해당 물건을 이미 구매했습니다.");
+        SendUi(player);
+        return false;
+    }
+
+    std::vector<DailyPurchaseRequirement> requirements =
+        BuildDailyPurchaseRequirements(productItemEntry);
+    if (requirements.size() < DAILY_PURCHASE_REQUIREMENT_COUNT)
+    {
+        SendSystem(player, "오늘의 구매 조건을 불러오지 못했습니다.");
+        SendUi(player);
+        return false;
+    }
+
+    for (DailyPurchaseRequirement const& requirement : requirements)
+    {
+        if (!player->HasItemCount(requirement.ItemEntry, requirement.Count, false))
+        {
+            ItemTemplate const* itemTemplate =
+                sObjectMgr->GetItemTemplate(requirement.ItemEntry);
+            std::string itemName = itemTemplate ? itemTemplate->Name1 : "알 수 없는 재료";
+            SendSystem(player, Acore::StringFormat(
+                "{} 아이템이 {}개 필요합니다.",
+                itemName, requirement.Count));
+            SendUi(player);
+            return false;
+        }
+    }
+
+    ItemPosCountVec dest;
+    if (player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, productItemEntry, 1)
+        != EQUIP_ERR_OK)
+    {
+        SendSystem(player, "가방 공간이 부족합니다.");
+        SendUi(player);
+        return false;
+    }
+
+    for (DailyPurchaseRequirement const& requirement : requirements)
+        player->DestroyItemCount(requirement.ItemEntry, requirement.Count, true, false);
+
+    if (Item* newItem = player->StoreNewItem(dest, productItemEntry, true))
+        player->SendNewItem(newItem, 1, true, false);
+
+    CharacterDatabase.Execute(
+        "REPLACE INTO solo_arena_daily_purchase "
+        "(guid, purchase_date, item_entry, purchase_count, updated_at) "
+        "VALUES ({}, CURDATE(), {}, 1, {})",
+        player->GetGUID().GetCounter(), productItemEntry, std::time(nullptr));
+
+    ItemTemplate const* productTemplate = sObjectMgr->GetItemTemplate(productItemEntry);
+    std::string productName = productTemplate ? productTemplate->Name1 : "아이템";
+    SendSystem(player, Acore::StringFormat("{} 구매를 완료했습니다.", productName));
+    SendUi(player);
+    return true;
+}
+
+bool SoloArenaMgr::UseExtraEntryTicket(Player* player)
+{
+    if (!SoloArenaConfig::Instance().IsEnabled() || !player)
+        return false;
+
+    if (HasSession(player->GetGUID()))
+    {
+        SendSystem(player, "이미 진행 중인 시련이 있습니다.");
+        SendUi(player);
+        return false;
+    }
+
+    uint32 todayEntriesUsed = GetTodayEntryCount(player);
+    uint32 dailyEntryLimit = GetCurrentDailyEntryLimit(player);
+    if (todayEntriesUsed < dailyEntryLimit)
+    {
+        SendSystem(player,
+            "일일 제한 횟수를 모두 소진해야 사용 가능합니다.");
+        SendUi(player);
+        return false;
+    }
+
+    if (!player->HasItemCount(TRIAL_EXTRA_TICKET_ITEM, 1, false))
+    {
+        SendSystem(player, "시련 암표가 필요합니다.");
+        SendUi(player);
+        return false;
+    }
+
+    player->DestroyItemCount(TRIAL_EXTRA_TICKET_ITEM, 1, true, false);
+
+    uint32 bonusEntries = GetTodayBonusEntryCount(player) + 1;
+    CharacterDatabase.Execute(
+        "REPLACE INTO solo_arena_daily_bonus "
+        "(guid, use_date, bonus_entries, updated_at) "
+        "VALUES ({}, CURDATE(), {}, {})",
+        player->GetGUID().GetCounter(), bonusEntries, std::time(nullptr));
+
+    SendSystem(player,
+        "시련 암표를 사용해 추가 입장 기회 1회를 획득했습니다.");
+    return true;
 }
 
 void SoloArenaMgr::SaveProgress(Player* player, uint8 stageId)

@@ -80,3 +80,20 @@ CREATE TABLE IF NOT EXISTS `solo_arena_reward_log` (
     KEY `idx_solo_arena_reward_run` (`run_uid`, `granted_at`),
     KEY `idx_solo_arena_reward_guid` (`guid`, `granted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `solo_arena_daily_bonus` (
+    `guid` BIGINT UNSIGNED NOT NULL,
+    `use_date` DATE NOT NULL,
+    `bonus_entries` INT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`guid`, `use_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `solo_arena_daily_purchase` (
+    `guid` BIGINT UNSIGNED NOT NULL,
+    `purchase_date` DATE NOT NULL,
+    `item_entry` INT UNSIGNED NOT NULL,
+    `purchase_count` INT UNSIGNED NOT NULL DEFAULT 0,
+    `updated_at` BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`guid`, `purchase_date`, `item_entry`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
