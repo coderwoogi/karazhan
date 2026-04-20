@@ -2242,6 +2242,7 @@ namespace
         DailyTicketOffer BuildDailyTicketOffer(Player* player,
             uint32 productItemEntry) const;
         std::string BuildDailyPurchasePayload(Player* player) const;
+        uint32 RefreshActiveSessionShadows();
         void LogRun(Player* player, ArenaSession const& session);
         void LogEvent(Player* player, ArenaSession const& session,
             std::string const& eventType, std::string const& note = "");
@@ -5340,6 +5341,86 @@ std::string SoloArenaMgr::BuildDailyPurchasePayload(Player* player) const
     return payload.str();
 }
 
+uint32 SoloArenaMgr::RefreshActiveSessionShadows()
+{
+    uint32 refreshedCount = 0;
+
+    for (auto& [_, session] : _sessions)
+    {
+        if (session.State == SessionState::AwaitingReturn ||
+            session.BotGuid.IsEmpty())
+        {
+            continue;
+        }
+
+        Player* player = ObjectAccessor::FindConnectedPlayer(session.PlayerGuid);
+        if (!player)
+            continue;
+
+        Creature* bot = ObjectAccessor::GetCreature(*player, session.BotGuid);
+        if (!bot)
+            continue;
+
+        StageConfig const* stage = GetStage(session.StageId);
+        if (!stage)
+            continue;
+
+        StageConfig shadowStage = *stage;
+        if (session.Scenario == TrialScenario::Objective)
+        {
+            shadowStage.ArenaMapId = DEFAULT_OBJECTIVE_MAP_ID;
+            if (!GetObjectiveStartMarkerLocation(
+                    Battleground::GetOtherTeamId(session.Team),
+                    shadowStage.BotX, shadowStage.BotY,
+                    shadowStage.BotZ, shadowStage.BotO))
+            {
+                GetObjectiveStartLocation(
+                    Battleground::GetOtherTeamId(session.Team),
+                    shadowStage.BotX, shadowStage.BotY,
+                    shadowStage.BotZ, shadowStage.BotO);
+            }
+        }
+
+        ShadowProfile profile = CaptureShadowProfile(player, shadowStage);
+        float healthPct = bot->GetMaxHealth() > 0 ?
+            float(bot->GetHealth()) / float(bot->GetMaxHealth()) : 1.0f;
+        float powerPct = bot->GetMaxPower(bot->getPowerType()) > 0 ?
+            float(bot->GetPower(bot->getPowerType())) /
+            float(bot->GetMaxPower(bot->getPowerType())) : 1.0f;
+        bool wasActiveCombat = session.State == SessionState::Active &&
+            bot->IsAlive() && player->IsAlive();
+
+        _shadowProfiles[session.BotGuid.GetCounter()] = profile;
+        ConfigureShadow(bot, player, profile, shadowStage);
+
+        uint32 refreshedHealth = std::max<uint32>(1u,
+            uint32(float(bot->GetMaxHealth()) *
+                std::clamp(healthPct, 0.0f, 1.0f)));
+        bot->SetHealth(refreshedHealth);
+
+        Powers powerType = bot->getPowerType();
+        if (bot->GetMaxPower(powerType) > 0)
+        {
+            uint32 refreshedPower = uint32(float(bot->GetMaxPower(powerType)) *
+                std::clamp(powerPct, 0.0f, 1.0f));
+            bot->SetPower(powerType, refreshedPower);
+        }
+
+        bot->AIM_Initialize();
+
+        if (wasActiveCombat)
+        {
+            StartShadowCombat(player, bot);
+            if (session.Scenario == TrialScenario::Objective)
+                EnsureObjectiveShadowGrounded(player, bot, session);
+        }
+
+        ++refreshedCount;
+    }
+
+    return refreshedCount;
+}
+
 bool SoloArenaMgr::PurchaseDailyTicket(Player* player, uint32 productItemEntry)
 {
     if (!player)
@@ -7882,10 +7963,14 @@ namespace
         {
             SoloArenaMgr::Instance().LoadStages();
             SoloArenaMgr::Instance().LoadMechanics();
+            uint32 refreshedShadows =
+                SoloArenaMgr::Instance().RefreshActiveSessionShadows();
 
             if (handler)
-                handler->SendSysMessage(
-                    "시련 단계/보상 데이터를 다시 불러왔습니다.");
+                handler->PSendSysMessage(
+                    "시련 단계/보상 데이터를 다시 불러왔습니다. "
+                    "활성 그림자 {}개를 재적용했습니다.",
+                    refreshedShadows);
 
             return true;
         }
