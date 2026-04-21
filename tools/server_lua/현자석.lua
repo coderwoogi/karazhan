@@ -2,6 +2,8 @@
 local PREFIX = "HERO_STONE_UI"
 local ADDON_EVENT_ON_MESSAGE = 30
 local CHAT_MSG_WHISPER = 7
+local MAX_LEVEL = 80
+local HERO_STONE_MAX_LEVEL_BUFF_COST = 500000
 
 local HEROIC_DUNGEON_MAPS = {
     33, 34, 36, 43, 47, 48, 70, 90, 109, 129, 169, 189, 209, 229, 230,
@@ -135,9 +137,14 @@ local function PayBuff(player)
 end
 
 local function FreeBuff(player)
-    if player:GetLevel() >= 80 then
-        player:SendBroadcastMessage("무료 버프는 79레벨 이하만 사용할 수 있습니다.")
-        return
+    if player:GetLevel() >= MAX_LEVEL then
+        if player:GetCoinage() < HERO_STONE_MAX_LEVEL_BUFF_COST then
+            player:SendBroadcastMessage(
+                "50골드가 필요합니다. 소지금이 부족합니다.")
+            return
+        end
+
+        player:ModifyMoney(-HERO_STONE_MAX_LEVEL_BUFF_COST)
     end
 
     player:AddAura(48074, player)
@@ -148,7 +155,12 @@ local function FreeBuff(player)
     player:AddAura(48162, player)
     player:AddAura(48942, player)
     player:AddAura(75447, player)
-    player:SendBroadcastMessage("현자석: 무료 버프가 적용되었습니다.")
+    if player:GetLevel() >= MAX_LEVEL then
+        player:SendBroadcastMessage(
+            "현자석: 유료 버프가 적용되었습니다. (50골드 소모)")
+    else
+        player:SendBroadcastMessage("현자석: 무료 버프가 적용되었습니다.")
+    end
 end
 
 local function BuildMenuItems(player, isSubscriber, remainDays)
@@ -195,8 +207,11 @@ local function BuildMenuItems(player, isSubscriber, remainDays)
         })
         table.insert(items, {
             id = 105,
-            label = "무료 버프",
-            desc = "79레벨 이하 캐릭터만 사용할 수 있습니다.",
+            label = player:GetLevel() >= MAX_LEVEL and "유료 버프(50골드)" or
+                "무료 버프",
+            desc = player:GetLevel() >= MAX_LEVEL and
+                "만렙 캐릭터는 50골드를 소모하고 주요 버프를 받습니다." or
+                "79레벨 이하 캐릭터만 무료로 사용할 수 있습니다.",
             icon = "Interface\\ICONS\\Ability_Mage_MissileBarrage",
         })
     end

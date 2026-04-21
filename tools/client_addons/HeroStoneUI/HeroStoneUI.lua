@@ -60,6 +60,16 @@ local function SendCommand(command, value)
   SendAddonMessage(activePrefix, payload, "WHISPER", playerName)
 end
 
+StaticPopupDialogs["HERO_STONE_BUFF_CONFIRM"] = {
+  text = "",
+  button1 = ACCEPT,
+  button2 = CANCEL,
+  timeout = 0,
+  whileDead = true,
+  hideOnEscape = true,
+  preferredIndex = STATICPOPUP_NUMDIALOGS,
+}
+
 local function CreateText(parent, layer, template, size, r, g, b, justify)
   local fs = parent:CreateFontString(nil, layer or "OVERLAY", template)
   fs:SetFont(STANDARD_TEXT_FONT, size, "")
@@ -340,6 +350,21 @@ for index = 1, 8 do
 
   button:SetScript("OnClick", function(self)
     if self.actionId then
+      if tonumber(self.actionId) == 105 then
+        local popup = StaticPopupDialogs["HERO_STONE_BUFF_CONFIRM"]
+        if popup then
+          if UnitLevel("player") >= 80 then
+            popup.text = "50골드를 소모하여 버프를 받으시겠습니까?"
+          else
+            popup.text = "무료 버프를 받으시겠습니까?"
+          end
+          popup.OnAccept = function()
+            SendCommand("ACT", tostring(self.actionId))
+          end
+          StaticPopup_Show("HERO_STONE_BUFF_CONFIRM")
+        end
+        return
+      end
       SendCommand("ACT", tostring(self.actionId))
     end
   end)
