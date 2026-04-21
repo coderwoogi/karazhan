@@ -2210,6 +2210,7 @@ namespace
         bool IsManagedShadow(Creature const* creature) const;
         bool IsManagedArenaInstance(uint32 instanceId) const;
         bool IsManagedObjectiveInstance(uint32 instanceId) const;
+        uint32 RefreshActiveSessionShadows();
 
     private:
         bool SpawnShadow(Player* player, ArenaSession& session);
@@ -2242,7 +2243,6 @@ namespace
         DailyTicketOffer BuildDailyTicketOffer(Player* player,
             uint32 productItemEntry) const;
         std::string BuildDailyPurchasePayload(Player* player) const;
-        uint32 RefreshActiveSessionShadows();
         void LogRun(Player* player, ArenaSession const& session);
         void LogEvent(Player* player, ArenaSession const& session,
             std::string const& eventType, std::string const& note = "");
