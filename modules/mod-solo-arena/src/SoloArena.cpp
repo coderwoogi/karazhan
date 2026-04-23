@@ -520,6 +520,27 @@ namespace
         return std::clamp(1.0f / (1.0f + hastePct), 0.55f, 1.0f);
     }
 
+    float EstimateShadowSpellPowerCoefficient(Unit* caster,
+        SpellInfo const* spellInfo)
+    {
+        if (!spellInfo)
+            return 0.0f;
+
+        uint32 castTime = spellInfo->CalcCastTime(caster);
+        if (spellInfo->IsChanneled())
+            castTime = std::max<uint32>(castTime, spellInfo->GetDuration());
+        if (castTime == 0)
+            castTime = 1500;
+
+        float coefficient = std::clamp(float(castTime) / 3500.0f,
+            0.25f, 1.0f);
+
+        if (spellInfo->HasAreaAuraEffect())
+            coefficient *= 0.75f;
+
+        return coefficient;
+    }
+
     bool IsGapCloserSpell(uint32 spellId)
     {
         switch (spellId)
@@ -1973,6 +1994,13 @@ namespace
                 profile.HasteRating = stats.HasteRating;
                 profile.CastSpeedRate = ShadowCastSpeedRate(stats.HasteRating);
             }
+        }
+
+        if (profile.PowerType == POWER_MANA)
+        {
+            profile.MaxPower = std::max<uint32>(1u,
+                uint32(std::min<uint64>(uint64(profile.MaxPower) * 2ull,
+                    uint64(0xFFFFFFFFu))));
         }
 
         return profile;
@@ -8147,6 +8175,15 @@ namespace
                 !profile->UseStageStatTable)
             {
                 return;
+            }
+
+            if (!IsMeleeArchetype(*profile) && profile->SpellPowerBonus > 0)
+            {
+                float coefficient = EstimateShadowSpellPowerCoefficient(
+                    attacker, spellInfo);
+                int32 spellPowerBonus = int32(std::round(
+                    float(profile->SpellPowerBonus) * coefficient * 0.55f));
+                damage = std::max<int32>(1, damage + spellPowerBonus);
             }
 
             if (profile->CritChancePct > 0.0f &&
