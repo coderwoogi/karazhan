@@ -817,7 +817,7 @@ Trial.exitButton:SetScript("OnClick", function()
   StaticPopup_Show("KARAZHAN_TRIAL_ABANDON_CONFIRM")
 end)
 
-Trial.resultFrame = CreatePanel(UIParent, 360, 220)
+Trial.resultFrame = CreatePanel(UIParent, 360, 250)
 Trial.resultFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 Trial.resultFrame:SetClampedToScreen(true)
 Trial.resultFrame:Hide()
@@ -840,12 +840,12 @@ EnableWrap(Trial.resultSummary, 280, 44, "CENTER")
 Trial.resultTime = CreateLabel(
   Trial.resultFrame, "GameFontNormal", 13, 0.90, 0.90, 0.90, "CENTER")
 Trial.resultTime:SetPoint("TOP", Trial.resultSummary, "BOTTOM", 0, -16)
-EnableWrap(Trial.resultTime, 280, 26, "CENTER")
+EnableWrap(Trial.resultTime, 300, 34, "CENTER")
 
 Trial.returnButton = CreateFrame(
   "Button", nil, Trial.resultFrame, "UIPanelButtonTemplate")
 Trial.returnButton:SetSize(140, 28)
-Trial.returnButton:SetPoint("BOTTOM", Trial.resultFrame, "BOTTOM", 0, 18)
+Trial.returnButton:SetPoint("BOTTOM", Trial.resultFrame, "BOTTOM", 0, 14)
 Trial.returnButton:SetText("복귀")
 
 Trial.rewardTable = CreatePanel(Trial.rewardView, 470, 280)
