@@ -29,6 +29,7 @@
 #include "TemporarySummon.h"
 #include "UnitScript.h"
 #include "WorldPacket.h"
+#include "WorldSessionMgr.h"
 #include "WorldStateDefines.h"
 #include "WorldSession.h"
 
@@ -2315,6 +2316,55 @@ namespace
                 return;
 
             ChatHandler(player->GetSession()).PSendSysMessage("{}", message);
+        }
+
+        static void SendShadowStatsToGMs(Player* player,
+            ArenaSession const& session, Creature* summon,
+            ShadowProfile const& profile)
+        {
+            if (!player || !summon)
+                return;
+
+            char const* scenarioLabel =
+                session.Scenario == TrialScenario::Objective ?
+                    "거점전" : "결투";
+            char const* archetypeLabel =
+                IsMeleeArchetype(profile) ? "밀리" : "캐스터";
+
+            std::string message;
+            if (IsMeleeArchetype(profile))
+            {
+                message = Acore::StringFormat(
+                    "[시련 그림자] 플레이어:{} 단계:{} 모드:{} 유형:{} "
+                    "체력:{} 마나:{} 공격력:{} 치명:{:.1f}% 방관:{}",
+                    player->GetName(), uint32(session.StageId), scenarioLabel,
+                    archetypeLabel, summon->GetMaxHealth(),
+                    summon->GetMaxPower(summon->getPowerType()),
+                    profile.AttackPowerBonus, profile.CritChancePct,
+                    profile.ArmorPenetrationRating);
+            }
+            else
+            {
+                message = Acore::StringFormat(
+                    "[시련 그림자] 플레이어:{} 단계:{} 모드:{} 유형:{} "
+                    "체력:{} 마나:{} 주문력:{} 치명:{:.1f}% 가속:{} 시전속도:{:.2f}",
+                    player->GetName(), uint32(session.StageId), scenarioLabel,
+                    archetypeLabel, summon->GetMaxHealth(),
+                    summon->GetMaxPower(summon->getPowerType()),
+                    profile.SpellPowerBonus, profile.CritChancePct,
+                    profile.HasteRating, profile.CastSpeedRate);
+            }
+
+            for (auto const& [_, worldSession] : sWorldSessionMgr->GetAllSessions())
+            {
+                if (!worldSession ||
+                    worldSession->GetSecurity() < SEC_GAMEMASTER)
+                {
+                    continue;
+                }
+
+                ChatHandler(worldSession).SendGMText(message);
+            }
         }
 
         std::unordered_map<uint8, StageConfig> _stages;
@@ -4626,6 +4676,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         session.State = SessionState::WaitingForStart;
 
     _shadowProfiles[summon->GetGUID().GetCounter()] = profile;
+    SendShadowStatsToGMs(player, session, summon, profile);
 
     summon->ClearInCombat();
     player->ClearInCombat();
