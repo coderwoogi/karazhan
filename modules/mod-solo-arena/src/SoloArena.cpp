@@ -238,6 +238,7 @@ namespace
         {
             uint32 TargetGearScore = 0;
             uint32 MaxHealth = 1;
+            uint32 MaxMana = 0;
             int32 AttackPower = 0;
             int32 SpellPower = 0;
             float CritChancePct = 0.0f;
@@ -1991,6 +1992,8 @@ namespace
             }
             else
             {
+                if (profile.PowerType == POWER_MANA && stats.MaxMana > 0)
+                    profile.MaxPower = stats.MaxMana;
                 profile.SpellPowerBonus = stats.SpellPower;
                 profile.HasteRating = stats.HasteRating;
                 profile.CastSpeedRate = ShadowCastSpeedRate(stats.HasteRating);
@@ -2852,7 +2855,7 @@ void SoloArenaMgr::LoadStages()
         "spell_interval_ms, move_speed_rate, preparation_ms, enabled, "
         "melee_target_gs, melee_health, melee_attack_power, "
         "melee_crit_pct, melee_armor_pen_rating, caster_target_gs, "
-        "caster_health, caster_spell_power, caster_crit_pct, "
+        "caster_health, caster_mana, caster_spell_power, caster_crit_pct, "
         "caster_haste_rating "
         "FROM solo_arena_stage ORDER BY stage_id");
 
@@ -2892,9 +2895,10 @@ void SoloArenaMgr::LoadStages()
         stage.MeleeStats.ArmorPenetrationRating = fields[22].Get<uint32>();
         stage.CasterStats.TargetGearScore = fields[23].Get<uint32>();
         stage.CasterStats.MaxHealth = fields[24].Get<uint32>();
-        stage.CasterStats.SpellPower = fields[25].Get<int32>();
-        stage.CasterStats.CritChancePct = fields[26].Get<float>();
-        stage.CasterStats.HasteRating = fields[27].Get<uint32>();
+        stage.CasterStats.MaxMana = fields[25].Get<uint32>();
+        stage.CasterStats.SpellPower = fields[26].Get<int32>();
+        stage.CasterStats.CritChancePct = fields[27].Get<float>();
+        stage.CasterStats.HasteRating = fields[28].Get<uint32>();
         if (IsObjectiveTrialStage(stage.StageId))
             stage.ArenaMapId = DEFAULT_OBJECTIVE_MAP_ID;
         if (std::string fixedName = GetFixedStageLabel(stage.StageId);
@@ -6385,7 +6389,7 @@ void SoloArenaMgr::LoadDefaultStages()
     auto applyDefaultShadowStats = [](StageConfig& stage,
         uint32 meleeGs, int32 meleeAp, uint32 meleeHp, float meleeCrit,
         uint32 meleeArp, uint32 casterGs, int32 casterSp, uint32 casterHp,
-        float casterCrit, uint32 casterHaste)
+        uint32 casterMana, float casterCrit, uint32 casterHaste)
     {
         stage.MeleeStats.TargetGearScore = meleeGs;
         stage.MeleeStats.AttackPower = meleeAp;
@@ -6396,6 +6400,7 @@ void SoloArenaMgr::LoadDefaultStages()
         stage.CasterStats.TargetGearScore = casterGs;
         stage.CasterStats.SpellPower = casterSp;
         stage.CasterStats.MaxHealth = casterHp;
+        stage.CasterStats.MaxMana = casterMana;
         stage.CasterStats.CritChancePct = casterCrit;
         stage.CasterStats.HasteRating = casterHaste;
     };
@@ -6404,7 +6409,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage1.StageId = 1;
     stage1.Name = "그림자 시련 1단계";
     applyDefaultShadowStats(stage1, 4300, 3000, 22000, 25.0f, 200,
-        4300, 1800, 20000, 20.0f, 300);
+        4300, 1800, 20000, 26000, 20.0f, 300);
     _stages[stage1.StageId] = stage1;
 
     StageConfig stage2 = stage1;
@@ -6416,7 +6421,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage2.SpellIntervalMs = 4200;
     stage2.MoveSpeedRate = 1.00f;
     applyDefaultShadowStats(stage2, 4600, 3500, 24000, 28.0f, 300,
-        4600, 2100, 22000, 22.0f, 400);
+        4600, 2100, 22000, 29000, 22.0f, 400);
     _stages[stage2.StageId] = stage2;
 
     StageConfig stage3 = stage1;
@@ -6428,7 +6433,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage3.SpellIntervalMs = 4200;
     stage3.MoveSpeedRate = 1.00f;
     applyDefaultShadowStats(stage3, 4900, 4000, 26000, 30.0f, 400,
-        4900, 2400, 24000, 25.0f, 500);
+        4900, 2400, 24000, 32000, 25.0f, 500);
     _stages[stage3.StageId] = stage3;
 
     StageConfig stage4 = stage1;
@@ -6439,7 +6444,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage4.DamageMultiplier = 1.00f;
     stage4.MoveSpeedRate = 1.00f;
     applyDefaultShadowStats(stage4, 5200, 4600, 28000, 32.0f, 500,
-        5200, 2800, 26000, 27.0f, 600);
+        5200, 2800, 26000, 34000, 27.0f, 600);
     _stages[stage4.StageId] = stage4;
 
     StageConfig stage5 = stage1;
@@ -6450,7 +6455,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage5.DamageMultiplier = 1.20f;
     stage5.MoveSpeedRate = 1.20f;
     applyDefaultShadowStats(stage5, 5500, 5200, 30000, 35.0f, 600,
-        5500, 3200, 28000, 30.0f, 700);
+        5500, 3200, 28000, 36000, 30.0f, 700);
     _stages[stage5.StageId] = stage5;
 
     StageConfig stage6 = stage1;
@@ -6461,7 +6466,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage6.DamageMultiplier = 1.50f;
     stage6.MoveSpeedRate = 1.50f;
     applyDefaultShadowStats(stage6, 5800, 5800, 32000, 38.0f, 700,
-        5800, 3500, 30000, 32.0f, 800);
+        5800, 3500, 30000, 39000, 32.0f, 800);
     _stages[stage6.StageId] = stage6;
 
     StageConfig stage7 = stage1;
@@ -6470,7 +6475,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage7.HealthMultiplier = 1.60f;
     stage7.DamageMultiplier = 1.60f;
     applyDefaultShadowStats(stage7, 6000, 6300, 34000, 40.0f, 800,
-        6000, 3800, 32000, 35.0f, 900);
+        6000, 3800, 32000, 42000, 35.0f, 900);
     _stages[stage7.StageId] = stage7;
 
     StageConfig stage8 = stage1;
@@ -6479,7 +6484,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage8.HealthMultiplier = 1.70f;
     stage8.DamageMultiplier = 1.70f;
     applyDefaultShadowStats(stage8, 6300, 6800, 36000, 42.0f, 900,
-        6300, 4200, 34000, 37.0f, 1000);
+        6300, 4200, 34000, 45000, 37.0f, 1000);
     _stages[stage8.StageId] = stage8;
 
     StageConfig stage9 = stage1;
@@ -6488,7 +6493,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage9.HealthMultiplier = 1.80f;
     stage9.DamageMultiplier = 1.80f;
     applyDefaultShadowStats(stage9, 6500, 7200, 38000, 45.0f, 1000,
-        6500, 4500, 36000, 40.0f, 1100);
+        6500, 4500, 36000, 48000, 40.0f, 1100);
     _stages[stage9.StageId] = stage9;
 
     StageConfig stage10 = stage1;
@@ -6497,7 +6502,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage10.HealthMultiplier = 1.90f;
     stage10.DamageMultiplier = 1.90f;
     applyDefaultShadowStats(stage10, 6500, 7200, 38000, 45.0f, 1000,
-        6500, 4500, 36000, 40.0f, 1100);
+        6500, 4500, 36000, 48000, 40.0f, 1100);
     _stages[stage10.StageId] = stage10;
 }
 
