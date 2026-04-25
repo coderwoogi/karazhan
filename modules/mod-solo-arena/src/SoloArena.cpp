@@ -383,6 +383,7 @@ namespace
         ShadowArchetype Archetype = ShadowArchetype::Caster;
         Powers PowerType = POWER_MANA;
         uint32 MaxHealth = 1;
+        uint32 CreateMana = 0;
         uint32 MaxPower = 0;
         float ObjectScale = 1.0f;
         float RunSpeedRate = 1.0f;
@@ -1918,6 +1919,7 @@ namespace
             profile.ActiveSpec);
         profile.PowerType = player->getPowerType();
         profile.MaxHealth = std::max<uint32>(1u, player->GetMaxHealth());
+        profile.CreateMana = player->GetCreateMana();
         profile.MaxPower = player->GetMaxPower(profile.PowerType);
         profile.ObjectScale = player->GetObjectScale();
         profile.RunSpeedRate = player->GetSpeedRate(MOVE_RUN);
@@ -4770,7 +4772,8 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
 
     if (profile.PowerType == POWER_MANA)
     {
-        summon->SetCreateMana(profile.MaxPower);
+        summon->SetCreateMana(profile.CreateMana > 0 ?
+            profile.CreateMana : profile.MaxPower);
         summon->SetStatFlatModifier(UNIT_MOD_MANA, BASE_VALUE,
             float(profile.MaxPower));
     }
