@@ -2002,13 +2002,6 @@ namespace
             }
         }
 
-        if (profile.PowerType == POWER_MANA)
-        {
-            profile.MaxPower = std::max<uint32>(1u,
-                uint32(std::min<uint64>(uint64(profile.MaxPower) * 2ull,
-                    uint64(0xFFFFFFFFu))));
-        }
-
         return profile;
     }
 
