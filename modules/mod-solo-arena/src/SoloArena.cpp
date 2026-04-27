@@ -274,6 +274,7 @@ namespace
         ObjectGuid PlayerGuid = ObjectGuid::Empty;
         ObjectGuid BotGuid = ObjectGuid::Empty;
         ObjectGuid PetGuid = ObjectGuid::Empty;
+        uint32 AccountId = 0;
         uint8 StageId = 0;
         TrialScenario Scenario = TrialScenario::Duel;
         BattlegroundTypeId BgTypeId = DEFAULT_ARENA_BG_TYPE;
@@ -2260,6 +2261,8 @@ namespace
         void SaveProgress(Player* player, uint8 stageId);
         void SaveStageRecord(Player* player, ArenaSession const& session);
         void GrantStageRewards(Player* player, ArenaSession const& session);
+        uint32 GetTodayCompletedEntryCount(Player* player) const;
+        uint32 GetTodayActiveEntryCount(Player* player) const;
         uint32 GetTodayEntryCount(Player* player) const;
         uint32 GetTodayBonusEntryCount(Player* player) const;
         uint32 GetTodayPurchaseCount(Player* player, uint32 itemEntry) const;
@@ -2400,6 +2403,23 @@ namespace
             text.resize(maxLen);
 
         return text;
+    }
+
+    uint32 GetPlayerAccountId(Player const* player)
+    {
+        if (!player)
+            return 0;
+
+        if (WorldSession const* session = player->GetSession())
+            return session->GetAccountId();
+
+        QueryResult result = CharacterDatabase.Query(
+            "SELECT account FROM characters WHERE guid = {}",
+            player->GetGUID().GetCounter());
+        if (!result)
+            return 0;
+
+        return result->Fetch()[0].Get<uint32>();
     }
 
     std::string GetLocalizedItemName(uint32 itemEntry)
@@ -3049,6 +3069,13 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     if (!SoloArenaConfig::Instance().IsEnabled() || !player)
         return false;
 
+    uint32 accountId = GetPlayerAccountId(player);
+    if (accountId == 0)
+    {
+        SendSystem(player, "계정 정보를 확인하지 못했습니다.");
+        return false;
+    }
+
     if (HasSession(player->GetGUID()))
     {
         SendSystem(player, "이미 진행 중인 시련이 있습니다.");
@@ -3160,6 +3187,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     ArenaSession session;
     session.RunUid = GenerateRunUid();
     session.PlayerGuid = player->GetGUID();
+    session.AccountId = accountId;
     session.StageId = stageId;
     session.Scenario = objectiveTrial ?
         TrialScenario::Objective : TrialScenario::Duel;
@@ -5257,16 +5285,26 @@ std::pair<uint8, std::string> SoloArenaMgr::ComputeTrialRank(
 
 uint32 SoloArenaMgr::GetTodayEntryCount(Player* player) const
 {
+    return GetTodayCompletedEntryCount(player) +
+        GetTodayActiveEntryCount(player);
+}
+
+uint32 SoloArenaMgr::GetTodayCompletedEntryCount(Player* player) const
+{
     if (!player)
+        return 0;
+
+    uint32 accountId = GetPlayerAccountId(player);
+    if (accountId == 0)
         return 0;
 
     QueryResult result = CharacterDatabase.Query(
         "SELECT COUNT(*) "
         "FROM solo_arena_run_log "
-        "WHERE guid = {} "
+        "WHERE account_id = {} "
         "AND started_at >= UNIX_TIMESTAMP(CURDATE()) "
         "AND started_at < UNIX_TIMESTAMP(DATE_ADD(CURDATE(), INTERVAL 1 DAY))",
-        player->GetGUID().GetCounter());
+        accountId);
 
     if (!result)
         return 0;
@@ -5274,16 +5312,42 @@ uint32 SoloArenaMgr::GetTodayEntryCount(Player* player) const
     return result->Fetch()[0].Get<uint32>();
 }
 
+uint32 SoloArenaMgr::GetTodayActiveEntryCount(Player* player) const
+{
+    if (!player)
+        return 0;
+
+    uint32 accountId = GetPlayerAccountId(player);
+    if (accountId == 0)
+        return 0;
+
+    uint32 activeCount = 0;
+    for (auto const& [_, session] : _sessions)
+    {
+        if (session.AccountId != accountId ||
+            session.Result != ArenaResult::None)
+            continue;
+
+        ++activeCount;
+    }
+
+    return activeCount;
+}
+
 uint32 SoloArenaMgr::GetTodayBonusEntryCount(Player* player) const
 {
     if (!player)
         return 0;
 
+    uint32 accountId = GetPlayerAccountId(player);
+    if (accountId == 0)
+        return 0;
+
     QueryResult result = CharacterDatabase.Query(
         "SELECT bonus_entries "
         "FROM solo_arena_daily_bonus "
-        "WHERE guid = {} AND use_date = CURDATE()",
-        player->GetGUID().GetCounter());
+        "WHERE account_id = {} AND use_date = CURDATE()",
+        accountId);
 
     if (!result)
         return 0;
@@ -5296,11 +5360,17 @@ uint32 SoloArenaMgr::GetTodayPurchaseCount(Player* player, uint32 itemEntry) con
     if (!player || itemEntry == 0)
         return 0;
 
+    uint32 accountId = GetPlayerAccountId(player);
+    if (accountId == 0)
+        return 0;
+
     QueryResult result = CharacterDatabase.Query(
         "SELECT purchase_count "
         "FROM solo_arena_daily_purchase "
-        "WHERE guid = {} AND purchase_date = CURDATE() AND item_entry = {}",
-        player->GetGUID().GetCounter(), itemEntry);
+        "WHERE account_id = {} "
+        "AND purchase_date = CURDATE() "
+        "AND item_entry = {}",
+        accountId, itemEntry);
 
     if (!result)
         return 0;
@@ -5505,6 +5575,14 @@ bool SoloArenaMgr::PurchaseDailyTicket(Player* player, uint32 productItemEntry)
     if (!player)
         return false;
 
+    uint32 accountId = GetPlayerAccountId(player);
+    if (accountId == 0)
+    {
+        SendSystem(player, "계정 정보를 확인하지 못했습니다.");
+        SendUi(player);
+        return false;
+    }
+
     if (productItemEntry != TRIAL_TICKET_ITEM &&
         productItemEntry != TRIAL_EXTRA_TICKET_ITEM)
     {
@@ -5560,9 +5638,9 @@ bool SoloArenaMgr::PurchaseDailyTicket(Player* player, uint32 productItemEntry)
 
     CharacterDatabase.Execute(
         "REPLACE INTO solo_arena_daily_purchase "
-        "(guid, purchase_date, item_entry, purchase_count, updated_at) "
+        "(account_id, purchase_date, item_entry, purchase_count, updated_at) "
         "VALUES ({}, CURDATE(), {}, 1, {})",
-        player->GetGUID().GetCounter(), productItemEntry, std::time(nullptr));
+        accountId, productItemEntry, std::time(nullptr));
 
     ItemTemplate const* productTemplate = sObjectMgr->GetItemTemplate(productItemEntry);
     std::string productName = productTemplate ? productTemplate->Name1 : "아이템";
@@ -5575,6 +5653,14 @@ bool SoloArenaMgr::UseExtraEntryTicket(Player* player)
 {
     if (!SoloArenaConfig::Instance().IsEnabled() || !player)
         return false;
+
+    uint32 accountId = GetPlayerAccountId(player);
+    if (accountId == 0)
+    {
+        SendSystem(player, "계정 정보를 확인하지 못했습니다.");
+        SendUi(player);
+        return false;
+    }
 
     if (HasSession(player->GetGUID()))
     {
@@ -5605,9 +5691,9 @@ bool SoloArenaMgr::UseExtraEntryTicket(Player* player)
     uint32 bonusEntries = GetTodayBonusEntryCount(player) + 1;
     CharacterDatabase.Execute(
         "REPLACE INTO solo_arena_daily_bonus "
-        "(guid, use_date, bonus_entries, updated_at) "
+        "(account_id, use_date, bonus_entries, updated_at) "
         "VALUES ({}, CURDATE(), {}, {})",
-        player->GetGUID().GetCounter(), bonusEntries, std::time(nullptr));
+        accountId, bonusEntries, std::time(nullptr));
 
     SendSystem(player,
         "시련 암표를 사용해 추가 입장 기회 1회를 획득했습니다.");
@@ -5720,6 +5806,9 @@ void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
     if (!player)
         return;
 
+    uint32 accountId = session.AccountId != 0 ?
+        session.AccountId : GetPlayerAccountId(player);
+
     CharacterDatabase.Execute(
         "INSERT INTO solo_arena_run_log ("
         "run_uid, guid, account_id, player_name, stage_id, stage_name, "
@@ -5734,7 +5823,7 @@ void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
         ")",
         session.RunUid,
         player->GetGUID().GetCounter(),
-        player->GetSession() ? player->GetSession()->GetAccountId() : 0,
+        accountId,
         EscapeCharacterDb(player->GetName()),
         session.StageId,
         EscapeCharacterDb(GetStageName(session.StageId)),
@@ -5768,6 +5857,9 @@ void SoloArenaMgr::LogEvent(Player* player, ArenaSession const& session,
     if (!player)
         return;
 
+    uint32 accountId = session.AccountId != 0 ?
+        session.AccountId : GetPlayerAccountId(player);
+
     CharacterDatabase.Execute(
         "INSERT INTO solo_arena_event_log "
         "(run_uid, guid, account_id, player_name, stage_id, event_type, "
@@ -5775,7 +5867,7 @@ void SoloArenaMgr::LogEvent(Player* player, ArenaSession const& session,
         "VALUES ({}, {}, {}, '{}', {}, '{}', {}, {}, {}, '{}')",
         session.RunUid,
         player->GetGUID().GetCounter(),
-        player->GetSession() ? player->GetSession()->GetAccountId() : 0,
+        accountId,
         EscapeCharacterDb(player->GetName()),
         session.StageId,
         EscapeCharacterDb(eventType),
@@ -5792,6 +5884,9 @@ void SoloArenaMgr::LogReward(Player* player, ArenaSession const& session,
     if (!player)
         return;
 
+    uint32 accountId = session.AccountId != 0 ?
+        session.AccountId : GetPlayerAccountId(player);
+
     CharacterDatabase.Execute(
         "INSERT INTO solo_arena_reward_log "
         "(run_uid, guid, account_id, player_name, stage_id, "
@@ -5799,7 +5894,7 @@ void SoloArenaMgr::LogReward(Player* player, ArenaSession const& session,
         "VALUES ({}, {}, {}, '{}', {}, {}, {}, {}, '{}', {})",
         session.RunUid,
         player->GetGUID().GetCounter(),
-        player->GetSession() ? player->GetSession()->GetAccountId() : 0,
+        accountId,
         EscapeCharacterDb(player->GetName()),
         session.StageId,
         itemEntry,
