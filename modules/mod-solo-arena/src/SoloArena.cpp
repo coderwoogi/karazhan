@@ -264,6 +264,10 @@ namespace
         float MoveSpeedRate = 1.0f;
         bool Enabled = true;
         uint32 PreparationMs = 6000;
+        uint32 RankSSeconds = 45;
+        uint32 RankASeconds = 75;
+        uint32 RankBSeconds = 105;
+        uint32 RankCSeconds = 135;
         ShadowStatTuning MeleeStats;
         ShadowStatTuning CasterStats;
     };
@@ -2867,7 +2871,9 @@ void SoloArenaMgr::LoadStages()
         "SELECT stage_id, name, arena_map_id, player_x, player_y, "
         "player_z, player_o, bot_x, bot_y, bot_z, bot_o, "
         "health_multiplier, damage_multiplier, attack_time_ms, "
-        "spell_interval_ms, move_speed_rate, preparation_ms, enabled, "
+        "spell_interval_ms, move_speed_rate, preparation_ms, "
+        "rank_s_seconds, rank_a_seconds, rank_b_seconds, "
+        "rank_c_seconds, enabled, "
         "melee_target_gs, melee_health, melee_attack_power, "
         "melee_crit_pct, melee_armor_pen_rating, caster_target_gs, "
         "caster_health, caster_mana, caster_spell_power, caster_crit_pct, "
@@ -2902,18 +2908,22 @@ void SoloArenaMgr::LoadStages()
         stage.SpellIntervalMs = fields[14].Get<uint32>();
         stage.MoveSpeedRate = fields[15].Get<float>();
         stage.PreparationMs = fields[16].Get<uint32>();
-        stage.Enabled = fields[17].Get<uint8>() != 0;
-        stage.MeleeStats.TargetGearScore = fields[18].Get<uint32>();
-        stage.MeleeStats.MaxHealth = fields[19].Get<uint32>();
-        stage.MeleeStats.AttackPower = fields[20].Get<int32>();
-        stage.MeleeStats.CritChancePct = fields[21].Get<float>();
-        stage.MeleeStats.ArmorPenetrationRating = fields[22].Get<uint32>();
-        stage.CasterStats.TargetGearScore = fields[23].Get<uint32>();
-        stage.CasterStats.MaxHealth = fields[24].Get<uint32>();
-        stage.CasterStats.MaxMana = fields[25].Get<uint32>();
-        stage.CasterStats.SpellPower = fields[26].Get<int32>();
-        stage.CasterStats.CritChancePct = fields[27].Get<float>();
-        stage.CasterStats.HasteRating = fields[28].Get<uint32>();
+        stage.RankSSeconds = fields[17].Get<uint32>();
+        stage.RankASeconds = fields[18].Get<uint32>();
+        stage.RankBSeconds = fields[19].Get<uint32>();
+        stage.RankCSeconds = fields[20].Get<uint32>();
+        stage.Enabled = fields[21].Get<uint8>() != 0;
+        stage.MeleeStats.TargetGearScore = fields[22].Get<uint32>();
+        stage.MeleeStats.MaxHealth = fields[23].Get<uint32>();
+        stage.MeleeStats.AttackPower = fields[24].Get<int32>();
+        stage.MeleeStats.CritChancePct = fields[25].Get<float>();
+        stage.MeleeStats.ArmorPenetrationRating = fields[26].Get<uint32>();
+        stage.CasterStats.TargetGearScore = fields[27].Get<uint32>();
+        stage.CasterStats.MaxHealth = fields[28].Get<uint32>();
+        stage.CasterStats.MaxMana = fields[29].Get<uint32>();
+        stage.CasterStats.SpellPower = fields[30].Get<int32>();
+        stage.CasterStats.CritChancePct = fields[31].Get<float>();
+        stage.CasterStats.HasteRating = fields[32].Get<uint32>();
         if (IsObjectiveTrialStage(stage.StageId))
             stage.ArenaMapId = DEFAULT_OBJECTIVE_MAP_ID;
         if (std::string fixedName = GetFixedStageLabel(stage.StageId);
@@ -5259,6 +5269,20 @@ std::pair<uint8, std::string> SoloArenaMgr::ComputeTrialRank(
         return { 0, "F" };
 
     uint32 durationSec = GetRankDurationSec(session);
+    StageConfig const* stage = GetStage(session.StageId);
+    if (stage)
+    {
+        if (durationSec <= stage->RankSSeconds)
+            return { 5, "S" };
+        if (durationSec <= stage->RankASeconds)
+            return { 4, "A" };
+        if (durationSec <= stage->RankBSeconds)
+            return { 3, "B" };
+        if (durationSec <= stage->RankCSeconds)
+            return { 2, "C" };
+        return { 1, "D" };
+    }
+
     if (IsObjectiveTrialStage(session.StageId))
     {
         if (durationSec <= 360)
@@ -6477,6 +6501,16 @@ void SoloArenaMgr::LoadDefaultStages()
 {
     _stages.clear();
 
+    auto applyDefaultRankTimes = [](StageConfig& stage,
+        uint32 rankSSeconds, uint32 rankASeconds,
+        uint32 rankBSeconds, uint32 rankCSeconds)
+    {
+        stage.RankSSeconds = rankSSeconds;
+        stage.RankASeconds = rankASeconds;
+        stage.RankBSeconds = rankBSeconds;
+        stage.RankCSeconds = rankCSeconds;
+    };
+
     auto applyDefaultShadowStats = [](StageConfig& stage,
         uint32 meleeGs, int32 meleeAp, uint32 meleeHp, float meleeCrit,
         uint32 meleeArp, uint32 casterGs, int32 casterSp, uint32 casterHp,
@@ -6499,6 +6533,7 @@ void SoloArenaMgr::LoadDefaultStages()
     StageConfig stage1;
     stage1.StageId = 1;
     stage1.Name = "그림자 시련 1단계";
+    applyDefaultRankTimes(stage1, 45, 75, 105, 135);
     applyDefaultShadowStats(stage1, 4300, 3000, 22000, 25.0f, 200,
         4300, 1800, 20000, 26000, 20.0f, 300);
     _stages[stage1.StageId] = stage1;
@@ -6534,6 +6569,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage4.HealthMultiplier = 1.00f;
     stage4.DamageMultiplier = 1.00f;
     stage4.MoveSpeedRate = 1.00f;
+    applyDefaultRankTimes(stage4, 360, 480, 600, 720);
     applyDefaultShadowStats(stage4, 5200, 4600, 28000, 32.0f, 500,
         5200, 2800, 26000, 34000, 27.0f, 600);
     _stages[stage4.StageId] = stage4;
@@ -6545,6 +6581,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage5.HealthMultiplier = 1.20f;
     stage5.DamageMultiplier = 1.20f;
     stage5.MoveSpeedRate = 1.20f;
+    applyDefaultRankTimes(stage5, 360, 480, 600, 720);
     applyDefaultShadowStats(stage5, 5500, 5200, 30000, 35.0f, 600,
         5500, 3200, 28000, 36000, 30.0f, 700);
     _stages[stage5.StageId] = stage5;
@@ -6556,6 +6593,7 @@ void SoloArenaMgr::LoadDefaultStages()
     stage6.HealthMultiplier = 1.50f;
     stage6.DamageMultiplier = 1.50f;
     stage6.MoveSpeedRate = 1.50f;
+    applyDefaultRankTimes(stage6, 360, 480, 600, 720);
     applyDefaultShadowStats(stage6, 5800, 5800, 32000, 38.0f, 700,
         5800, 3500, 30000, 39000, 32.0f, 800);
     _stages[stage6.StageId] = stage6;
