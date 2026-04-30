@@ -5831,7 +5831,7 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
 
         if (rewardGold > 0)
         {
-            uint64 copperReward = uint64(rewardGold) * GOLD;
+            uint64 copperReward = uint64(rewardGold);
             if (copperReward <= uint64(std::numeric_limits<int32>::max()))
             {
                 player->ModifyMoney(int32(copperReward));

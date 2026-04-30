@@ -1043,6 +1043,34 @@ local function GetSortedStageRewards(stage)
   return rewards
 end
 
+local function FormatRewardGold(value)
+  local amount = tonumber(value) or 0
+  if amount <= 0 then
+    return "0골드"
+  end
+
+  if amount < 10000 then
+    return string.format("%d골드", amount)
+  end
+
+  local gold = math.floor(amount / 10000)
+  local silver = math.floor(math.fmod(amount, 10000) / 100)
+  local copper = math.fmod(amount, 100)
+  local parts = {}
+
+  if gold > 0 then
+    table.insert(parts, string.format("%d골드", gold))
+  end
+  if silver > 0 then
+    table.insert(parts, string.format("%d실버", silver))
+  end
+  if copper > 0 then
+    table.insert(parts, string.format("%d쿠퍼", copper))
+  end
+
+  return table.concat(parts, " ")
+end
+
 local function GetRewardDisplayName(reward)
   if not reward then
     return "설정된 보상이 없습니다."
@@ -1050,7 +1078,7 @@ local function GetRewardDisplayName(reward)
 
   local rewardGold = tonumber(reward.rewardGold) or 0
   if rewardGold > 0 and (tonumber(reward.itemEntry) or 0) == 0 then
-    return string.format("%d골드", rewardGold)
+    return FormatRewardGold(rewardGold)
   end
 
   return reward.itemName
