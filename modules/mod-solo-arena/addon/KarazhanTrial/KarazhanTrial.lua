@@ -449,25 +449,29 @@ Trial.rewardListHeaderRank = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
 Trial.rewardListHeaderRank:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 10, -2)
 Trial.rewardListHeaderRank:SetWidth(56)
+Trial.rewardListHeaderRank:SetJustifyH("LEFT")
 Trial.rewardListHeaderRank:SetText("랭크")
 
 Trial.rewardListHeaderIcon = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
-Trial.rewardListHeaderIcon:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 84, -2)
+Trial.rewardListHeaderIcon:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 82, -2)
 Trial.rewardListHeaderIcon:SetWidth(48)
+Trial.rewardListHeaderIcon:SetJustifyH("CENTER")
 Trial.rewardListHeaderIcon:SetText("아이콘")
 
 Trial.rewardListHeaderName = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
-Trial.rewardListHeaderName:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 140, -2)
-Trial.rewardListHeaderName:SetWidth(250)
-Trial.rewardListHeaderName:SetText("아이템 이름")
+Trial.rewardListHeaderName:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 132, -2)
+Trial.rewardListHeaderName:SetWidth(268)
+Trial.rewardListHeaderName:SetJustifyH("LEFT")
+Trial.rewardListHeaderName:SetText("보상 이름")
 
 Trial.rewardListHeaderCount = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
-Trial.rewardListHeaderCount:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 416, -2)
-Trial.rewardListHeaderCount:SetWidth(48)
-Trial.rewardListHeaderCount:SetText("개수")
+Trial.rewardListHeaderCount:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 408, -2)
+Trial.rewardListHeaderCount:SetWidth(68)
+Trial.rewardListHeaderCount:SetJustifyH("CENTER")
+Trial.rewardListHeaderCount:SetText("수량/구분")
 
 Trial.rewardListHeaderDivider = Trial.rewardListPane:CreateTexture(nil, "ARTWORK")
 Trial.rewardListHeaderDivider:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
@@ -568,9 +572,9 @@ for i = 1, 6 do
   row.name:SetPoint("LEFT", row, "LEFT", 132, 0)
   EnableWrap(row.name, 268, 34, "LEFT")
 
-  row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "LEFT")
-  row.count:SetPoint("LEFT", row, "LEFT", 416, 0)
-  row.count:SetWidth(48)
+  row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "CENTER")
+  row.count:SetPoint("LEFT", row, "LEFT", 408, 0)
+  row.count:SetWidth(68)
 
   row:Hide()
   Trial.rewardListRows[i] = row
@@ -855,8 +859,8 @@ Trial.rewardTable:SetPoint("BOTTOMRIGHT", Trial.rewardView, "BOTTOMRIGHT", 0, -5
 local rewardHeaderTexts = {
   { key = "rank", text = "랭크", width = 70, offset = 18, justify = "CENTER" },
   { key = "icon", text = "아이콘", width = 66, offset = 98, justify = "CENTER" },
-  { key = "name", text = "아이템 이름", width = 210, offset = 176, justify = "LEFT" },
-  { key = "count", text = "개수", width = 58, offset = 396, justify = "CENTER" },
+  { key = "name", text = "보상 이름", width = 230, offset = 146, justify = "LEFT" },
+  { key = "count", text = "수량/구분", width = 70, offset = 390, justify = "CENTER" },
 }
 
 Trial.rewardHeaders = {}
@@ -933,11 +937,11 @@ for i = 1, 8 do
 
   row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
   row.name:SetPoint("LEFT", row, "LEFT", 136, 0)
-  EnableWrap(row.name, 212, 32, "LEFT")
+  EnableWrap(row.name, 238, 32, "LEFT")
 
   row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "CENTER")
   row.count:SetPoint("LEFT", row, "LEFT", 390, 0)
-  row.count:SetWidth(44)
+  row.count:SetWidth(70)
 
   Trial.rewardRows[i] = row
 end
@@ -1046,7 +1050,7 @@ local function GetRewardDisplayName(reward)
 
   local rewardGold = tonumber(reward.rewardGold) or 0
   if rewardGold > 0 and (tonumber(reward.itemEntry) or 0) == 0 then
-    return "골드"
+    return string.format("%d골드", rewardGold)
   end
 
   return reward.itemName
@@ -1067,7 +1071,7 @@ end
 local function GetRewardDisplayCount(reward)
   local rewardGold = reward and (tonumber(reward.rewardGold) or 0) or 0
   if rewardGold > 0 and (tonumber(reward.itemEntry) or 0) == 0 then
-    return string.format("%d골드", rewardGold)
+    return "골드"
   end
 
   return tostring((reward and reward.itemCount) or 1)
@@ -1097,13 +1101,23 @@ local function GetStageReward(stage)
       rankText = string.format("[%s] ", reward.rankLabel)
     end
 
-    table.insert(lines, string.format(
-      "%s%s %s%s",
-      rankText,
-      itemName,
-      GetRewardDisplayCount(reward),
-      chanceText
-    ))
+    if (tonumber(reward.rewardGold) or 0) > 0
+      and (tonumber(reward.itemEntry) or 0) == 0 then
+      table.insert(lines, string.format(
+        "%s%s%s",
+        rankText,
+        itemName,
+        chanceText
+      ))
+    else
+      table.insert(lines, string.format(
+        "%s%s %s%s",
+        rankText,
+        itemName,
+        GetRewardDisplayCount(reward),
+        chanceText
+      ))
+    end
   end
 
   return {
