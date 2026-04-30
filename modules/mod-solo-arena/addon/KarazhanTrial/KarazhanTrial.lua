@@ -1023,6 +1023,12 @@ local function GetSortedStageRewards(stage)
       return rankA < rankB
     end
 
+    local goldA = tonumber(a.rewardGold) or 0
+    local goldB = tonumber(b.rewardGold) or 0
+    if goldA ~= goldB then
+      return goldA > goldB
+    end
+
     if (a.itemEntry or 0) ~= (b.itemEntry or 0) then
       return (a.itemEntry or 0) < (b.itemEntry or 0)
     end
@@ -1031,6 +1037,40 @@ local function GetSortedStageRewards(stage)
   end)
 
   return rewards
+end
+
+local function GetRewardDisplayName(reward)
+  if not reward then
+    return "설정된 보상이 없습니다."
+  end
+
+  local rewardGold = tonumber(reward.rewardGold) or 0
+  if rewardGold > 0 and (tonumber(reward.itemEntry) or 0) == 0 then
+    return "골드"
+  end
+
+  return reward.itemName
+    or GetItemInfo(reward.itemEntry)
+    or ("아이템 " .. tostring(reward.itemEntry))
+end
+
+local function GetRewardDisplayIcon(reward)
+  local rewardGold = reward and (tonumber(reward.rewardGold) or 0) or 0
+  if rewardGold > 0 and (tonumber(reward.itemEntry) or 0) == 0 then
+    return "Interface\\Icons\\INV_Misc_Coin_01"
+  end
+
+  return GetItemIcon(reward and reward.itemEntry or nil)
+    or "Interface\\Icons\\INV_Misc_QuestionMark"
+end
+
+local function GetRewardDisplayCount(reward)
+  local rewardGold = reward and (tonumber(reward.rewardGold) or 0) or 0
+  if rewardGold > 0 and (tonumber(reward.itemEntry) or 0) == 0 then
+    return string.format("%d골드", rewardGold)
+  end
+
+  return tostring((reward and reward.itemCount) or 1)
 end
 
 local function GetStageReward(stage)
@@ -1043,13 +1083,11 @@ local function GetStageReward(stage)
   end
 
   local firstReward = stage.rewards[1]
-  local icon = GetItemIcon(firstReward.itemEntry)
-    or "Interface\\Icons\\INV_Misc_QuestionMark"
+  local icon = GetRewardDisplayIcon(firstReward)
   local lines = {}
 
   for _, reward in ipairs(stage.rewards) do
-    local itemName = GetItemInfo(reward.itemEntry)
-      or ("아이템 " .. tostring(reward.itemEntry))
+    local itemName = GetRewardDisplayName(reward)
     local chanceText = ""
     local rankText = ""
     if reward.chance and reward.chance > 0 and reward.chance < 100 then
@@ -1060,10 +1098,10 @@ local function GetStageReward(stage)
     end
 
     table.insert(lines, string.format(
-      "%s%s x%d%s",
+      "%s%s %s%s",
       rankText,
       itemName,
-      reward.itemCount or 1,
+      GetRewardDisplayCount(reward),
       chanceText
     ))
   end
@@ -1071,7 +1109,7 @@ local function GetStageReward(stage)
   return {
     icon = icon,
     text = table.concat(lines, "\n"),
-    itemEntry = firstReward.itemEntry,
+    itemEntry = (tonumber(firstReward.itemEntry) or 0) > 0 and firstReward.itemEntry or nil,
   }
 end
 
@@ -1344,13 +1382,12 @@ local function RefreshRewardModal()
   for i, row in ipairs(Trial.rewardRows) do
     local reward = rewards[i]
     if reward then
-      local itemName = GetItemInfo(reward.itemEntry)
-        or ("아이템 " .. tostring(reward.itemEntry))
+      local itemName = GetRewardDisplayName(reward)
       row.rank:SetText(reward.rankLabel ~= "" and reward.rankLabel or "-")
-      row.icon:SetTexture(nil)
-      row.iconBg.itemEntry = nil
+      row.icon:SetTexture(GetRewardDisplayIcon(reward))
+      row.iconBg.itemEntry = (tonumber(reward.itemEntry) or 0) > 0 and reward.itemEntry or nil
       row.name:SetText(itemName)
-      row.count:SetText(tostring(reward.itemCount or 1))
+      row.count:SetText(GetRewardDisplayCount(reward))
       row:Show()
     else
       row.iconBg.itemEntry = nil
@@ -1375,15 +1412,14 @@ local function BuildRewardListText(stage)
   }
 
   for _, reward in ipairs(rewards) do
-    local itemName = GetItemInfo(reward.itemEntry)
-      or ("아이템 " .. tostring(reward.itemEntry))
+    local itemName = GetRewardDisplayName(reward)
     table.insert(
       lines,
       string.format(
-        "%s | %s | %d",
+        "%s | %s | %s",
         reward.rankLabel ~= "" and reward.rankLabel or "-",
         itemName,
-        reward.itemCount or 1
+        GetRewardDisplayCount(reward)
       )
     )
   end
@@ -1437,19 +1473,17 @@ local function RefreshRewardListRows(stage)
         row:Show()
       else
         local reward = displayRow.reward
-        local itemName = reward.itemName or GetItemInfo(reward.itemEntry)
-        or "이름 로딩 중"
+        local itemName = GetRewardDisplayName(reward)
         row.bg:SetVertexColor(0.07, 0.04, 0.02, 0.58)
         row.rank:SetText("")
         row.rank:Show()
-        row.icon:SetTexture(GetItemIcon(reward.itemEntry)
-          or "Interface\\Icons\\INV_Misc_QuestionMark")
-        row.iconBg.itemEntry = reward.itemEntry
+        row.icon:SetTexture(GetRewardDisplayIcon(reward))
+        row.iconBg.itemEntry = (tonumber(reward.itemEntry) or 0) > 0 and reward.itemEntry or nil
         row.iconBg:Show()
         row.name:SetPoint("LEFT", row, "LEFT", 132, 0)
         row.name:SetWidth(268)
         row.name:SetText(itemName)
-        row.count:SetText(tostring(reward.itemCount or 1))
+        row.count:SetText(GetRewardDisplayCount(reward))
         row.count:Show()
         row:Show()
       end
@@ -1817,13 +1851,15 @@ local function ApplyOpenPayload(highestCleared, encoded, inProgress,
         for _, rewardEntry in ipairs(rewardEntries) do
           local rewardParts = Split(rewardEntry, "^")
           local itemEntry = tonumber(rewardParts[1]) or 0
-          if itemEntry > 0 then
+          local rewardGold = tonumber(rewardParts[6]) or 0
+          if itemEntry > 0 or rewardGold > 0 then
             table.insert(stage.rewards, {
               itemEntry = itemEntry,
               itemCount = tonumber(rewardParts[2]) or 1,
               chance = tonumber(rewardParts[3]) or 100,
               rankLabel = rewardParts[4] or "",
               itemName = rewardParts[5] or nil,
+              rewardGold = rewardGold,
             })
           end
         end

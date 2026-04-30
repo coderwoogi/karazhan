@@ -5998,7 +5998,7 @@ std::string SoloArenaMgr::BuildStageRankPayload(Player* player,
 std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
 {
     QueryResult result = WorldDatabase.Query(
-        "SELECT item_entry, item_count, chance, reward_rank_label "
+        "SELECT item_entry, item_count, reward_gold, chance, reward_rank_label "
         "FROM solo_arena_stage_reward "
         "WHERE stage_id = {} AND enabled = 1 "
         "ORDER BY sort_order, id",
@@ -6015,9 +6015,14 @@ std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
         Field* fields = result->Fetch();
         uint32 itemEntry = fields[0].Get<uint32>();
         uint32 itemCount = std::max<uint32>(1, fields[1].Get<uint32>());
-        float chance = fields[2].Get<float>();
-        std::string rewardRankLabel = fields[3].Get<std::string>();
-        std::string rewardItemName = "이름 로딩 중";
+        uint32 rewardGold = fields[2].Get<uint32>();
+        float chance = fields[3].Get<float>();
+        std::string rewardRankLabel = fields[4].Get<std::string>();
+        std::string rewardItemName = rewardGold > 0 && itemEntry == 0 ?
+            "골드" : "이름 로딩 중";
+
+        if (itemEntry == 0 && rewardGold == 0)
+            continue;
 
         if (ItemTemplate const* itemTemplate = sObjectMgr->GetItemTemplate(itemEntry))
         {
@@ -6051,10 +6056,24 @@ std::string SoloArenaMgr::BuildStageRewardPayload(uint8 stageId) const
         if (!first)
             rewards << ",";
 
-        first = false;
-        rewards << itemEntry << "^" << itemCount << "^" << chance
-                << "^" << SanitizeAddonField(rewardRankLabel, 8)
-                << "^" << SanitizeAddonField(rewardItemName, 64);
+        if (itemEntry != 0)
+        {
+            first = false;
+            rewards << itemEntry << "^" << itemCount << "^" << chance
+                    << "^" << SanitizeAddonField(rewardRankLabel, 8)
+                    << "^" << SanitizeAddonField(rewardItemName, 64)
+                    << "^0";
+        }
+
+        if (rewardGold > 0)
+        {
+            if (!first)
+                rewards << ",";
+            first = false;
+            rewards << 0 << "^0^" << chance
+                    << "^" << SanitizeAddonField(rewardRankLabel, 8)
+                    << "^골드^" << rewardGold;
+        }
     } while (result->NextRow());
 
     return rewards.str();
