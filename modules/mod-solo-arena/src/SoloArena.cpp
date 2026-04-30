@@ -5782,8 +5782,8 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
         return;
 
     QueryResult result = WorldDatabase.Query(
-        "SELECT item_entry, item_count, chance, reward_rank_value, "
-        "reward_rank_label "
+        "SELECT item_entry, item_count, reward_gold, chance, "
+        "reward_rank_value, reward_rank_label "
         "FROM solo_arena_stage_reward "
         "WHERE stage_id = {} AND enabled = 1 "
         "AND (reward_rank_value = 0 OR reward_rank_value = {}) "
@@ -5798,30 +5798,52 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
         Field* fields = result->Fetch();
         uint32 itemEntry = fields[0].Get<uint32>();
         uint32 itemCount = std::max<uint32>(1, fields[1].Get<uint32>());
-        float chance = fields[2].Get<float>();
-        uint8 rewardRankValue = fields[3].Get<uint8>();
-        std::string rewardRankLabel = fields[4].Get<std::string>();
+        uint32 rewardGold = fields[2].Get<uint32>();
+        float chance = fields[3].Get<float>();
+        uint8 rewardRankValue = fields[4].Get<uint8>();
+        std::string rewardRankLabel = fields[5].Get<std::string>();
         float roll = float(std::rand() % 10000) / 100.0f;
 
         if (chance > 0.0f && roll > chance)
         {
-            LogReward(player, session, itemEntry, itemCount, chance,
-                Acore::StringFormat("SKIPPED:{}:{}",
-                    rewardRankValue, rewardRankLabel));
+            if (itemEntry != 0)
+                LogReward(player, session, itemEntry, itemCount, chance,
+                    Acore::StringFormat("SKIPPED:{}:{}",
+                        rewardRankValue, rewardRankLabel));
+            if (rewardGold > 0)
+                LogReward(player, session, 0, rewardGold, chance,
+                    Acore::StringFormat("SKIPPED_GOLD:{}:{}",
+                        rewardRankValue, rewardRankLabel));
             continue;
         }
 
-        if (player->AddItem(itemEntry, itemCount))
+        if (itemEntry != 0)
         {
-            LogReward(player, session, itemEntry, itemCount, chance,
-                Acore::StringFormat("GRANTED:{}:{}",
-                    rewardRankValue, rewardRankLabel));
-            continue;
+            if (player->AddItem(itemEntry, itemCount))
+                LogReward(player, session, itemEntry, itemCount, chance,
+                    Acore::StringFormat("GRANTED:{}:{}",
+                        rewardRankValue, rewardRankLabel));
+            else
+                LogReward(player, session, itemEntry, itemCount, chance,
+                    Acore::StringFormat("FAILED:{}:{}",
+                        rewardRankValue, rewardRankLabel));
         }
 
-        LogReward(player, session, itemEntry, itemCount, chance,
-            Acore::StringFormat("FAILED:{}:{}",
-                rewardRankValue, rewardRankLabel));
+        if (rewardGold > 0)
+        {
+            uint64 copperReward = uint64(rewardGold) * GOLD;
+            if (copperReward <= uint64(std::numeric_limits<int32>::max()))
+            {
+                player->ModifyMoney(int32(copperReward));
+                LogReward(player, session, 0, rewardGold, chance,
+                    Acore::StringFormat("GRANTED_GOLD:{}:{}",
+                        rewardRankValue, rewardRankLabel));
+            }
+            else
+                LogReward(player, session, 0, rewardGold, chance,
+                    Acore::StringFormat("FAILED_GOLD:{}:{}",
+                        rewardRankValue, rewardRankLabel));
+        }
     } while (result->NextRow());
 }
 

@@ -42,6 +42,7 @@ CREATE TABLE `solo_arena_stage_reward` (
     `stage_id` TINYINT UNSIGNED NOT NULL,
     `item_entry` INT UNSIGNED NOT NULL,
     `item_count` INT UNSIGNED NOT NULL DEFAULT 1,
+    `reward_gold` INT UNSIGNED NOT NULL DEFAULT 0,
     `chance` FLOAT NOT NULL DEFAULT 100,
     `reward_rank_value` TINYINT UNSIGNED NOT NULL DEFAULT 3,
     `reward_rank_label` VARCHAR(8) NOT NULL DEFAULT 'B',
