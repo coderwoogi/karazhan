@@ -449,28 +449,36 @@ Trial.rewardListHeaderRank = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
 Trial.rewardListHeaderRank:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 10, -2)
 Trial.rewardListHeaderRank:SetWidth(56)
+Trial.rewardListHeaderRank:SetHeight(18)
 Trial.rewardListHeaderRank:SetJustifyH("LEFT")
+Trial.rewardListHeaderRank:SetJustifyV("MIDDLE")
 Trial.rewardListHeaderRank:SetText("랭크")
 
 Trial.rewardListHeaderIcon = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
 Trial.rewardListHeaderIcon:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 82, -2)
 Trial.rewardListHeaderIcon:SetWidth(48)
+Trial.rewardListHeaderIcon:SetHeight(18)
 Trial.rewardListHeaderIcon:SetJustifyH("CENTER")
+Trial.rewardListHeaderIcon:SetJustifyV("MIDDLE")
 Trial.rewardListHeaderIcon:SetText("아이콘")
 
 Trial.rewardListHeaderName = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
 Trial.rewardListHeaderName:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 132, -2)
 Trial.rewardListHeaderName:SetWidth(268)
+Trial.rewardListHeaderName:SetHeight(18)
 Trial.rewardListHeaderName:SetJustifyH("LEFT")
+Trial.rewardListHeaderName:SetJustifyV("MIDDLE")
 Trial.rewardListHeaderName:SetText("보상 이름")
 
 Trial.rewardListHeaderCount = CreateLabel(
   Trial.rewardListHeader, "GameFontHighlight", 14, 1.0, 0.84, 0.25, "LEFT")
 Trial.rewardListHeaderCount:SetPoint("TOPLEFT", Trial.rewardListHeader, "TOPLEFT", 408, -2)
 Trial.rewardListHeaderCount:SetWidth(68)
+Trial.rewardListHeaderCount:SetHeight(18)
 Trial.rewardListHeaderCount:SetJustifyH("CENTER")
+Trial.rewardListHeaderCount:SetJustifyV("MIDDLE")
 Trial.rewardListHeaderCount:SetText("수량/구분")
 
 Trial.rewardListHeaderDivider = Trial.rewardListPane:CreateTexture(nil, "ARTWORK")
@@ -540,6 +548,8 @@ for i = 1, 6 do
   row.rank = CreateLabel(row, "GameFontNormal", 14, 1.0, 0.88, 0.32, "LEFT")
   row.rank:SetPoint("LEFT", row, "LEFT", 10, 0)
   row.rank:SetWidth(56)
+  row.rank:SetHeight(34)
+  row.rank:SetJustifyV("MIDDLE")
 
   row.iconBg = CreateFrame("Frame", nil, row)
   row.iconBg:SetSize(24, 24)
@@ -571,10 +581,13 @@ for i = 1, 6 do
   row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
   row.name:SetPoint("LEFT", row, "LEFT", 132, 0)
   EnableWrap(row.name, 268, 34, "LEFT")
+  row.name:SetJustifyV("MIDDLE")
 
   row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "CENTER")
   row.count:SetPoint("LEFT", row, "LEFT", 408, 0)
   row.count:SetWidth(68)
+  row.count:SetHeight(34)
+  row.count:SetJustifyV("MIDDLE")
 
   row:Hide()
   Trial.rewardListRows[i] = row
@@ -870,6 +883,8 @@ for _, header in ipairs(rewardHeaderTexts) do
     header.justify)
   fs:SetPoint("TOPLEFT", Trial.rewardTable, "TOPLEFT", header.offset, -16)
   fs:SetWidth(header.width)
+  fs:SetHeight(18)
+  fs:SetJustifyV("MIDDLE")
   fs:SetText(header.text)
   Trial.rewardHeaders[header.key] = fs
 end
@@ -913,6 +928,8 @@ for i = 1, 8 do
   row.rank = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "CENTER")
   row.rank:SetPoint("LEFT", row, "LEFT", 8, 0)
   row.rank:SetWidth(64)
+  row.rank:SetHeight(30)
+  row.rank:SetJustifyV("MIDDLE")
 
   row.iconBg = CreatePanel(row, 28, 28)
   row.iconBg:SetPoint("LEFT", row, "LEFT", 92, 0)
@@ -938,10 +955,13 @@ for i = 1, 8 do
   row.name = CreateLabel(row, "GameFontNormal", 14, 0.96, 0.92, 0.86, "LEFT")
   row.name:SetPoint("LEFT", row, "LEFT", 136, 0)
   EnableWrap(row.name, 238, 32, "LEFT")
+  row.name:SetJustifyV("MIDDLE")
 
   row.count = CreateLabel(row, "GameFontNormal", 14, 0.95, 0.82, 0.24, "CENTER")
   row.count:SetPoint("LEFT", row, "LEFT", 390, 0)
   row.count:SetWidth(70)
+  row.count:SetHeight(30)
+  row.count:SetJustifyV("MIDDLE")
 
   Trial.rewardRows[i] = row
 end
