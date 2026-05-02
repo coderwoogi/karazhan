@@ -104,7 +104,21 @@ local function FormatRemaining(targetTime)
     return "-"
   end
 
-  return string.format("%d초", math.max(0, targetTime - time()))
+  local remaining = targetTime - time()
+  if remaining <= 0 then
+    remaining = 1
+  end
+
+  return string.format("%d초", math.ceil(remaining))
+end
+
+local function NormalizeRespawnTime(value)
+  local targetTime = tonumber(value)
+  if not targetTime or targetTime <= 0 then
+    return nil
+  end
+
+  return targetTime
 end
 
 local function ShowCenterAlert(message)
@@ -2092,8 +2106,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     Trial.state.preparationEndsAt = tonumber(parts[2]) or nil
     Trial.state.combatEndsAt = tonumber(parts[4]) or nil
     Trial.state.sessionState = tonumber(parts[6]) or SESSION_PENDING_SPAWN
-    Trial.state.playerRespawnAt = tonumber(parts[7]) or nil
-    Trial.state.shadowRespawnAt = tonumber(parts[8]) or nil
+    Trial.state.playerRespawnAt = NormalizeRespawnTime(parts[7])
+    Trial.state.shadowRespawnAt = NormalizeRespawnTime(parts[8])
     Trial.state.inProgress = Trial.state.sessionState == SESSION_ACTIVE
       or Trial.state.sessionState == SESSION_WAITING_FOR_START
     Trial.state.pendingArena = Trial.state.sessionState == SESSION_PENDING_SPAWN
@@ -2109,7 +2123,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
 
     if Trial.state.playerRespawnAt and Trial.state.playerRespawnAt > time()
       and previousPlayerRespawnAt ~= Trial.state.playerRespawnAt then
-      ShowCenterAlert("플레이어 부활까지 15초")
+      ShowCenterAlert("플레이어 부활까지 "
+        .. FormatRemaining(Trial.state.playerRespawnAt))
     elseif previousPlayerRespawnAt and previousPlayerRespawnAt > 0
       and not Trial.state.playerRespawnAt then
       ShowCenterAlert("플레이어가 다시 부활했습니다")
@@ -2117,7 +2132,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
 
     if Trial.state.shadowRespawnAt and Trial.state.shadowRespawnAt > time()
       and previousShadowRespawnAt ~= Trial.state.shadowRespawnAt then
-      ShowCenterAlert("그림자 부활까지 15초")
+      ShowCenterAlert("그림자 부활까지 "
+        .. FormatRemaining(Trial.state.shadowRespawnAt))
     elseif previousShadowRespawnAt and previousShadowRespawnAt > 0
       and not Trial.state.shadowRespawnAt then
       ShowCenterAlert("그림자가 다시 부활했습니다")
