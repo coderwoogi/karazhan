@@ -104,7 +104,9 @@ local function FormatRemaining(targetTime)
     return "-"
   end
 
-  local remaining = targetTime - time()
+  local currentTime = Trial and Trial.state and Trial.state.serverNow
+    or time()
+  local remaining = targetTime - currentTime
   if remaining <= 0 then
     remaining = 1
   end
@@ -210,6 +212,8 @@ local function NewState()
     combatEndsAt = nil,
     playerRespawnAt = nil,
     shadowRespawnAt = nil,
+    serverTimeOffset = 0,
+    serverNow = nil,
     resultShown = false,
     result = {
       stageId = 0,
@@ -1377,11 +1381,14 @@ local function RefreshStatusTimes()
   end
 
   local parts = {}
-  if Trial.state.playerRespawnAt and Trial.state.playerRespawnAt > time() then
+  local currentTime = Trial.state.serverNow or time()
+  if Trial.state.playerRespawnAt
+    and Trial.state.playerRespawnAt > currentTime then
     table.insert(parts,
       "플레이어 부활: " .. FormatRemaining(Trial.state.playerRespawnAt))
   end
-  if Trial.state.shadowRespawnAt and Trial.state.shadowRespawnAt > time() then
+  if Trial.state.shadowRespawnAt
+    and Trial.state.shadowRespawnAt > currentTime then
     table.insert(parts,
       "그림자 부활: " .. FormatRemaining(Trial.state.shadowRespawnAt))
   end
@@ -2103,6 +2110,14 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
   if parts[1] == "TIME" then
     local previousPlayerRespawnAt = Trial.state.playerRespawnAt
     local previousShadowRespawnAt = Trial.state.shadowRespawnAt
+    local serverNow = tonumber(parts[9])
+    if serverNow and serverNow > 0 then
+      Trial.state.serverTimeOffset = serverNow - time()
+      Trial.state.serverNow = serverNow
+    else
+      Trial.state.serverNow = time() + (Trial.state.serverTimeOffset or 0)
+    end
+
     Trial.state.preparationEndsAt = tonumber(parts[2]) or nil
     Trial.state.combatEndsAt = tonumber(parts[4]) or nil
     Trial.state.sessionState = tonumber(parts[6]) or SESSION_PENDING_SPAWN
@@ -2121,7 +2136,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
       Trial.statusBox:Show()
     end
 
-    if Trial.state.playerRespawnAt and Trial.state.playerRespawnAt > time()
+    if Trial.state.playerRespawnAt
+      and Trial.state.playerRespawnAt > Trial.state.serverNow
       and previousPlayerRespawnAt ~= Trial.state.playerRespawnAt then
       ShowCenterAlert("플레이어 부활까지 "
         .. FormatRemaining(Trial.state.playerRespawnAt))
@@ -2130,7 +2146,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
       ShowCenterAlert("플레이어가 다시 부활했습니다")
     end
 
-    if Trial.state.shadowRespawnAt and Trial.state.shadowRespawnAt > time()
+    if Trial.state.shadowRespawnAt
+      and Trial.state.shadowRespawnAt > Trial.state.serverNow
       and previousShadowRespawnAt ~= Trial.state.shadowRespawnAt then
       ShowCenterAlert("그림자 부활까지 "
         .. FormatRemaining(Trial.state.shadowRespawnAt))
@@ -2169,6 +2186,7 @@ Trial.statusBox:SetScript("OnUpdate", function(_, elapsed)
   end
 
   Trial._clockElapsed = 0
+  Trial.state.serverNow = time() + (Trial.state.serverTimeOffset or 0)
   if Trial.statusBox:IsShown() then
     RefreshStatusTimes()
   end

@@ -2827,7 +2827,8 @@ namespace
         payload << uint64(session.EndedAt) << "\t";
         payload << uint32(session.State) << "\t";
         payload << uint64(session.PlayerRespawnAt) << "\t";
-        payload << uint64(session.ShadowRespawnAt);
+        payload << uint64(session.ShadowRespawnAt) << "\t";
+        payload << now;
         SendAddonPayload(player, TRIAL_UI_PREFIX, payload.str());
     }
 
@@ -4023,6 +4024,15 @@ void MatchObjectiveShadowSpeed(Player* player, Creature* bot)
 {
     if (!player || !bot)
         return;
+
+    if (player->GetSession() &&
+        player->GetSession()->GetSecurity() >= SEC_GAMEMASTER)
+    {
+        bot->SetSpeed(MOVE_RUN, OBJECTIVE_MOUNT_RUN_RATE, true);
+        bot->SetSpeed(MOVE_RUN_BACK, OBJECTIVE_MOUNT_RUN_RATE, true);
+        bot->SetSpeed(MOVE_SWIM, OBJECTIVE_MOUNT_RUN_RATE, true);
+        return;
+    }
 
     float runRate = player->GetSpeedRate(MOVE_RUN);
     float backRate = player->GetSpeedRate(MOVE_RUN_BACK);
