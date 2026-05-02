@@ -1992,7 +1992,6 @@ EtherealForge:SetScript("OnEvent", function(self, event, ...)
 end)
 
 EtherealForge:SetScript("OnShow", function(self)
-  self:EnableKeyboard(true)
   UpdateCharacterHeader()
   BuildEquipmentButtons()
   statusLine:SetText(self.state.statusText or "")
@@ -2006,12 +2005,6 @@ EtherealForge:SetScript("OnHide", function(self)
   self:EnableKeyboard(false)
   ReleaseGossipState()
   ResetState()
-end)
-
-EtherealForge:SetScript("OnKeyDown", function(_, key)
-  if key == "ESCAPE" then
-    HandleForgeEscape()
-  end
 end)
 
 local function ForgeSystemMessageFilter(_, _, message)
