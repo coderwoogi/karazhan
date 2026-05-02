@@ -2266,6 +2266,7 @@ namespace
         void SaveProgress(Player* player, uint8 stageId);
         void SaveStageRecord(Player* player, ArenaSession const& session);
         void GrantStageRewards(Player* player, ArenaSession const& session);
+        bool GrantGoldReward(Player* player, uint64 copper) const;
         uint32 GetTodayCompletedEntryCount(Player* player) const;
         uint32 GetTodayActiveEntryCount(Player* player) const;
         uint32 GetTodayEntryCount(Player* player) const;
@@ -5807,6 +5808,22 @@ void SoloArenaMgr::SaveStageRecord(Player* player, ArenaSession const& session)
         std::time(nullptr));
 }
 
+bool SoloArenaMgr::GrantGoldReward(Player* player, uint64 copper) const
+{
+    if (!player)
+        return false;
+
+    while (copper > 0)
+    {
+        uint32 chunk = uint32(std::min<uint64>(
+            copper, uint64(std::numeric_limits<int32>::max())));
+        player->ModifyMoney(int32(chunk));
+        copper -= chunk;
+    }
+
+    return true;
+}
+
 void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session)
 {
     if (!player)
@@ -5835,7 +5852,7 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
         std::string rewardRankLabel = fields[5].Get<std::string>();
         float roll = float(std::rand() % 10000) / 100.0f;
 
-        if (chance > 0.0f && roll > chance)
+        if (chance <= 0.0f || roll > chance)
         {
             if (itemEntry != 0)
                 LogReward(player, session, itemEntry, itemCount, chance,
@@ -5862,10 +5879,8 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
 
         if (rewardGold > 0)
         {
-            uint64 copperReward = uint64(rewardGold);
-            if (copperReward <= uint64(std::numeric_limits<int32>::max()))
+            if (GrantGoldReward(player, uint64(rewardGold)))
             {
-                player->ModifyMoney(int32(copperReward));
                 LogReward(player, session, 0, rewardGold, chance,
                     Acore::StringFormat("GRANTED_GOLD:{}:{}",
                         rewardRankValue, rewardRankLabel));
