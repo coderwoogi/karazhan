@@ -411,6 +411,13 @@ local function HideDefaultGossip()
   end
 end
 
+local function CloseHiddenGossip()
+  if CloseGossip then
+    EtherealForge.state.ignoreNextGossipClosed = true
+    CloseGossip()
+  end
+end
+
 local function ResetState()
   EtherealForge.state = {
     active = false,
@@ -429,6 +436,7 @@ local function ResetState()
     equipmentActions = {},
     rootShowItemsIndex = nil,
     rootInfoIndex = nil,
+    ignoreNextGossipClosed = false,
     statusText = "강화 가능한 장비를 불러오는 중입니다.",
     resultText = "",
   }
@@ -776,12 +784,7 @@ resultOverlay:SetAllPoints(EtherealForge)
 resultOverlay:SetFrameStrata("FULLSCREEN_DIALOG")
 resultOverlay:SetFrameLevel(EtherealForge:GetFrameLevel() + 50)
 resultOverlay:EnableMouse(true)
-resultOverlay:EnableKeyboard(true)
-resultOverlay:SetScript("OnKeyDown", function(_, key)
-  if key == "ESCAPE" then
-    HandleForgeEscape()
-  end
-end)
+resultOverlay:EnableKeyboard(false)
 resultOverlay:Hide()
 SetSimpleBackdrop(resultOverlay, 0.02, 0.02, 0.03, 0.97,
   0.76, 0.60, 0.22, 0.98)
@@ -827,12 +830,7 @@ alertOverlay:SetSize(420, 220)
 alertOverlay:SetFrameStrata("FULLSCREEN_DIALOG")
 alertOverlay:SetFrameLevel(resultOverlay:GetFrameLevel() + 10)
 alertOverlay:EnableMouse(true)
-alertOverlay:EnableKeyboard(true)
-alertOverlay:SetScript("OnKeyDown", function(_, key)
-  if key == "ESCAPE" then
-    HandleForgeEscape()
-  end
-end)
+alertOverlay:EnableKeyboard(false)
 alertOverlay:Hide()
 SetSimpleBackdrop(alertOverlay, 0.04, 0.03, 0.03, 0.98,
   0.82, 0.32, 0.22, 0.95)
@@ -1909,6 +1907,7 @@ local function OpenForOptions(options)
   })
   SetStatusText("강화할 장비를 선택하세요.")
   SendForgeCommand("OPEN")
+  CloseHiddenGossip()
 end
 
 EtherealForge:RegisterEvent("GOSSIP_SHOW")
@@ -1933,6 +1932,11 @@ EtherealForge:SetScript("OnEvent", function(self, event, ...)
   end
 
   if event == "GOSSIP_CLOSED" then
+    if self.state and self.state.ignoreNextGossipClosed then
+      self.state.ignoreNextGossipClosed = false
+      return
+    end
+
     self:Hide()
     ResetState()
     return
@@ -1980,7 +1984,6 @@ EtherealForge:SetScript("OnEvent", function(self, event, ...)
 end)
 
 EtherealForge:SetScript("OnShow", function(self)
-  self:EnableKeyboard(true)
   UpdateCharacterHeader()
   BuildEquipmentButtons()
   statusLine:SetText(self.state.statusText or "")
