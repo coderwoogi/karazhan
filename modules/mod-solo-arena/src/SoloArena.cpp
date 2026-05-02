@@ -2828,7 +2828,11 @@ namespace
         payload << uint32(session.State) << "\t";
         payload << uint64(session.PlayerRespawnAt) << "\t";
         payload << uint64(session.ShadowRespawnAt) << "\t";
-        payload << now;
+        payload << now << "\t";
+        payload << (session.PlayerRespawnAt > now ?
+            session.PlayerRespawnAt - now : 0) << "\t";
+        payload << (session.ShadowRespawnAt > now ?
+            session.ShadowRespawnAt - now : 0);
         SendAddonPayload(player, TRIAL_UI_PREFIX, payload.str());
     }
 
@@ -6004,7 +6008,7 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
         "reward_rank_value, reward_rank_label "
         "FROM solo_arena_stage_reward "
         "WHERE stage_id = {} AND enabled = 1 "
-        "AND (reward_rank_value = 0 OR reward_rank_value = {}) "
+        "AND (reward_rank_value = 0 OR reward_rank_value <= {}) "
         "ORDER BY sort_order, id",
         session.StageId, session.RankValue);
 

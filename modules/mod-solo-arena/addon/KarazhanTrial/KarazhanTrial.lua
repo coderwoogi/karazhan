@@ -114,10 +114,35 @@ local function FormatRemaining(targetTime)
   return string.format("%d초", math.ceil(remaining))
 end
 
-local function NormalizeRespawnTime(value)
+local function FormatRespawnRemaining(targetTime)
+  if not targetTime or targetTime <= 0 then
+    return "-"
+  end
+
+  local remaining = targetTime - time()
+  if remaining <= 0 then
+    remaining = 1
+  end
+
+  return string.format("%d초", math.ceil(remaining))
+end
+
+local function NormalizeRespawnTime(value, remainingValue)
+  local remaining = tonumber(remainingValue)
+  if remaining and remaining > 0 then
+    return time() + remaining
+  end
+
   local targetTime = tonumber(value)
   if not targetTime or targetTime <= 0 then
     return nil
+  end
+
+  if Trial and Trial.state and Trial.state.serverNow then
+    remaining = targetTime - Trial.state.serverNow
+    if remaining and remaining > 0 then
+      return time() + remaining
+    end
   end
 
   return targetTime
@@ -1381,16 +1406,15 @@ local function RefreshStatusTimes()
   end
 
   local parts = {}
-  local currentTime = Trial.state.serverNow or time()
   if Trial.state.playerRespawnAt
-    and Trial.state.playerRespawnAt > currentTime then
+    and Trial.state.playerRespawnAt > time() then
     table.insert(parts,
-      "플레이어 부활: " .. FormatRemaining(Trial.state.playerRespawnAt))
+      "플레이어 부활: " .. FormatRespawnRemaining(Trial.state.playerRespawnAt))
   end
   if Trial.state.shadowRespawnAt
-    and Trial.state.shadowRespawnAt > currentTime then
+    and Trial.state.shadowRespawnAt > time() then
     table.insert(parts,
-      "그림자 부활: " .. FormatRemaining(Trial.state.shadowRespawnAt))
+      "그림자 부활: " .. FormatRespawnRemaining(Trial.state.shadowRespawnAt))
   end
 
   if #parts > 0 then
@@ -2121,8 +2145,8 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     Trial.state.preparationEndsAt = tonumber(parts[2]) or nil
     Trial.state.combatEndsAt = tonumber(parts[4]) or nil
     Trial.state.sessionState = tonumber(parts[6]) or SESSION_PENDING_SPAWN
-    Trial.state.playerRespawnAt = NormalizeRespawnTime(parts[7])
-    Trial.state.shadowRespawnAt = NormalizeRespawnTime(parts[8])
+    Trial.state.playerRespawnAt = NormalizeRespawnTime(parts[7], parts[10])
+    Trial.state.shadowRespawnAt = NormalizeRespawnTime(parts[8], parts[11])
     Trial.state.inProgress = Trial.state.sessionState == SESSION_ACTIVE
       or Trial.state.sessionState == SESSION_WAITING_FOR_START
     Trial.state.pendingArena = Trial.state.sessionState == SESSION_PENDING_SPAWN
@@ -2137,20 +2161,20 @@ Trial:SetScript("OnEvent", function(self, event, prefix, message)
     end
 
     if Trial.state.playerRespawnAt
-      and Trial.state.playerRespawnAt > Trial.state.serverNow
+      and Trial.state.playerRespawnAt > time()
       and previousPlayerRespawnAt ~= Trial.state.playerRespawnAt then
       ShowCenterAlert("플레이어 부활까지 "
-        .. FormatRemaining(Trial.state.playerRespawnAt))
+        .. FormatRespawnRemaining(Trial.state.playerRespawnAt))
     elseif previousPlayerRespawnAt and previousPlayerRespawnAt > 0
       and not Trial.state.playerRespawnAt then
       ShowCenterAlert("플레이어가 다시 부활했습니다")
     end
 
     if Trial.state.shadowRespawnAt
-      and Trial.state.shadowRespawnAt > Trial.state.serverNow
+      and Trial.state.shadowRespawnAt > time()
       and previousShadowRespawnAt ~= Trial.state.shadowRespawnAt then
       ShowCenterAlert("그림자 부활까지 "
-        .. FormatRemaining(Trial.state.shadowRespawnAt))
+        .. FormatRespawnRemaining(Trial.state.shadowRespawnAt))
     elseif previousShadowRespawnAt and previousShadowRespawnAt > 0
       and not Trial.state.shadowRespawnAt then
       ShowCenterAlert("그림자가 다시 부활했습니다")
