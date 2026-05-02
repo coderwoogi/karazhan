@@ -2215,6 +2215,7 @@ namespace
         StageConfig const* GetStage(uint8 stageId) const;
         std::vector<StageMechanicConfig> GetMechanics(uint8 stageId) const;
         bool HasSession(ObjectGuid const& playerGuid) const;
+        bool HasAccountSession(uint32 accountId) const;
         ArenaSession const* GetSession(ObjectGuid const& playerGuid) const;
         ArenaSession* GetMutableSession(ObjectGuid const& playerGuid);
         bool IsCombatActive(ObjectGuid const& playerGuid) const;
@@ -3077,6 +3078,23 @@ bool SoloArenaMgr::HasSession(ObjectGuid const& playerGuid) const
     return _sessions.find(playerGuid.GetCounter()) != _sessions.end();
 }
 
+bool SoloArenaMgr::HasAccountSession(uint32 accountId) const
+{
+    if (accountId == 0)
+        return false;
+
+    for (auto const& [_, session] : _sessions)
+    {
+        if (session.AccountId != accountId ||
+            session.State == SessionState::AwaitingReturn)
+            continue;
+
+        return true;
+    }
+
+    return false;
+}
+
 ArenaSession const* SoloArenaMgr::GetSession(ObjectGuid const& playerGuid) const
 {
     auto itr = _sessions.find(playerGuid.GetCounter());
@@ -3144,7 +3162,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         return false;
     }
 
-    if (HasSession(player->GetGUID()))
+    if (HasAccountSession(accountId))
     {
         SendSystem(player, "이미 진행 중인 시련이 있습니다.");
         return false;
@@ -5774,7 +5792,7 @@ bool SoloArenaMgr::UseExtraEntryTicket(Player* player)
         return false;
     }
 
-    if (HasSession(player->GetGUID()))
+    if (HasAccountSession(accountId))
     {
         SendSystem(player, "이미 진행 중인 시련이 있습니다.");
         SendUi(player);
