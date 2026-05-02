@@ -171,6 +171,7 @@ local function DebugMessage(text)
 end
 
 local alertOverlay
+local resultOverlay
 local alertTitle
 local alertMessage
 
@@ -770,11 +771,17 @@ actionPanel:SetSize(230, 338)
 SetSimpleBackdrop(actionPanel, 0.08, 0.07, 0.05, 0.88,
   0.38, 0.30, 0.14, 0.88)
 
-local resultOverlay = CreateFrame("Frame", nil, EtherealForge)
+resultOverlay = CreateFrame("Frame", nil, EtherealForge)
 resultOverlay:SetAllPoints(EtherealForge)
 resultOverlay:SetFrameStrata("FULLSCREEN_DIALOG")
 resultOverlay:SetFrameLevel(EtherealForge:GetFrameLevel() + 50)
 resultOverlay:EnableMouse(true)
+resultOverlay:EnableKeyboard(true)
+resultOverlay:SetScript("OnKeyDown", function(_, key)
+  if key == "ESCAPE" then
+    HandleForgeEscape()
+  end
+end)
 resultOverlay:Hide()
 SetSimpleBackdrop(resultOverlay, 0.02, 0.02, 0.03, 0.97,
   0.76, 0.60, 0.22, 0.98)
@@ -820,6 +827,12 @@ alertOverlay:SetSize(420, 220)
 alertOverlay:SetFrameStrata("FULLSCREEN_DIALOG")
 alertOverlay:SetFrameLevel(resultOverlay:GetFrameLevel() + 10)
 alertOverlay:EnableMouse(true)
+alertOverlay:EnableKeyboard(true)
+alertOverlay:SetScript("OnKeyDown", function(_, key)
+  if key == "ESCAPE" then
+    HandleForgeEscape()
+  end
+end)
 alertOverlay:Hide()
 SetSimpleBackdrop(alertOverlay, 0.04, 0.03, 0.03, 0.98,
   0.82, 0.32, 0.22, 0.95)
@@ -1866,6 +1879,7 @@ local function OpenForOptions(options)
     return
   end
 
+  ResetState()
   EtherealForge.state.active = true
   HideDefaultGossip()
   EtherealForge:Show()
