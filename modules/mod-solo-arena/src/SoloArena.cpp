@@ -942,6 +942,29 @@ namespace
             session.ObjectiveResourceScores[TEAM_HORDE]);
     }
 
+    bool SyncObjectiveScoresFromBattleground(ArenaSession& session,
+        Battleground const* bg)
+    {
+        if (!bg)
+            return false;
+
+        bool changed = false;
+        for (uint8 teamIndex = TEAM_ALLIANCE; teamIndex < PVP_TEAMS_COUNT;
+             ++teamIndex)
+        {
+            TeamId teamId = static_cast<TeamId>(teamIndex);
+            uint32 score = bg->GetTeamScore(teamId);
+            if (score <= session.ObjectiveResourceScores[teamIndex])
+                continue;
+
+            session.ObjectiveResourceScores[teamIndex] =
+                std::min<uint32>(score, OBJECTIVE_WIN_RESOURCES);
+            changed = true;
+        }
+
+        return changed;
+    }
+
     void GetRandomObjectiveFlagLocation(float& x, float& y, float& z, float& o)
     {
         uint8 node = urand(0, BG_AB_DYNAMIC_NODES_COUNT - 1);
@@ -4033,6 +4056,16 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
 
     if (Battleground* bg = player->GetBattleground())
     {
+        BattlegroundAB* objectiveBg = dynamic_cast<BattlegroundAB*>(bg);
+        if (SyncObjectiveScoresFromBattleground(session, bg))
+        {
+            session.ObjectiveWorldStateDirty = true;
+            session.NextObjectiveWorldStateSyncAt = 0;
+        }
+
+        if (TryFinishObjectiveByScore(player, session))
+            return false;
+
         if (bg->GetStatus() == STATUS_WAIT_JOIN &&
             bg->GetStartDelayTime() > int32(SOLO_ARENA_PREPARATION_MS))
         {
@@ -4052,6 +4085,12 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
             session.PreparationEndsAt = now + (SOLO_ARENA_PREPARATION_MS / 1000);
             SendTrialTimePayload(player, session);
             return true;
+        }
+
+        if (objectiveBg && session.ObjectiveWorldStateDirty)
+        {
+            PushObjectiveResourceWorldStates(objectiveBg, session);
+            session.ObjectiveWorldStateDirty = false;
         }
     }
     else
