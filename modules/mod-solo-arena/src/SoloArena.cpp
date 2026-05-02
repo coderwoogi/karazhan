@@ -2247,6 +2247,7 @@ namespace
     private:
         bool SpawnShadow(Player* player, ArenaSession& session);
         bool UpdateObjectiveTrial(Player* player, ArenaSession& session);
+        bool TryFinishObjectiveByScore(Player* player, ArenaSession& session);
         void NormalizeObjectiveMovement(Player* player,
             ArenaSession& session);
         bool SyncShadowPet(Player* player, ArenaSession& session,
@@ -3488,6 +3489,7 @@ bool SoloArenaMgr::SetObjectiveScore(ChatHandler* handler, Player* target,
 
     ShowObjectiveScore(handler, target);
     SendTrialTimePayload(target, *session, true);
+    TryFinishObjectiveByScore(target, *session);
     return true;
 }
 
@@ -4059,21 +4061,8 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         }
     }
 
-    TeamId playerObjectiveTeam = session.Team == TEAM_ALLIANCE ?
-        TEAM_ALLIANCE : TEAM_HORDE;
-    TeamId shadowObjectiveTeam = playerObjectiveTeam == TEAM_ALLIANCE ?
-        TEAM_HORDE : TEAM_ALLIANCE;
-
-    if (session.ObjectiveResourceScores[playerObjectiveTeam] >=
-        OBJECTIVE_WIN_RESOURCES)
-    {
-        session.ObjectiveAllNodesCaptured = true;
-        MarkVictory(player->GetGUID());
-        FinishSession(player, session);
-        SendSystem(player,
-            "1600점을 먼저 달성했습니다. 시련에서 승리했습니다.");
+    if (TryFinishObjectiveByScore(player, session))
         return false;
-    }
 
     Creature* bot = session.BotGuid.IsEmpty() ? nullptr :
         ObjectAccessor::GetCreature(*player, session.BotGuid);
@@ -4307,17 +4296,6 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         }
     }
 
-    if (session.ObjectiveResourceScores[shadowObjectiveTeam] >=
-        OBJECTIVE_WIN_RESOURCES)
-    {
-        MarkFailure(player->GetGUID());
-        LogEvent(player, session, "OBJECTIVE_SHADOW_WON");
-        NotifyObjectiveFinishReason(player,
-            "그림자가 먼저 1600점을 달성했습니다");
-        FinishSession(player, session);
-        return false;
-    }
-
     SyncObjectiveNodeVisuals(session, objectiveBg);
     if (objectiveBg &&
         (session.ObjectiveWorldStateDirty ||
@@ -4328,6 +4306,59 @@ bool SoloArenaMgr::UpdateObjectiveTrial(Player* player, ArenaSession& session)
         session.ObjectiveWorldStateDirty = false;
     }
 
+    if (TryFinishObjectiveByScore(player, session))
+        return false;
+
+    return true;
+}
+
+bool SoloArenaMgr::TryFinishObjectiveByScore(Player* player,
+    ArenaSession& session)
+{
+    if (!player || session.Scenario != TrialScenario::Objective)
+        return false;
+
+    if (session.Result != ArenaResult::None ||
+        session.State == SessionState::AwaitingReturn)
+        return false;
+
+    TeamId playerObjectiveTeam = session.Team == TEAM_ALLIANCE ?
+        TEAM_ALLIANCE : TEAM_HORDE;
+    TeamId shadowObjectiveTeam = playerObjectiveTeam == TEAM_ALLIANCE ?
+        TEAM_HORDE : TEAM_ALLIANCE;
+
+    bool playerReached =
+        session.ObjectiveResourceScores[playerObjectiveTeam] >=
+        OBJECTIVE_WIN_RESOURCES;
+    bool shadowReached =
+        session.ObjectiveResourceScores[shadowObjectiveTeam] >=
+        OBJECTIVE_WIN_RESOURCES;
+
+    if (!playerReached && !shadowReached)
+        return false;
+
+    if (playerReached)
+    {
+        session.ObjectiveResourceScores[playerObjectiveTeam] =
+            OBJECTIVE_WIN_RESOURCES;
+        session.ObjectiveAllNodesCaptured = true;
+        MarkVictory(player->GetGUID());
+        LogEvent(player, session, "OBJECTIVE_PLAYER_WON");
+        NotifyObjectiveFinishReason(player,
+            "플레이어가 먼저 1600점을 달성했습니다");
+        SendSystem(player,
+            "1600점을 먼저 달성했습니다. 시련에서 승리했습니다.");
+        FinishSession(player, session);
+        return true;
+    }
+
+    session.ObjectiveResourceScores[shadowObjectiveTeam] =
+        OBJECTIVE_WIN_RESOURCES;
+    MarkFailure(player->GetGUID());
+    LogEvent(player, session, "OBJECTIVE_SHADOW_WON");
+    NotifyObjectiveFinishReason(player,
+        "그림자가 먼저 1600점을 달성했습니다");
+    FinishSession(player, session);
     return true;
 }
 
