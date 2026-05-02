@@ -12,7 +12,9 @@
 #include "DatabaseEnv.h"
 #include "Duration.h"
 #include "GameObject.h"
+#include "Item.h"
 #include "LFGMgr.h"
+#include "Mail.h"
 #include "MapMgr.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
@@ -44,6 +46,7 @@
 #include <limits>
 #include <random>
 #include <queue>
+#include <sstream>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -2266,7 +2269,6 @@ namespace
         void SaveProgress(Player* player, uint8 stageId);
         void SaveStageRecord(Player* player, ArenaSession const& session);
         void GrantStageRewards(Player* player, ArenaSession const& session);
-        bool GrantGoldReward(Player* player, uint64 copper) const;
         uint32 GetTodayCompletedEntryCount(Player* player) const;
         uint32 GetTodayActiveEntryCount(Player* player) const;
         uint32 GetTodayEntryCount(Player* player) const;
@@ -2487,6 +2489,60 @@ namespace
         data << fullMessage;
         data << uint8(0);
         player->GetSession()->SendPacket(&data);
+    }
+
+    std::string FormatRewardMoney(uint64 copper)
+    {
+        uint64 gold = copper / 10000;
+        uint64 silver = (copper % 10000) / 100;
+        uint64 copperOnly = copper % 100;
+
+        std::ostringstream text;
+        bool wrote = false;
+        if (gold > 0)
+        {
+            text << gold << "골드";
+            wrote = true;
+        }
+        if (silver > 0)
+        {
+            if (wrote)
+                text << " ";
+            text << silver << "실버";
+            wrote = true;
+        }
+        if (copperOnly > 0 || !wrote)
+        {
+            if (wrote)
+                text << " ";
+            text << copperOnly << "쿠퍼";
+        }
+
+        return text.str();
+    }
+
+    std::string GetRewardItemName(uint32 itemEntry)
+    {
+        std::string itemName = Acore::StringFormat("아이템 {}", itemEntry);
+
+        if (ItemTemplate const* itemTemplate =
+            sObjectMgr->GetItemTemplate(itemEntry))
+        {
+            itemName = itemTemplate->Name1;
+
+            if (ItemLocale const* itemLocale =
+                sObjectMgr->GetItemLocale(itemEntry))
+            {
+                if (itemLocale->Name.size() > std::size_t(LOCALE_koKR) &&
+                    !itemLocale->Name[LOCALE_koKR].empty())
+                    itemName = itemLocale->Name[LOCALE_koKR];
+            }
+        }
+
+        if (itemName.empty())
+            itemName = Acore::StringFormat("아이템 {}", itemEntry);
+
+        return itemName;
     }
 
     std::string GetTrialClassLabel(uint8 classId)
@@ -5808,26 +5864,31 @@ void SoloArenaMgr::SaveStageRecord(Player* player, ArenaSession const& session)
         std::time(nullptr));
 }
 
-bool SoloArenaMgr::GrantGoldReward(Player* player, uint64 copper) const
-{
-    if (!player)
-        return false;
-
-    while (copper > 0)
-    {
-        uint32 chunk = uint32(std::min<uint64>(
-            copper, uint64(std::numeric_limits<int32>::max())));
-        player->ModifyMoney(int32(chunk));
-        copper -= chunk;
-    }
-
-    return true;
-}
-
 void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session)
 {
     if (!player)
         return;
+
+    struct TrialMailItemReward
+    {
+        uint32 ItemEntry = 0;
+        uint32 ItemCount = 0;
+        float Chance = 0.0f;
+        uint8 RankValue = 0;
+        std::string RankLabel;
+        std::string ItemName;
+    };
+
+    struct TrialMailGoldReward
+    {
+        uint32 Copper = 0;
+        float Chance = 0.0f;
+        uint8 RankValue = 0;
+        std::string RankLabel;
+    };
+
+    std::vector<TrialMailItemReward> itemRewards;
+    std::vector<TrialMailGoldReward> goldRewards;
 
     QueryResult result = WorldDatabase.Query(
         "SELECT item_entry, item_count, reward_gold, chance, "
@@ -5867,30 +5928,112 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
 
         if (itemEntry != 0)
         {
-            if (player->AddItem(itemEntry, itemCount))
-                LogReward(player, session, itemEntry, itemCount, chance,
-                    Acore::StringFormat("GRANTED:{}:{}",
-                        rewardRankValue, rewardRankLabel));
-            else
-                LogReward(player, session, itemEntry, itemCount, chance,
-                    Acore::StringFormat("FAILED:{}:{}",
-                        rewardRankValue, rewardRankLabel));
+            itemRewards.push_back({
+                itemEntry,
+                itemCount,
+                chance,
+                rewardRankValue,
+                rewardRankLabel,
+                GetRewardItemName(itemEntry)
+            });
         }
 
         if (rewardGold > 0)
         {
-            if (GrantGoldReward(player, uint64(rewardGold)))
-            {
-                LogReward(player, session, 0, rewardGold, chance,
-                    Acore::StringFormat("GRANTED_GOLD:{}:{}",
-                        rewardRankValue, rewardRankLabel));
-            }
-            else
-                LogReward(player, session, 0, rewardGold, chance,
-                    Acore::StringFormat("FAILED_GOLD:{}:{}",
-                        rewardRankValue, rewardRankLabel));
+            goldRewards.push_back({
+                rewardGold,
+                chance,
+                rewardRankValue,
+                rewardRankLabel
+            });
         }
     } while (result->NextRow());
+
+    if (itemRewards.empty() && goldRewards.empty())
+        return;
+
+    uint64 totalGoldReward = 0;
+    for (TrialMailGoldReward const& reward : goldRewards)
+        totalGoldReward += reward.Copper;
+
+    std::ostringstream body;
+    body << "시련 완료 보상이 우편으로 지급되었습니다.$B$B";
+    body << "단계: " << GetStageName(session.StageId) << "$B";
+    body << "결과: 성공$B";
+    body << "랭크: "
+         << (session.RankLabel.empty() ? "-" : session.RankLabel) << "$B";
+    body << "소요시간: " << session.CombatDurationSec << "초$B$B";
+    body << "보상 내역:$B";
+
+    for (TrialMailItemReward const& reward : itemRewards)
+    {
+        body << "- [" << reward.RankLabel << "] "
+             << reward.ItemName << " x" << reward.ItemCount << "$B";
+    }
+
+    for (TrialMailGoldReward const& reward : goldRewards)
+    {
+        body << "- [" << reward.RankLabel << "] 골드 "
+             << FormatRewardMoney(reward.Copper) << "$B";
+    }
+
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    MailDraft draft("시련 완료 보상", body.str());
+
+    uint32 mailMoney = uint32(std::min<uint64>(
+        totalGoldReward, uint64(std::numeric_limits<uint32>::max())));
+    if (mailMoney > 0)
+        draft.AddMoney(mailMoney);
+
+    for (TrialMailItemReward const& reward : itemRewards)
+    {
+        ItemTemplate const* itemTemplate =
+            sObjectMgr->GetItemTemplate(reward.ItemEntry);
+        uint32 maxStack = itemTemplate ?
+            std::max<uint32>(1, itemTemplate->GetMaxStackSize()) : 1;
+        uint32 remaining = reward.ItemCount;
+        bool mailedAny = false;
+
+        while (remaining > 0)
+        {
+            uint32 stackCount = std::min<uint32>(remaining, maxStack);
+            Item* item = Item::CreateItem(reward.ItemEntry, stackCount);
+            if (!item)
+                break;
+
+            item->SaveToDB(trans);
+            draft.AddItem(item);
+            mailedAny = true;
+            remaining -= stackCount;
+        }
+
+        if (mailedAny && remaining == 0)
+        {
+            LogReward(player, session, reward.ItemEntry, reward.ItemCount,
+                reward.Chance, Acore::StringFormat("MAILED:{}:{}",
+                    reward.RankValue, reward.RankLabel));
+        }
+        else
+        {
+            LogReward(player, session, reward.ItemEntry, reward.ItemCount,
+                reward.Chance, Acore::StringFormat("FAILED:{}:{}",
+                    reward.RankValue, reward.RankLabel));
+        }
+    }
+
+    draft.SendMailTo(trans,
+        MailReceiver(player, player->GetGUID().GetCounter()),
+        MailSender(MAIL_CREATURE, 34337));
+    CharacterDatabase.CommitTransaction(trans);
+
+    for (TrialMailGoldReward const& reward : goldRewards)
+    {
+        LogReward(player, session, 0, reward.Copper, reward.Chance,
+            Acore::StringFormat("MAILED_GOLD:{}:{}",
+                reward.RankValue, reward.RankLabel));
+    }
+
+    SendSystem(player, "시련 보상이 우편으로 발송되었습니다.");
 }
 
 void SoloArenaMgr::LogRun(Player* player, ArenaSession const& session)
