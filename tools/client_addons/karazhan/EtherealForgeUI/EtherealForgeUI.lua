@@ -407,7 +407,11 @@ end
 
 local function HideDefaultGossip()
   if GossipFrame and GossipFrame:IsShown() then
-    GossipFrame:Hide()
+    if HideUIPanel then
+      HideUIPanel(GossipFrame)
+    else
+      GossipFrame:Hide()
+    end
   end
 end
 
@@ -416,6 +420,8 @@ local function CloseHiddenGossip()
     EtherealForge.state.ignoreNextGossipClosed = true
     CloseGossip()
   end
+
+  HideDefaultGossip()
 end
 
 local function ReleaseGossipState()
@@ -423,9 +429,7 @@ local function ReleaseGossipState()
     CloseGossip()
   end
 
-  if GossipFrame and GossipFrame:IsShown() then
-    GossipFrame:Hide()
-  end
+  HideDefaultGossip()
 end
 
 local function ResetState()
