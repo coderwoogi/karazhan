@@ -954,7 +954,6 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
                 return;
             }
 
-            player->_ApplyItemMods(oldItem, originalSlot, false);
             player->RemoveItem(pending.bag, pending.slot, false);
             oldItem = player->StoreItem(unequipDest, oldItem, true);
 
