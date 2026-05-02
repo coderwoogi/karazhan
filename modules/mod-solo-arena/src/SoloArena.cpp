@@ -2270,9 +2270,11 @@ namespace
         void SaveProgress(Player* player, uint8 stageId);
         void SaveStageRecord(Player* player, ArenaSession const& session);
         void GrantStageRewards(Player* player, ArenaSession const& session);
+        uint32 GetTodayRecordedEntryCount(Player* player) const;
         uint32 GetTodayCompletedEntryCount(Player* player) const;
         uint32 GetTodayActiveEntryCount(Player* player) const;
         uint32 GetTodayEntryCount(Player* player) const;
+        void RecordDailyEntryUse(uint32 accountId);
         uint32 GetTodayBonusEntryCount(Player* player) const;
         uint32 GetTodayPurchaseCount(Player* player, uint32 itemEntry) const;
         uint32 GetCurrentDailyEntryLimit(Player* player) const;
@@ -3404,6 +3406,7 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     }
 
     player->DestroyItemCount(TRIAL_TICKET_ITEM, 1, true, false);
+    RecordDailyEntryUse(accountId);
     LogEvent(player, _sessions[player->GetGUID().GetCounter()],
         "TICKET_CONSUMED", Acore::StringFormat(
             "item={} remaining={}", TRIAL_TICKET_ITEM,
@@ -5415,8 +5418,32 @@ std::pair<uint8, std::string> SoloArenaMgr::ComputeTrialRank(
 
 uint32 SoloArenaMgr::GetTodayEntryCount(Player* player) const
 {
-    return GetTodayCompletedEntryCount(player) +
+    uint32 const recordedCount = GetTodayRecordedEntryCount(player);
+    uint32 const fallbackCount = GetTodayCompletedEntryCount(player) +
         GetTodayActiveEntryCount(player);
+
+    return std::max(recordedCount, fallbackCount);
+}
+
+uint32 SoloArenaMgr::GetTodayRecordedEntryCount(Player* player) const
+{
+    if (!player)
+        return 0;
+
+    uint32 accountId = GetPlayerAccountId(player);
+    if (accountId == 0)
+        return 0;
+
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT entry_count "
+        "FROM solo_arena_daily_entry "
+        "WHERE account_id = {} AND use_date = CURDATE()",
+        accountId);
+
+    if (!result)
+        return 0;
+
+    return result->Fetch()[0].Get<uint32>();
 }
 
 uint32 SoloArenaMgr::GetTodayCompletedEntryCount(Player* player) const
@@ -5462,6 +5489,21 @@ uint32 SoloArenaMgr::GetTodayActiveEntryCount(Player* player) const
     }
 
     return activeCount;
+}
+
+void SoloArenaMgr::RecordDailyEntryUse(uint32 accountId)
+{
+    if (accountId == 0)
+        return;
+
+    CharacterDatabase.DirectExecute(
+        "INSERT INTO solo_arena_daily_entry "
+        "(account_id, use_date, entry_count, updated_at) "
+        "VALUES ({}, CURDATE(), 1, UNIX_TIMESTAMP()) "
+        "ON DUPLICATE KEY UPDATE "
+        "entry_count = entry_count + 1, "
+        "updated_at = VALUES(updated_at)",
+        accountId);
 }
 
 uint32 SoloArenaMgr::GetTodayBonusEntryCount(Player* player) const
