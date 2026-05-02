@@ -418,6 +418,16 @@ local function CloseHiddenGossip()
   end
 end
 
+local function ReleaseGossipState()
+  if CloseGossip then
+    CloseGossip()
+  end
+
+  if GossipFrame and GossipFrame:IsShown() then
+    GossipFrame:Hide()
+  end
+end
+
 local function ResetState()
   EtherealForge.state = {
     active = false,
@@ -454,9 +464,7 @@ ResetState()
 local function CloseForgeWindow()
   EtherealForge:Hide()
   ResetState()
-  if CloseGossip then
-    CloseGossip()
-  end
+  ReleaseGossipState()
 end
 
 local function HandleForgeEscape()
@@ -1984,6 +1992,7 @@ EtherealForge:SetScript("OnEvent", function(self, event, ...)
 end)
 
 EtherealForge:SetScript("OnShow", function(self)
+  self:EnableKeyboard(true)
   UpdateCharacterHeader()
   BuildEquipmentButtons()
   statusLine:SetText(self.state.statusText or "")
@@ -1995,6 +2004,8 @@ end)
 
 EtherealForge:SetScript("OnHide", function(self)
   self:EnableKeyboard(false)
+  ReleaseGossipState()
+  ResetState()
 end)
 
 EtherealForge:SetScript("OnKeyDown", function(_, key)
