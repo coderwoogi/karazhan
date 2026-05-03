@@ -906,7 +906,7 @@ Trial.returnButton = CreateFrame(
   "Button", nil, Trial.resultFrame, "UIPanelButtonTemplate")
 Trial.returnButton:SetSize(140, 28)
 Trial.returnButton:SetPoint("BOTTOM", Trial.resultFrame, "BOTTOM", 0, 14)
-Trial.returnButton:SetText("복귀")
+Trial.returnButton:SetText("확인")
 
 Trial.rewardTable = CreatePanel(Trial.rewardView, 470, 280)
 Trial.rewardTable:SetPoint("TOPLEFT", Trial.rewardView, "TOPLEFT", 0, 0)
@@ -2051,7 +2051,6 @@ Trial.extraTicketButton:SetScript("OnClick", function()
 end)
 
 Trial.returnButton:SetScript("OnClick", function()
-  SendCommand("RETURN")
   Trial.state.resultShown = false
   Trial.state.inProgress = false
   Trial.state.pendingArena = false
