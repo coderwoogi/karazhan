@@ -10,7 +10,7 @@
 #include "BlackMarketSystem.h"
 
 void AddBlackMarketNPCScripts();
-void AddBlackMarketCommandScripts(); // ✅ 추가
+void AddBlackMarketCommandScripts();
 void AddBlackMarketTrackerScripts();
 
 class BlackMarketWorldScript : public WorldScript
@@ -38,6 +38,6 @@ void Addmod_blackmarketScripts()
 {
     new BlackMarketWorldScript();
     AddBlackMarketNPCScripts();
-    AddBlackMarketCommandScripts(); // ✅追加
+    AddBlackMarketCommandScripts();
     AddBlackMarketTrackerScripts();
 }
