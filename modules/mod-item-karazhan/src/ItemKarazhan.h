@@ -147,6 +147,7 @@ public:
     uint8 GetItemEnhanceType(Item const* item) const;
     char const* GetEnhanceTypeName(uint8 enhanceType) const;
     uint32 GetEnhanceSpellId(uint8 level, uint8 enhanceType) const;
+    void RepairPlayerEnhancedItems(Player* player);
 
 private:
     void LoadSlotConfigs();
@@ -170,6 +171,7 @@ private:
     bool RestoreItemState(Item* newItem, ItemStateBackup const& backup, Player* player);
     uint16 MakeEnchantConfigKey(uint8 level, uint8 enhanceType) const;
     uint8 GetEnhanceTypeByRandomProperty(int32 randomPropertyId) const;
+    bool RepairItemRandomProperty(Item* item, Player* player);
 
     std::unordered_map<uint8, KarazhanSlotConfig> _slotConfigs;
     std::unordered_map<uint16, KarazhanEnchantConfig> _enchantConfigs;

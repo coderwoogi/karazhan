@@ -3,6 +3,7 @@
  */
 
 #include "ItemKarazhan.h"
+#include "Bag.h"
 #include "Item.h"
 #include "Player.h"
 #include "ObjectMgr.h"
@@ -710,6 +711,69 @@ uint8 ItemKarazhanMgr::GetEnhanceTypeByRandomProperty(
             return pair.second.enhanceType;
 
     return ENHANCE_TYPE_NONE;
+}
+
+bool ItemKarazhanMgr::RepairItemRandomProperty(Item* item, Player* player)
+{
+    if (!item || !player)
+        return false;
+
+    int32 randomPropertyId = item->GetItemRandomPropertyId();
+    if (GetEnhanceTypeByRandomProperty(randomPropertyId) == ENHANCE_TYPE_NONE)
+        return false;
+
+    uint32 itemGuid = item->GetGUID().GetCounter();
+    if (GetItemEnhanceLevel(itemGuid) == 0)
+        return false;
+
+    bool isEquipped = item->IsEquipped();
+    uint8 itemSlot = item->GetSlot();
+
+    if (isEquipped)
+        player->_ApplyItemMods(item, itemSlot, false);
+
+    item->SetItemRandomProperties(randomPropertyId);
+    item->SetState(ITEM_CHANGED, player);
+
+    if (isEquipped)
+        player->_ApplyItemMods(item, itemSlot, true);
+
+    return true;
+}
+
+void ItemKarazhanMgr::RepairPlayerEnhancedItems(Player* player)
+{
+    if (!player)
+        return;
+
+    uint32 repairedCount = 0;
+    for (uint8 slot = EQUIPMENT_SLOT_START; slot < INVENTORY_SLOT_ITEM_END;
+        ++slot)
+    {
+        if (Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot))
+            if (RepairItemRandomProperty(item, player))
+                ++repairedCount;
+    }
+
+    for (uint8 bagSlot = INVENTORY_SLOT_BAG_START;
+        bagSlot < INVENTORY_SLOT_BAG_END; ++bagSlot)
+    {
+        Bag* bag = player->GetBagByPos(bagSlot);
+        if (!bag)
+            continue;
+
+        for (uint32 slot = 0; slot < bag->GetBagSize(); ++slot)
+            if (Item* item = bag->GetItemByPos(slot))
+                if (RepairItemRandomProperty(item, player))
+                    ++repairedCount;
+    }
+
+    if (repairedCount > 0)
+    {
+        player->UpdateAllStats();
+        LOG_INFO("module", "Karazhan: Repaired {} enhanced item random properties for player {}",
+            repairedCount, player->GetGUID().GetCounter());
+    }
 }
 
 char const* ItemKarazhanMgr::GetEnhanceTypeName(uint8 enhanceType) const
