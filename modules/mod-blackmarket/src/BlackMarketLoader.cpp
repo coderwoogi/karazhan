@@ -11,6 +11,7 @@
 
 void AddBlackMarketNPCScripts();
 void AddBlackMarketCommandScripts(); // ✅ 추가
+void AddBlackMarketTrackerScripts();
 
 class BlackMarketWorldScript : public WorldScript
 {
@@ -38,4 +39,5 @@ void Addmod_blackmarketScripts()
     new BlackMarketWorldScript();
     AddBlackMarketNPCScripts();
     AddBlackMarketCommandScripts(); // ✅追加
+    AddBlackMarketTrackerScripts();
 }

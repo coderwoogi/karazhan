@@ -74,6 +74,7 @@ public:
     // Vendor 지원 함수
     void SendVendorInventory(Player* player, Creature* creature);
     bool HandleVendorBuy(Player* player, uint32 itemEntry);
+    bool SendCurrentLocationMail(Player* player);
     
     std::vector<BlackMarketVendorItem> const& GetCurrentItems() const { return _currentItems; }
     std::string GetRandomDialogue() const;

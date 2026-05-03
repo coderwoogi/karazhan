@@ -18,9 +18,13 @@
 #include "DBCStores.h"
 #include "WorldPacket.h"
 #include "Language.h"
+#include "Mail.h"
 #include "Map.h"
 #include "WorldSession.h"
 #include "StringFormat.h"
+
+#include <algorithm>
+#include <sstream>
 
 BlackMarketSystem* BlackMarketSystem::instance()
 {
@@ -664,6 +668,55 @@ std::string BlackMarketSystem::GetLocalizedItemName(uint32 itemEntry, LocaleCons
     }
 
     return itemTemplate->Name1;
+}
+
+bool BlackMarketSystem::SendCurrentLocationMail(Player* player)
+{
+    if (!player)
+        return false;
+
+    ChatHandler handler(player->GetSession());
+
+    if (!_enabled)
+    {
+        handler.SendSysMessage("암상인 추적 장치가 반응하지 않습니다.");
+        return false;
+    }
+
+    if (!_isActive || !_currentSpawnPointId)
+    {
+        handler.SendSysMessage("현재 암상인은 모습을 드러내지 않았습니다.");
+        return false;
+    }
+
+    auto itr = std::find_if(_spawnPoints.begin(), _spawnPoints.end(),
+        [this](BlackMarketSpawnPoint const& point)
+        {
+            return point.id == _currentSpawnPointId;
+        });
+
+    if (itr == _spawnPoints.end())
+    {
+        handler.SendSysMessage("현재 암상인 위치 정보를 찾을 수 없습니다.");
+        return false;
+    }
+
+    std::string location = itr->comment.empty() ? "알 수 없는 위치" : itr->comment;
+
+    std::ostringstream body;
+    body << "암상인 추적기가 희미한 흔적을 포착했습니다.$B$B";
+    body << "현재 암상인 위치: " << location << "$B";
+    body << "서두르십시오. 암상인은 오래 머물지 않습니다.";
+
+    CharacterDatabaseTransaction trans = CharacterDatabase.BeginTransaction();
+    MailDraft draft("암상인 위치 추적 결과", body.str());
+    draft.SendMailTo(trans,
+        MailReceiver(player, player->GetGUID().GetCounter()),
+        MailSender(MAIL_CREATURE, _npcEntry));
+    CharacterDatabase.CommitTransaction(trans);
+
+    handler.SendSysMessage("암상인 위치 정보가 우편으로 발송되었습니다.");
+    return true;
 }
 
 void BlackMarketSystem::SendVendorInventory(Player* player, Creature* creature)
