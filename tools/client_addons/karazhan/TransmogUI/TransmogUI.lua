@@ -208,25 +208,58 @@ function IsListOption(option)
     or string.find(option.clean, "Back", 1, true)
 end
 
+local hiddenPanelPoints = {}
+
+local function MovePanelOffscreen(frame)
+  if not frame or hiddenPanelPoints[frame] then
+    return
+  end
+
+  local points = {}
+  for i = 1, frame:GetNumPoints() do
+    local point, relativeTo, relativePoint, xOfs, yOfs = frame:GetPoint(i)
+    points[i] = { point, relativeTo, relativePoint, xOfs, yOfs }
+  end
+  hiddenPanelPoints[frame] = points
+
+  frame:ClearAllPoints()
+  frame:SetPoint("TOPLEFT", UIParent, "BOTTOMRIGHT", 2000, -2000)
+end
+
+local function RestorePanelPoint(frame)
+  local points = frame and hiddenPanelPoints[frame]
+  if not points then
+    return
+  end
+
+  frame:ClearAllPoints()
+  for _, point in ipairs(points) do
+    frame:SetPoint(point[1], point[2], point[3], point[4], point[5])
+  end
+  hiddenPanelPoints[frame] = nil
+end
+
 local function ConcealDefaultPanels()
   if GossipFrame and GossipFrame:IsShown() then
     GossipFrame:SetAlpha(0)
     GossipFrame:EnableMouse(false)
-    GossipFrame:Hide()
+    MovePanelOffscreen(GossipFrame)
   end
   if MerchantFrame and MerchantFrame:IsShown() then
     MerchantFrame:SetAlpha(0)
     MerchantFrame:EnableMouse(false)
-    MerchantFrame:Hide()
+    MovePanelOffscreen(MerchantFrame)
   end
 end
 
 local function RestoreDefaultPanels()
   if GossipFrame then
+    RestorePanelPoint(GossipFrame)
     GossipFrame:SetAlpha(1)
     GossipFrame:EnableMouse(true)
   end
   if MerchantFrame then
+    RestorePanelPoint(MerchantFrame)
     MerchantFrame:SetAlpha(1)
     MerchantFrame:EnableMouse(true)
   end
