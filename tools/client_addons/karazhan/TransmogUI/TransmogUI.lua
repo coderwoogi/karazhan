@@ -295,6 +295,26 @@ local leftHeader = CreateText(leftPane, "GameFontHighlight", 14, 0.70, 0.94, 1.0
 leftHeader:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 20, -18)
 leftHeader:SetText("장비칸")
 
+local modelPanel = CreateFrame("Frame", nil, leftPane)
+modelPanel:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 112, -92)
+modelPanel:SetSize(152, 294)
+modelPanel:SetFrameLevel(leftPane:GetFrameLevel() + 1)
+SetBackdrop(modelPanel, 0.02, 0.04, 0.05, 0.42, 0.20, 0.48, 0.56, 0.58)
+
+local playerModel = CreateFrame("PlayerModel", nil, modelPanel)
+playerModel:SetPoint("TOPLEFT", modelPanel, "TOPLEFT", 4, -4)
+playerModel:SetPoint("BOTTOMRIGHT", modelPanel, "BOTTOMRIGHT", -4, 4)
+playerModel:EnableMouse(false)
+
+local playerNameText = CreateText(leftPane, "GameFontHighlight", 13, 0.70, 0.94, 1.0, "CENTER")
+playerNameText:SetPoint("TOP", modelPanel, "BOTTOM", 0, -8)
+playerNameText:SetWidth(220)
+
+local selectedSlotText = CreateText(leftPane, "GameFontNormalSmall", 11, 0.78, 0.86, 0.88, "CENTER")
+selectedSlotText:SetPoint("TOP", playerNameText, "BOTTOM", 0, -5)
+selectedSlotText:SetWidth(250)
+selectedSlotText:SetText("장비칸을 선택하세요.")
+
 local rightHeader = CreateText(rightPane, "GameFontHighlight", 14, 0.70, 0.94, 1.0, "LEFT")
 rightHeader:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 20, -18)
 rightHeader:SetText("형상변환 아이템 목록")
@@ -304,7 +324,14 @@ TransmogUI.status:SetPoint("TOPLEFT", rightHeader, "BOTTOMLEFT", 0, -8)
 TransmogUI.status:SetWidth(520)
 TransmogUI.status:SetText("형상변환 NPC와 대화하면 목록이 표시됩니다.")
 
+local function UpdatePlayerModel()
+  playerModel:SetUnit("player")
+  playerNameText:SetText(UnitName("player") or "")
+end
+
 local function BuildSlotButtons(options)
+  UpdatePlayerModel()
+
   if options and IsTransmogRoot(options) then
     TransmogUI.rootSlotOptions = BuildRootSlotOptionMap(options)
   end
@@ -315,6 +342,7 @@ local function BuildSlotButtons(options)
     if not button then
       button = CreateFrame("Button", nil, leftPane)
       button:SetSize(40, 40)
+      button:SetFrameLevel(leftPane:GetFrameLevel() + 5)
       button.icon = button:CreateTexture(nil, "ARTWORK")
       button.icon:SetAllPoints(button)
       button.border = button:CreateTexture(nil, "OVERLAY")
@@ -330,6 +358,7 @@ local function BuildSlotButtons(options)
           return
         end
         TransmogUI.selectedSlot = self.slotLabel
+        selectedSlotText:SetText(self.slotLabel .. " 선택됨")
         SetStatus(self.slotLabel .. " 형상 목록을 불러오는 중입니다.")
         SelectGossip(self.optionIndex)
       end)
@@ -451,6 +480,7 @@ local function OpenForGossip()
   end
 
   TransmogUI:Show()
+  selectedSlotText:SetText("장비칸을 선택하세요.")
   BuildSlotButtons(options)
   RenderGossipList(options)
   ConcealDefaultPanels()
@@ -463,6 +493,7 @@ end)
 TransmogUI:SetScript("OnHide", function()
   CloseNpcWindows()
   TransmogUI.selectedSlot = nil
+  selectedSlotText:SetText("장비칸을 선택하세요.")
 end)
 
 TransmogUI:RegisterEvent("GOSSIP_SHOW")
