@@ -29,8 +29,7 @@ public:
         if (!sBlackMarket->SendCurrentLocationMail(player))
             return true;
 
-        player->DestroyItemCount(BLACKMARKET_TRACKER_ITEM, 1, true);
-        return true;
+        return false;
     }
 };
 

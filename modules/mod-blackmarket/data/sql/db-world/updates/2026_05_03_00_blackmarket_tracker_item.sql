@@ -15,7 +15,7 @@ SET
     `InventoryType` = 0,
     `spellid_1` = 51347,
     `spelltrigger_1` = 0,
-    `spellcharges_1` = 0,
+    `spellcharges_1` = -1,
     `spellcooldown_1` = 0,
     `spellcategory_1` = 11,
     `spellcategorycooldown_1` = 1000,
