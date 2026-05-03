@@ -1155,8 +1155,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         {
             if (i == TEMP_ENCHANTMENT_SLOT || 
                 i == BONUS_ENCHANTMENT_SLOT ||
-                i >= PROP_ENCHANTMENT_SLOT_0 ||
-                (i >= SOCK_ENCHANTMENT_SLOT && i < SOCK_ENCHANTMENT_SLOT + MAX_ITEM_PROTO_SOCKETS))
+                i >= PROP_ENCHANTMENT_SLOT_0)
             {
                 continue;
             }
