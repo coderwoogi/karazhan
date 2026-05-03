@@ -39,7 +39,7 @@ local function CreateLabel(parent, template, size, r, g, b, justify)
 end
 
 local Frame = CreateFrame("Frame", "HeroStoneUIFrame", UIParent)
-Frame:SetSize(600, 378)
+Frame:SetSize(760, 520)
 Frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 Frame:SetClampedToScreen(true)
 Frame:EnableMouse(true)
@@ -75,13 +75,14 @@ Frame.state = {
 local title = CreateLabel(
   Frame,
   "GameFontHighlightLarge",
-  20,
+  22,
   0.96,
   0.84,
   0.30,
   "CENTER"
 )
 title:SetPoint("TOP", Frame, "TOP", 0, -18)
+title:SetWidth(660)
 
 local subtitle = CreateLabel(
   Frame,
@@ -93,13 +94,14 @@ local subtitle = CreateLabel(
   "CENTER"
 )
 subtitle:SetPoint("TOP", title, "BOTTOM", 0, -4)
+subtitle:SetWidth(660)
 
 local close = CreateFrame("Button", nil, Frame, "UIPanelCloseButton")
 close:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -10, -10)
 
 local leftPane = CreateFrame("Frame", nil, Frame)
 leftPane:SetPoint("TOPLEFT", Frame, "TOPLEFT", 20, -52)
-leftPane:SetSize(220, 300)
+leftPane:SetSize(292, 430)
 
 local leftHeader = CreateLabel(
   leftPane,
@@ -135,12 +137,12 @@ leftScroll:SetPoint("TOPLEFT", leftPane, "TOPLEFT", 4, -34)
 leftScroll:SetPoint("BOTTOMRIGHT", leftPane, "BOTTOMRIGHT", -28, 4)
 
 local leftContent = CreateFrame("Frame", nil, leftScroll)
-leftContent:SetSize(188, 1)
+leftContent:SetSize(252, 1)
 leftScroll:SetScrollChild(leftContent)
 
 local rightPane = CreateFrame("Frame", nil, Frame)
 rightPane:SetPoint("TOPRIGHT", Frame, "TOPRIGHT", -20, -52)
-rightPane:SetSize(336, 300)
+rightPane:SetSize(424, 430)
 
 local rightBg = rightPane:CreateTexture(nil, "BACKGROUND")
 rightBg:SetTexture("Interface\\Buttons\\WHITE8x8")
@@ -182,7 +184,7 @@ local infoTitle = CreateLabel(
   0.86
 )
 infoTitle:SetPoint("TOPLEFT", iconFrame, "TOPRIGHT", 12, -2)
-infoTitle:SetWidth(236)
+infoTitle:SetWidth(310)
 
 local infoSubtitle = CreateLabel(
   rightPane,
@@ -193,7 +195,7 @@ local infoSubtitle = CreateLabel(
   0.34
 )
 infoSubtitle:SetPoint("TOPLEFT", infoTitle, "BOTTOMLEFT", 0, -4)
-infoSubtitle:SetWidth(236)
+infoSubtitle:SetWidth(310)
 
 local gaugeLabel = CreateLabel(
   rightPane,
@@ -208,6 +210,7 @@ gaugeLabel:SetText("구독 상태")
 
 local gaugeBg = CreateFrame("Frame", nil, rightPane)
 gaugeBg:SetSize(304, 18)
+gaugeBg:SetWidth(392)
 gaugeBg:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -116)
 gaugeBg:SetBackdrop({
   bgFile = "Interface\\Buttons\\WHITE8x8",
@@ -263,6 +266,8 @@ local bodyText = CreateLabel(
 )
 bodyText:SetPoint("TOPLEFT", rightPane, "TOPLEFT", 16, -182)
 bodyText:SetPoint("TOPRIGHT", rightPane, "TOPRIGHT", -16, -182)
+bodyText:SetPoint("BOTTOMRIGHT", rightPane, "BOTTOMRIGHT", -16, 56)
+bodyText:SetHeight(190)
 bodyText:SetJustifyH("LEFT")
 if bodyText.SetWordWrap then
   bodyText:SetWordWrap(true)
@@ -284,8 +289,8 @@ Frame.buttons = {}
 
 local function CreateListButton(index)
   local button = CreateFrame("Button", nil, leftContent)
-  button:SetSize(188, 60)
-  button:SetPoint("TOPLEFT", leftContent, "TOPLEFT", 0, -((index - 1) * 64))
+  button:SetSize(252, 72)
+  button:SetPoint("TOPLEFT", leftContent, "TOPLEFT", 0, -((index - 1) * 78))
   button:SetBackdrop({
     bgFile = "Interface\\Buttons\\WHITE8x8",
     edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
@@ -315,8 +320,8 @@ local function CreateListButton(index)
     0.25
   )
   button.name:SetPoint("TOPLEFT", button.iconBg, "TOPRIGHT", 10, -2)
-  button.name:SetWidth(134)
-  button.name:SetHeight(28)
+  button.name:SetWidth(194)
+  button.name:SetHeight(30)
   if button.name.SetWordWrap then
     button.name:SetWordWrap(true)
   end
@@ -330,8 +335,8 @@ local function CreateListButton(index)
     0.72
   )
   button.meta:SetPoint("TOPLEFT", button.name, "BOTTOMLEFT", 0, -2)
-  button.meta:SetWidth(134)
-  button.meta:SetHeight(24)
+  button.meta:SetWidth(194)
+  button.meta:SetHeight(30)
   if button.meta.SetWordWrap then
     button.meta:SetWordWrap(true)
   end
@@ -358,7 +363,7 @@ end
 
 local function UpdateGauge()
   local value = math.min(Frame.state.remainDays or 0, 30)
-  local totalWidth = 300
+  local totalWidth = 388
   local width = math.max(1, math.floor((value / 30) * totalWidth))
 
   if Frame.state.remainDays > 0 then
@@ -390,7 +395,7 @@ local function RefreshList()
   if count < 1 then
     count = 1
   end
-  leftContent:SetHeight((count * 64) - 4)
+  leftContent:SetHeight((count * 78) - 6)
 
   for index, button in ipairs(Frame.buttons) do
     local item = Frame.state.items[index]
