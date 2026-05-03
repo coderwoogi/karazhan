@@ -666,6 +666,12 @@ uint8 ItemKarazhanMgr::GetItemEnhanceType(Item const* item) const
     if (!item)
         return ENHANCE_TYPE_NONE;
 
+    uint8 randomPropertyType =
+        GetEnhanceTypeByRandomProperty(item->GetItemRandomPropertyId());
+    if (randomPropertyType != ENHANCE_TYPE_NONE)
+        return randomPropertyType;
+
+    // Legacy fallback for items enhanced before random property based storage.
     uint32 enchantId = item->GetEnchantmentId(
         static_cast<EnchantmentSlot>(SOCK_ENCHANTMENT_SLOT + 3));
 
@@ -688,6 +694,20 @@ uint8 ItemKarazhanMgr::GetItemEnhanceType(Item const* item) const
                 break;
         }
     }
+
+    return ENHANCE_TYPE_NONE;
+}
+
+uint8 ItemKarazhanMgr::GetEnhanceTypeByRandomProperty(
+    int32 randomPropertyId) const
+{
+    if (randomPropertyId == 0)
+        return ENHANCE_TYPE_NONE;
+
+    int32 propertyId = randomPropertyId < 0 ? -randomPropertyId : randomPropertyId;
+    for (auto const& pair : _enchantConfigs)
+        if (pair.second.randomPropertyId == propertyId)
+            return pair.second.enhanceType;
 
     return ENHANCE_TYPE_NONE;
 }
@@ -1070,6 +1090,8 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         for (uint8 i = 0; i < MAX_ENCHANTMENT_SLOT; ++i)
         {
             if (i == TEMP_ENCHANTMENT_SLOT || 
+                i == BONUS_ENCHANTMENT_SLOT ||
+                i >= PROP_ENCHANTMENT_SLOT_0 ||
                 (i >= SOCK_ENCHANTMENT_SLOT && i < SOCK_ENCHANTMENT_SLOT + MAX_ITEM_PROTO_SOCKETS))
             {
                 continue;
@@ -1087,32 +1109,10 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
             }
         }
 
-        // ========================================
-        // STEP 8: Apply enhancement enchant
-        // ========================================
-        uint32 spellId = pending.config.spellId;
-        if (spellId > 0)
-        {
-            if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId))
-            {
-                for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
-                {
-                    if (spellInfo->Effects[i].Effect == SPELL_EFFECT_ENCHANT_ITEM ||
-                        spellInfo->Effects[i].Effect == SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY)
-                    {
-                        uint32 enchantId = spellInfo->Effects[i].MiscValue;
-                        if (enchantId > 0)
-                        {
-                            EnchantmentSlot slot = static_cast<EnchantmentSlot>(SOCK_ENCHANTMENT_SLOT + 3);
-                            newItem->SetEnchantment(slot, enchantId, 0, 0, player->GetGUID());
-                            LOG_INFO("module", "Karazhan: Enhancement enchant {} applied for type {}",
-                                enchantId, GetEnhanceTypeName(pending.enhanceType));
-                        }
-                        break;
-                    }
-                }
-            }
-        }
+        // Enhancement stats are applied by ItemRandomProperties. Slot 5 is
+        // reserved for the item's socket bonus and is updated when gems change.
+        LOG_INFO("module", "Karazhan: Enhancement random property {} applied for type {}",
+            randomPropId, GetEnhanceTypeName(pending.enhanceType));
 
         newItem->SetState(ITEM_CHANGED, player);
 

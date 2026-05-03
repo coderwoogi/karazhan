@@ -169,6 +169,7 @@ private:
     Item* CreateItemWithRandomProperty(Player* player, uint32 entry, int32 randomPropertyId);
     bool RestoreItemState(Item* newItem, ItemStateBackup const& backup, Player* player);
     uint16 MakeEnchantConfigKey(uint8 level, uint8 enhanceType) const;
+    uint8 GetEnhanceTypeByRandomProperty(int32 randomPropertyId) const;
 
     std::unordered_map<uint8, KarazhanSlotConfig> _slotConfigs;
     std::unordered_map<uint16, KarazhanEnchantConfig> _enchantConfigs;
