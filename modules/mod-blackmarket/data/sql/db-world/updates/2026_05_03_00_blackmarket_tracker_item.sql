@@ -9,5 +9,11 @@ SET
     `name` = '암상인 추적기',
     `description` = '사용 시 현재 암상인의 위치 정보를 우편으로 받습니다.',
     `InventoryType` = 0,
+    `spellid_1` = 46797,
+    `spelltrigger_1` = 0,
+    `spellcharges_1` = 0,
+    `spellcooldown_1` = -1,
+    `spellcategory_1` = 0,
+    `spellcategorycooldown_1` = -1,
     `ScriptName` = 'item_blackmarket_tracker'
 WHERE `entry` = 600025;
