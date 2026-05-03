@@ -212,10 +212,12 @@ local function ConcealDefaultPanels()
   if GossipFrame and GossipFrame:IsShown() then
     GossipFrame:SetAlpha(0)
     GossipFrame:EnableMouse(false)
+    GossipFrame:Hide()
   end
   if MerchantFrame and MerchantFrame:IsShown() then
     MerchantFrame:SetAlpha(0)
     MerchantFrame:EnableMouse(false)
+    MerchantFrame:Hide()
   end
 end
 
