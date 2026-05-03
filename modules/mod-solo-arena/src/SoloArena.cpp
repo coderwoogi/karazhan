@@ -3934,8 +3934,6 @@ void SoloArenaMgr::Update(uint32 diff)
                 }
 
                 FinishSession(player, session);
-                if (session.State != SessionState::AwaitingReturn)
-                    toErase.push_back(playerKey);
                 break;
             case SessionState::AwaitingReturn:
                 break;
@@ -5148,7 +5146,15 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
     LogEvent(player, session, "RUN_FINISHED");
     session.State = SessionState::AwaitingReturn;
     SendTrialTimePayload(player, session, true);
-    SendResultPayload(player, session);
+
+    ArenaSession resultSession = session;
+    if (ReturnPlayer(player))
+    {
+        SendResultPayload(player, resultSession);
+        return;
+    }
+
+    SendResultPayload(player, resultSession);
 }
 
 std::string SoloArenaMgr::RequestTrialTaunt(Player* player,
