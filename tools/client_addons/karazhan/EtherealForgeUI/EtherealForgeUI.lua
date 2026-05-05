@@ -1869,13 +1869,13 @@ local function ShowResultOverlay(parts)
     titleColor = { 0.30, 0.95, 0.45 }
     levelText = "+" .. tostring(currentLevel) .. " -> +" .. tostring(targetLevel)
   elseif resultType == "FAIL" then
-    ReturnToForgeHome(message ~= "" and message
-      or ("강화 실패, +" .. tostring(currentLevel) .. " 단계가 유지되었습니다."))
-    return
+    titleText = "강화 실패"
+    titleColor = { 0.95, 0.52, 0.28 }
+    levelText = "+" .. tostring(currentLevel) .. " 유지"
   elseif resultType == "DESTROYED" then
-    ReturnToForgeHome(message ~= "" and message
-      or ("강화 실패로 " .. itemName .. " 아이템이 파괴되었습니다."))
-    return
+    titleText = "아이템 파괴"
+    titleColor = { 0.95, 0.26, 0.26 }
+    levelText = "+" .. tostring(currentLevel) .. " -> 파괴"
   end
 
   resultTitle:SetTextColor(titleColor[1], titleColor[2], titleColor[3])
@@ -2072,7 +2072,7 @@ close:SetScript("OnClick", function()
 end)
 
 resultCloseButton:SetScript("OnClick", function()
-  CloseForgeWindow()
+  ReturnToForgeHome()
 end)
 
 alertConfirmButton:SetScript("OnClick", function()
