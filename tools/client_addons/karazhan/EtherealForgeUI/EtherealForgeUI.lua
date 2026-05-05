@@ -1801,6 +1801,52 @@ local function ShowBridgeInfoPage(parts)
   })
 end
 
+local function ReturnToForgeHome(message)
+  if resultOverlay then
+    resultOverlay:Hide()
+  end
+  if alertOverlay then
+    alertOverlay:Hide()
+  end
+
+  EtherealForge.state.selectedSlotId = nil
+  EtherealForge.state.selectedServerSlotId = nil
+  EtherealForge.state.selectedSlotLabel = nil
+  EtherealForge.state.selectedSlotActionIndex = nil
+  EtherealForge.state.pendingSlotId = nil
+  EtherealForge.state.pendingSlotLabel = nil
+  EtherealForge.state.pendingTypeLabel = nil
+  EtherealForge.state.pendingTypeKey = nil
+  EtherealForge.state.selectedTypeKey = nil
+
+  BuildEquipmentButtons()
+  ResetDetailPane("강화할 장비를 선택해주세요",
+    "왼쪽 장비칸 중 강화할 아이템을 선택해 주세요.")
+  ApplyDetailLines({
+    "강화 가능한 장착 장비만 선택할 수 있습니다.",
+    "장비 선택 후 강화 유형을 고르고 강화 확인 후 진행합니다.",
+    "현재 강화 수치는 장비 아이콘의 +값으로 표시됩니다.",
+  })
+  HideRequirementItems()
+  SetResultText(message or "")
+  SetStatusText(message or "강화 결과를 확인했습니다.")
+  ShowActionButtons({
+    {
+      label = "강화 안내",
+      payload = function()
+        SendForgeCommand("INFO")
+      end,
+    },
+    {
+      label = "창 닫기",
+      payload = function()
+        CloseForgeWindow()
+      end,
+    },
+  })
+  EtherealForge:Show()
+end
+
 local function ShowResultOverlay(parts)
   local resultType = parts[2] or "UNKNOWN"
   local itemName = parts[3] or "알 수 없는 장비"
@@ -1823,13 +1869,13 @@ local function ShowResultOverlay(parts)
     titleColor = { 0.30, 0.95, 0.45 }
     levelText = "+" .. tostring(currentLevel) .. " -> +" .. tostring(targetLevel)
   elseif resultType == "FAIL" then
-    titleText = "강화 실패"
-    titleColor = { 0.95, 0.52, 0.28 }
-    levelText = "+" .. tostring(currentLevel) .. " 유지"
+    ReturnToForgeHome(message ~= "" and message
+      or ("강화 실패, +" .. tostring(currentLevel) .. " 단계가 유지되었습니다."))
+    return
   elseif resultType == "DESTROYED" then
-    titleText = "아이템 파괴"
-    titleColor = { 0.95, 0.26, 0.26 }
-    levelText = "+" .. tostring(currentLevel) .. " -> 파괴"
+    ReturnToForgeHome(message ~= "" and message
+      or ("강화 실패로 " .. itemName .. " 아이템이 파괴되었습니다."))
+    return
   end
 
   resultTitle:SetTextColor(titleColor[1], titleColor[2], titleColor[3])
@@ -1841,9 +1887,6 @@ local function ShowResultOverlay(parts)
   resultSubMessageText:SetText("결과를 확인한 뒤 강화 메뉴로 돌아갈 수 있습니다.")
   resultOverlay:Show()
 
-  if resultType == "FAIL" or resultType == "DESTROYED" then
-    ShowForgeAlert(titleText, message ~= "" and message or titleText)
-  end
 end
 
 local function ApplyForgePayload(message)
