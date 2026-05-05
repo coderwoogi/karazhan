@@ -1,7 +1,0 @@
-## Interface: 30300
-## Title: Karazhan Transmog UI
-## Author: coderwoogi
-## Version: 1.0.0
-## Notes: 형상변환 NPC 전용 UI
-
-TransmogUI.lua

@@ -10,8 +10,6 @@
 !/modules/CMakeLists.txt
 !/modules/*.h
 !/modules/*.cmake
-!/modules/*/
-!/modules/*/**
 /build*/
 /var/*
 !/var/build/.gitkeep

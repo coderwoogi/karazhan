@@ -834,9 +834,6 @@ void Battleground::UpdateWorldState(uint32 variable, uint32 value)
 
 void Battleground::EndBattleground(PvPTeamId winnerTeamId)
 {
-    if (!sScriptMgr->OnBeforeBattlegroundEnd(this, GetTeamId(winnerTeamId)))
-        return;
-
     // xinef: if this is true, it means that endbattleground is called second time
     // skip to avoid double rating reduce / add
     // can bug out due to multithreading ?
