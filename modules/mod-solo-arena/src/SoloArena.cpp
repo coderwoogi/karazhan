@@ -8546,7 +8546,7 @@ namespace
         }
 
         bool CanPacketReceive(WorldSession* session,
-            WorldPacket& packet) override
+            WorldPacket const& packet) override
         {
             if (!session)
                 return true;
@@ -8584,7 +8584,8 @@ namespace
                 return true;
 
             ObjectGuid shadowGuid;
-            packet >> shadowGuid;
+            WorldPacket copy(packet);
+            copy >> shadowGuid;
 
             ShadowProfile const* profile =
                 SoloArenaMgr::Instance().GetShadowProfile(shadowGuid);

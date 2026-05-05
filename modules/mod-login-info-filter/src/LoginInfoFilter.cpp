@@ -152,24 +152,26 @@ public:
     {
     }
 
-    bool CanPacketSend(WorldSession* /*session*/, WorldPacket& packet) override
+    bool CanPacketSend(WorldSession* /*session*/, WorldPacket const& packet) override
     {
         if (!LoginInfoFilterConfig::Instance().IsEnabled())
             return true;
+
+        WorldPacket packetCopy(packet);
 
         switch (packet.GetOpcode())
         {
             case SMSG_MESSAGECHAT:
             case SMSG_GM_MESSAGECHAT:
-                if (ShouldBlockSystemChatPacket(packet))
+                if (ShouldBlockSystemChatPacket(packetCopy))
                     return false;
-                return !ShouldBlockRawPacketText(packet);
+                return !ShouldBlockRawPacketText(packetCopy);
             case SMSG_NOTIFICATION:
-                if (ShouldBlockNotificationPacket(packet))
+                if (ShouldBlockNotificationPacket(packetCopy))
                     return false;
-                return !ShouldBlockRawPacketText(packet);
+                return !ShouldBlockRawPacketText(packetCopy);
             case SMSG_AREA_TRIGGER_MESSAGE:
-                return !ShouldBlockRawPacketText(packet);
+                return !ShouldBlockRawPacketText(packetCopy);
             default:
                 return true;
         }

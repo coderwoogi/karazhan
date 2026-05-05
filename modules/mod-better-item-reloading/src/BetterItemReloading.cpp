@@ -298,7 +298,19 @@ public:
                     if (!(itemTemplate->AllowableClass & CLASSMASK_ALL_PLAYABLE))
                         LOG_ERROR("sql.sql", "Item (Entry: {}) does not have any playable classes ({}) in `AllowableClass` and can't be equipped or used.", entry, itemTemplate->AllowableClass);
 
-                    if (!(itemTemplate->AllowableRace & RACEMASK_ALL_PLAYABLE))
+                    constexpr uint32 RaceMaskAllPlayable =
+                        (1 << (RACE_HUMAN - 1)) |
+                        (1 << (RACE_ORC - 1)) |
+                        (1 << (RACE_DWARF - 1)) |
+                        (1 << (RACE_NIGHTELF - 1)) |
+                        (1 << (RACE_UNDEAD_PLAYER - 1)) |
+                        (1 << (RACE_TAUREN - 1)) |
+                        (1 << (RACE_GNOME - 1)) |
+                        (1 << (RACE_TROLL - 1)) |
+                        (1 << (RACE_BLOODELF - 1)) |
+                        (1 << (RACE_DRAENEI - 1));
+
+                    if (!(itemTemplate->AllowableRace & RaceMaskAllPlayable))
                         LOG_ERROR("sql.sql", "Item (Entry: {}) does not have any playable races ({}) in `AllowableRace` and can't be equipped or used.", entry, itemTemplate->AllowableRace);
                 }
             }

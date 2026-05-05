@@ -841,6 +841,9 @@ void Battleground::EndBattleground(PvPTeamId winnerTeamId)
     if (GetStatus() == STATUS_WAIT_LEAVE)
         return;
 
+    if (!sScriptMgr->OnBeforeBattlegroundEnd(this, GetTeamId(winnerTeamId)))
+        return;
+
     RemoveFromBGFreeSlotQueue();
     SetStatus(STATUS_WAIT_LEAVE);
     SetWinner(winnerTeamId);

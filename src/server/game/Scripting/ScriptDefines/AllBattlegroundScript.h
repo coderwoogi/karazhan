@@ -38,6 +38,7 @@ enum AllBattlegroundHook
     ALLBATTLEGROUNDHOOK_CAN_SEND_MESSAGE_BG_QUEUE,
     ALLBATTLEGROUNDHOOK_ON_BEFORE_SEND_JOIN_MESSAGE_ARENA_QUEUE,
     ALLBATTLEGROUNDHOOK_ON_BEFORE_SEND_EXIT_MESSAGE_ARENA_QUEUE,
+    ALLBATTLEGROUNDHOOK_ON_BEFORE_BATTLEGROUND_END,
     ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_END,
     ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_DESTROY,
     ALLBATTLEGROUNDHOOK_ON_BATTLEGROUND_CREATE,
@@ -70,6 +71,8 @@ public:
 
     // End Battleground
     virtual void OnBattlegroundEndReward(Battleground* /*bg*/, Player* /*player*/, TeamId /*winnerTeamId*/) { }
+
+    [[nodiscard]] virtual bool OnBeforeBattlegroundEnd(Battleground* /*bg*/, TeamId /*winnerTeamId*/) { return true; }
 
     // Update Battlegroud
     virtual void OnBattlegroundUpdate(Battleground* /*bg*/, uint32 /*diff*/) { }
