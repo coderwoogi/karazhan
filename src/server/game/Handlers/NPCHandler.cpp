@@ -764,8 +764,23 @@ void WorldSession::HandleRepairItemOpcode(WorldPacket& recvData)
 
     recvData >> npcGUID >> itemGUID >> guildBank;
 
-    Creature* unit = GetPlayer()->GetNPCIfCanInteractWith(npcGUID, UNIT_NPC_FLAG_REPAIR);
-    if (!unit)
+    uint32 const vendorEntry = GetCurrentVendor();
+    bool const virtualRepairVendor = npcGUID == GetPlayer()->GetGUID() && vendorEntry;
+    CreatureTemplate const* vendorTemplate = virtualRepairVendor
+        ? sObjectMgr->GetCreatureTemplate(vendorEntry)
+        : nullptr;
+
+    if (virtualRepairVendor &&
+        (!vendorTemplate || !(vendorTemplate->npcflag & UNIT_NPC_FLAG_REPAIR)))
+    {
+        LOG_DEBUG("network", "WORLD: HandleRepairItemOpcode - virtual vendor entry {} can not repair.", vendorEntry);
+        return;
+    }
+
+    Creature* unit = virtualRepairVendor
+        ? nullptr
+        : GetPlayer()->GetNPCIfCanInteractWith(npcGUID, UNIT_NPC_FLAG_REPAIR);
+    if (!unit && !virtualRepairVendor)
     {
         LOG_DEBUG("network", "WORLD: HandleRepairItemOpcode - Unit ({}) not found or you can not interact with him.", npcGUID.ToString());
         return;
@@ -776,7 +791,7 @@ void WorldSession::HandleRepairItemOpcode(WorldPacket& recvData)
         GetPlayer()->RemoveAurasByType(SPELL_AURA_FEIGN_DEATH);
 
     // reputation discount
-    float discountMod = _player->GetReputationPriceDiscount(unit);
+    float discountMod = virtualRepairVendor ? 1.0f : _player->GetReputationPriceDiscount(unit);
 
     sScriptMgr->OnPlayerBeforeDurabilityRepair(_player, npcGUID, itemGUID, discountMod, guildBank);
 

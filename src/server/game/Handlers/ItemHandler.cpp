@@ -580,15 +580,34 @@ void WorldSession::HandleSellItemOpcode(WorldPackets::Item::SellItem& packet)
     if (!packet.ItemGuid)
         return;
 
-    Creature* creature = GetPlayer()->GetNPCIfCanInteractWith(packet.VendorGuid, UNIT_NPC_FLAG_VENDOR);
-    if (!creature)
+    uint32 const vendorEntry = GetCurrentVendor();
+    bool const virtualVendor = packet.VendorGuid == _player->GetGUID() && vendorEntry;
+    CreatureTemplate const* vendorTemplate = virtualVendor
+        ? sObjectMgr->GetCreatureTemplate(vendorEntry)
+        : nullptr;
+
+    if (virtualVendor &&
+        (!vendorTemplate || !(vendorTemplate->npcflag & UNIT_NPC_FLAG_VENDOR)))
+    {
+        LOG_DEBUG("network", "WORLD: HandleSellItemOpcode - virtual vendor entry {} can not sell.", vendorEntry);
+        _player->SendSellError(SELL_ERR_CANT_FIND_VENDOR, nullptr, packet.ItemGuid, 0);
+        return;
+    }
+
+    Creature* creature = virtualVendor
+        ? nullptr
+        : GetPlayer()->GetNPCIfCanInteractWith(packet.VendorGuid, UNIT_NPC_FLAG_VENDOR);
+    if (!creature && !virtualVendor)
     {
         LOG_DEBUG("network", "WORLD: HandleSellItemOpcode - Unit ({}) not found or you can not interact with him.", packet.VendorGuid.ToString());
         _player->SendSellError(SELL_ERR_CANT_FIND_VENDOR, nullptr, packet.ItemGuid, 0);
         return;
     }
 
-    if (creature->HasFlagsExtra(CREATURE_FLAG_EXTRA_NO_SELL_VENDOR))
+    bool const noSellVendor = virtualVendor
+        ? vendorTemplate->HasFlagsExtra(CREATURE_FLAG_EXTRA_NO_SELL_VENDOR)
+        : creature->HasFlagsExtra(CREATURE_FLAG_EXTRA_NO_SELL_VENDOR);
+    if (noSellVendor)
     {
         _player->SendSellError(SELL_ERR_CANT_SELL_TO_THIS_MERCHANT, creature, packet.ItemGuid, 0);
         return;
@@ -747,8 +766,24 @@ void WorldSession::HandleSellItemOpcode(WorldPackets::Item::SellItem& packet)
 
 void WorldSession::HandleBuybackItem(WorldPackets::Item::BuybackItem& packet)
 {
-    Creature* creature = GetPlayer()->GetNPCIfCanInteractWith(packet.VendorGuid, UNIT_NPC_FLAG_VENDOR);
-    if (!creature)
+    uint32 const vendorEntry = GetCurrentVendor();
+    bool const virtualVendor = packet.VendorGuid == _player->GetGUID() && vendorEntry;
+    CreatureTemplate const* vendorTemplate = virtualVendor
+        ? sObjectMgr->GetCreatureTemplate(vendorEntry)
+        : nullptr;
+
+    if (virtualVendor &&
+        (!vendorTemplate || !(vendorTemplate->npcflag & UNIT_NPC_FLAG_VENDOR)))
+    {
+        LOG_DEBUG("network", "WORLD: HandleBuybackItem - virtual vendor entry {} can not buyback.", vendorEntry);
+        _player->SendSellError(SELL_ERR_CANT_FIND_VENDOR, nullptr, ObjectGuid::Empty, 0);
+        return;
+    }
+
+    Creature* creature = virtualVendor
+        ? nullptr
+        : GetPlayer()->GetNPCIfCanInteractWith(packet.VendorGuid, UNIT_NPC_FLAG_VENDOR);
+    if (!creature && !virtualVendor)
     {
         LOG_DEBUG("network", "WORLD: HandleBuybackItem - Unit ({}) not found or you can not interact with him.", packet.VendorGuid.ToString());
         _player->SendSellError(SELL_ERR_CANT_FIND_VENDOR, nullptr, ObjectGuid::Empty, 0);
@@ -857,8 +892,11 @@ void WorldSession::SendListInventory(ObjectGuid vendorGuid, uint32 vendorEntry)
 
     sScriptMgr->OnPlayerSendListInventory(GetPlayer(), vendorGuid, vendorEntry);
 
-    Creature* vendor = GetPlayer()->GetNPCIfCanInteractWith(vendorGuid, UNIT_NPC_FLAG_VENDOR);
-    if (!vendor)
+    bool const virtualVendor = vendorGuid == _player->GetGUID() && vendorEntry;
+    Creature* vendor = virtualVendor
+        ? nullptr
+        : GetPlayer()->GetNPCIfCanInteractWith(vendorGuid, UNIT_NPC_FLAG_VENDOR);
+    if (!vendor && !virtualVendor)
     {
         LOG_DEBUG("network", "WORLD: SendListInventory - Unit ({}) not found or you can not interact with him.", vendorGuid.ToString());
         _player->SendSellError(SELL_ERR_CANT_FIND_VENDOR, nullptr, ObjectGuid::Empty, 0);
@@ -871,12 +909,15 @@ void WorldSession::SendListInventory(ObjectGuid vendorGuid, uint32 vendorEntry)
         GetPlayer()->RemoveAurasByType(SPELL_AURA_FEIGN_DEATH);
     }
 
-    vendor->PauseMovementForInteraction();
+    if (vendor)
+    {
+        vendor->PauseMovementForInteraction();
 
-    // Update home position for patrolling NPCs only (prevents drift for stationary NPCs)
-    if (vendor->GetDefaultMovementType() == WAYPOINT_MOTION_TYPE ||
-        vendor->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
-        vendor->SetHomePosition(vendor->GetPosition());
+        // Update home position for patrolling NPCs only (prevents drift for stationary NPCs)
+        if (vendor->GetDefaultMovementType() == WAYPOINT_MOTION_TYPE ||
+            vendor->GetMotionMaster()->GetCurrentMovementGeneratorType() == WAYPOINT_MOTION_TYPE)
+            vendor->SetHomePosition(vendor->GetPosition());
+    }
 
     SetCurrentVendor(vendorEntry);
 
@@ -900,7 +941,7 @@ void WorldSession::SendListInventory(ObjectGuid vendorGuid, uint32 vendorEntry)
     std::size_t countPos = data.wpos();
     data << uint8(count);
 
-    float discountMod = _player->GetReputationPriceDiscount(vendor);
+    float discountMod = virtualVendor ? 1.0f : _player->GetReputationPriceDiscount(vendor);
 
     for (uint8 slot = 0; slot < itemCount; ++slot)
     {
@@ -920,16 +961,29 @@ void WorldSession::SendListInventory(ObjectGuid vendorGuid, uint32 vendorEntry)
                 }
 
                 // Items sold out are not displayed in list
-                uint32 leftInStock = !item->maxcount ? 0xFFFFFFFF : vendor->GetVendorItemCurrentCount(item);
+                uint32 leftInStock = !item->maxcount
+                    ? 0xFFFFFFFF
+                    : (virtualVendor ? item->maxcount : vendor->GetVendorItemCurrentCount(item));
                 if (!_player->IsGameMaster() && !leftInStock)
                 {
                     continue;
                 }
 
-                ConditionList conditions = sConditionMgr->GetConditionsForNpcVendorEvent(vendor->GetEntry(), item->item);
-                if (!sConditionMgr->IsObjectMeetToConditions(_player, vendor, conditions))
+                uint32 conditionVendorEntry = vendorEntry
+                    ? vendorEntry
+                    : vendor->GetEntry();
+                ConditionList conditions =
+                    sConditionMgr->GetConditionsForNpcVendorEvent(
+                        conditionVendorEntry, item->item);
+                bool conditionsMet = virtualVendor
+                    ? sConditionMgr->IsObjectMeetToConditions(_player, conditions)
+                    : sConditionMgr->IsObjectMeetToConditions(
+                        _player, vendor, conditions);
+                if (!conditionsMet)
                 {
-                    LOG_DEBUG("network", "SendListInventory: conditions not met for creature entry {} item {}", vendor->GetEntry(), item->item);
+                    LOG_DEBUG("network",
+                              "SendListInventory: conditions not met for creature entry {} item {}",
+                              conditionVendorEntry, item->item);
                     continue;
                 }
 

@@ -6,12 +6,16 @@
 #include "Player.h"
 #include "ScriptedGossip.h"
 #include "Item.h"
+#include "ItemScript.h"
 #include "ItemKarazhan.h"
 #include "Chat.h"
 #include "DatabaseEnv.h"
+#include "SpellMgr.h"
+#include "WorldSession.h"
 #include <sstream>
 #include <iomanip>
 #include <unordered_map>
+#include <vector>
 #include "StringFormat.h"
 
 namespace
@@ -21,7 +25,10 @@ namespace
     constexpr uint8 ENHANCE_TYPE_CASTER = 2;
     constexpr uint8 ENHANCE_TYPE_HEALER = 3;
     constexpr uint8 ENHANCE_TYPE_TANK = 4;
-    
+
+    uint32 constexpr FORGE_NPC_ENTRY = 190014;
+    char const* FORGE_UI_PREFIX = "KARAZHAN_FORGE_UI";
+    char const* FORGE_CMD_PREFIX = "KARAZHAN_FORGE_CMD";
 }
 
 enum GossipActions
@@ -61,6 +68,343 @@ static bool DecodeTypedAction(uint32 action, uint32 baseAction,
         return false;
 
     enhanceType = static_cast<uint8>(typeValue);
+    return true;
+}
+
+static std::string SanitizeForgeField(std::string text, size_t maxLen)
+{
+    std::replace(text.begin(), text.end(), '\t', ' ');
+    std::replace(text.begin(), text.end(), '\n', ' ');
+    std::replace(text.begin(), text.end(), '\r', ' ');
+    std::replace(text.begin(), text.end(), '^', '/');
+    std::replace(text.begin(), text.end(), '|', '/');
+
+    if (text.size() > maxLen)
+        text.resize(maxLen);
+
+    return text;
+}
+
+static std::vector<std::string> SplitForge(std::string const& text, char delim)
+{
+    std::vector<std::string> parts;
+    std::stringstream ss(text);
+    std::string item;
+
+    while (std::getline(ss, item, delim))
+        parts.push_back(item);
+
+    return parts;
+}
+
+static bool IsForgeAddonPayload(std::string const& msg)
+{
+    if (msg.empty())
+        return false;
+
+    if (msg.rfind(Acore::StringFormat("{}\t", FORGE_CMD_PREFIX), 0) == 0)
+        return true;
+
+    std::vector<std::string> parts = SplitForge(msg, '\t');
+    if (parts.empty())
+        return false;
+
+    std::string const& command = parts[0];
+    return command == "OPEN"
+        || command == "INFO"
+        || command == "SLOT"
+        || command == "TYPE"
+        || command == "DO";
+}
+
+static void SendForgePayload(Player* player, std::string const& payload)
+{
+    if (!player || !player->GetSession())
+        return;
+
+    std::string fullMessage = std::string(FORGE_UI_PREFIX) + "\t" + payload;
+
+    WorldPacket data(SMSG_MESSAGECHAT, 100);
+    data << uint8(CHAT_MSG_WHISPER);
+    data << int32(LANG_ADDON);
+    data << player->GetGUID();
+    data << uint32(0);
+    data << player->GetGUID();
+    data << uint32(fullMessage.length() + 1);
+    data << fullMessage;
+    data << uint8(0);
+    player->GetSession()->SendPacket(&data);
+}
+
+static char const* GetForgeTypeToken(uint8 enhanceType)
+{
+    switch (enhanceType)
+    {
+        case ENHANCE_TYPE_MELEE:
+            return "melee";
+        case ENHANCE_TYPE_CASTER:
+            return "caster";
+        case ENHANCE_TYPE_HEALER:
+            return "healer";
+        case ENHANCE_TYPE_TANK:
+            return "tank";
+        default:
+            return "";
+    }
+}
+
+static uint8 ParseForgeTypeToken(std::string const& token)
+{
+    if (token == "melee")
+        return ENHANCE_TYPE_MELEE;
+    if (token == "caster")
+        return ENHANCE_TYPE_CASTER;
+    if (token == "healer")
+        return ENHANCE_TYPE_HEALER;
+    if (token == "tank")
+        return ENHANCE_TYPE_TANK;
+    return ENHANCE_TYPE_NONE;
+}
+
+static bool TryGetForgeItem(Player* player, uint8 slot, Item*& item,
+    ItemTemplate const*& proto, uint8& currentLevel, uint8& maxLevel,
+    uint8& currentType, bool& lockedType, std::string& itemName)
+{
+    item = player ? player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot) : nullptr;
+    if (!item)
+        return false;
+
+    proto = item->GetTemplate();
+    if (!proto)
+        return false;
+
+    if (!sItemKarazhanMgr->CanEnhanceSlot(proto->InventoryType))
+        return false;
+
+    currentLevel = sItemKarazhanMgr->GetItemEnhanceLevel(
+        item->GetGUID().GetCounter());
+    maxLevel = sItemKarazhanMgr->GetMaxEnhanceLevel(proto->InventoryType);
+    currentType = sItemKarazhanMgr->GetItemEnhanceType(item);
+    lockedType = currentLevel > 0 && currentType != ENHANCE_TYPE_NONE;
+    itemName = sItemKarazhanMgr->GetItemNameLocale(item->GetEntry(), player);
+
+    return currentLevel < maxLevel;
+}
+
+static void SendForgeInfo(Player* player)
+{
+    std::ostringstream payload;
+    payload << "INFO\t"
+            << "장착 중인 장비를 강화할 수 있습니다.^"
+            << "무기는 최대 +100 강화.^"
+            << "방어구는 최대 +50 강화.^"
+            << "장신구는 최대 +30 강화.^"
+            << "강화 단계가 올라갈수록 성공 확률이 낮아집니다.^"
+            << "일부 단계에서는 실패 시 아이템이 파괴될 수 있습니다.";
+    SendForgePayload(player, payload.str());
+}
+
+static void SendForgeTypePage(Player* player, uint8 slot)
+{
+    Item* item = nullptr;
+    ItemTemplate const* proto = nullptr;
+    uint8 currentLevel = 0;
+    uint8 maxLevel = 0;
+    uint8 currentType = ENHANCE_TYPE_NONE;
+    bool lockedType = false;
+    std::string itemName;
+
+    if (!TryGetForgeItem(player, slot, item, proto, currentLevel, maxLevel,
+            currentType, lockedType, itemName))
+    {
+        SendForgePayload(player, "ERROR\t강화 가능한 장비가 아닙니다.");
+        return;
+    }
+
+    std::vector<std::string> allowedTypes;
+    if (lockedType)
+    {
+        allowedTypes.push_back(GetForgeTypeToken(currentType));
+    }
+    else
+    {
+        allowedTypes.push_back("melee");
+        allowedTypes.push_back("caster");
+        allowedTypes.push_back("healer");
+        allowedTypes.push_back("tank");
+    }
+
+    std::ostringstream allowed;
+    for (size_t i = 0; i < allowedTypes.size(); ++i)
+    {
+        if (i)
+            allowed << ",";
+        allowed << allowedTypes[i];
+    }
+
+    std::ostringstream payload;
+    payload << "TYPE\t"
+            << uint32(slot) << "\t"
+            << SanitizeForgeField(itemName, 64) << "\t"
+            << uint32(currentLevel) << "\t"
+            << uint32(maxLevel) << "\t"
+            << allowed.str() << "\t"
+            << SanitizeForgeField(
+                currentLevel > 0
+                    ? Acore::StringFormat("현재 강화: +{} / 최대 +{}",
+                        uint32(currentLevel), uint32(maxLevel))
+                    : Acore::StringFormat("최대 강화: +{}",
+                        uint32(maxLevel)),
+                64);
+
+    SendForgePayload(player, payload.str());
+}
+
+static void SendForgeConfirmPage(Player* player, uint8 slot, uint8 enhanceType)
+{
+    Item* item = nullptr;
+    ItemTemplate const* proto = nullptr;
+    uint8 currentLevel = 0;
+    uint8 maxLevel = 0;
+    uint8 currentType = ENHANCE_TYPE_NONE;
+    bool lockedType = false;
+    std::string itemName;
+
+    if (!TryGetForgeItem(player, slot, item, proto, currentLevel, maxLevel,
+            currentType, lockedType, itemName))
+    {
+        SendForgePayload(player, "ERROR\t강화 가능한 장비가 아닙니다.");
+        return;
+    }
+
+    if (lockedType && currentType != enhanceType)
+    {
+        SendForgePayload(player,
+            "ERROR\t이미 강화된 장비는 기존 유형으로만 강화할 수 있습니다.");
+        return;
+    }
+
+    uint8 targetLevel = currentLevel + 1;
+    KarazhanEnchantConfig const* config =
+        sItemKarazhanMgr->GetEnchantConfig(targetLevel, enhanceType);
+    if (!config)
+    {
+        SendForgePayload(player, "ERROR\t해당 강화 설정을 찾을 수 없습니다.");
+        return;
+    }
+
+    std::ostringstream payload;
+    payload << "CONFIRM\t"
+            << uint32(slot) << "\t"
+            << SanitizeForgeField(itemName, 64) << "\t"
+            << uint32(currentLevel) << "\t"
+            << uint32(targetLevel) << "\t"
+            << uint32(maxLevel) << "\t"
+            << GetForgeTypeToken(enhanceType) << "\t"
+            << SanitizeForgeField(
+                sItemKarazhanMgr->GetEnhanceTypeName(enhanceType), 16) << "\t"
+            << std::fixed << std::setprecision(1) << config->successRate << "\t"
+            << config->goldCost << "\t"
+            << config->material1 << "\t"
+            << config->material1Count << "\t"
+            << SanitizeForgeField(
+                config->material1
+                    ? sItemKarazhanMgr->GetItemNameLocale(config->material1,
+                        player)
+                    : "",
+                64) << "\t"
+            << config->material2 << "\t"
+            << config->material2Count << "\t"
+            << SanitizeForgeField(
+                config->material2
+                    ? sItemKarazhanMgr->GetItemNameLocale(config->material2,
+                        player)
+                    : "",
+                64) << "\t"
+            << config->material3 << "\t"
+            << config->material3Count << "\t"
+            << SanitizeForgeField(
+                config->material3
+                    ? sItemKarazhanMgr->GetItemNameLocale(config->material3,
+                        player)
+                    : "",
+                64);
+
+    SendForgePayload(player, payload.str());
+}
+
+static bool HandleForgeAddonCommand(Player* player, std::string const& msg)
+{
+    if (!player)
+        return false;
+
+    std::string prefix = Acore::StringFormat("{}\t", FORGE_CMD_PREFIX);
+    std::string payload = msg;
+    if (msg.rfind(prefix, 0) == 0)
+        payload = msg.substr(prefix.size());
+
+    std::vector<std::string> parts = SplitForge(payload, '\t');
+    if (parts.empty())
+        return true;
+
+    std::string const& command = parts[0];
+    LOG_INFO("module",
+        "Karazhan Forge: addon cmd player={} command={} raw={} payload={}",
+        player->GetName(), command, msg, payload);
+    if (command == "OPEN")
+    {
+        SendForgePayload(player, "OPEN\tREADY");
+        return true;
+    }
+
+    if (command == "INFO")
+    {
+        SendForgeInfo(player);
+        return true;
+    }
+
+    if (command == "SLOT" && parts.size() >= 2)
+    {
+        SendForgeTypePage(player, uint8(std::stoul(parts[1])));
+        return true;
+    }
+
+    if (command == "TYPE" && parts.size() >= 3)
+    {
+        uint8 slot = uint8(std::stoul(parts[1]));
+        uint8 enhanceType = ParseForgeTypeToken(parts[2]);
+        if (enhanceType == ENHANCE_TYPE_NONE)
+        {
+            SendForgePayload(player, "ERROR\t잘못된 강화 유형입니다.");
+            return true;
+        }
+
+        SendForgeConfirmPage(player, slot, enhanceType);
+        return true;
+    }
+
+    if (command == "DO" && parts.size() >= 3)
+    {
+        uint8 slot = uint8(std::stoul(parts[1]));
+        uint8 enhanceType = ParseForgeTypeToken(parts[2]);
+        if (enhanceType == ENHANCE_TYPE_NONE)
+        {
+            SendForgePayload(player, "ERROR\t잘못된 강화 유형입니다.");
+            return true;
+        }
+
+        Item* item = player->GetItemByPos(INVENTORY_SLOT_BAG_0, slot);
+        if (!item)
+        {
+            SendForgePayload(player, "ERROR\t아이템을 찾을 수 없습니다.");
+            return true;
+        }
+
+        sItemKarazhanMgr->RequestEnhancement(player, item, enhanceType);
+        SendForgePayload(player, "RESULT\tREQUESTED");
+        return true;
+    }
+
     return true;
 }
 
@@ -523,7 +867,108 @@ private:
     }
 };
 
+class item_karazhan_forge_playerscript : public PlayerScript
+{
+public:
+    item_karazhan_forge_playerscript()
+        : PlayerScript("item_karazhan_forge_playerscript")
+    {
+    }
+
+    bool OnPlayerCanUseChat(Player* player, uint32 /*type*/,
+        uint32 language, std::string& msg) override
+    {
+        if (!player || language != LANG_ADDON)
+            return true;
+
+        if (!IsForgeAddonPayload(msg))
+            return true;
+
+        return !HandleForgeAddonCommand(player, msg);
+    }
+
+    bool OnPlayerCanUseChat(Player* player, uint32 /*type*/,
+        uint32 language, std::string& msg, Player* /*receiver*/) override
+    {
+        if (!player || language != LANG_ADDON)
+            return true;
+
+        if (!IsForgeAddonPayload(msg))
+            return true;
+
+        return !HandleForgeAddonCommand(player, msg);
+    }
+
+};
+
+class item_karazhan_mount_collection : public ItemScript
+{
+public:
+    item_karazhan_mount_collection()
+        : ItemScript("item_karazhan_mount_collection")
+    {
+    }
+
+    bool OnUse(Player* player, Item* item,
+        SpellCastTargets const& /*targets*/) override
+    {
+        if (!player || !item)
+            return true;
+
+        ChatHandler handler(player->GetSession());
+        QueryResult result = WorldDatabase.Query(
+            "SELECT `spell_id` FROM `karazhan_mount_collection_spell` "
+            "ORDER BY `spell_id`");
+
+        if (!result)
+        {
+            handler.PSendSysMessage(
+                "|cffff0000탈것 도감 데이터가 없습니다. DB 업데이트를 확인하세요.|r");
+            return true;
+        }
+
+        uint32 learnedCount = 0;
+        uint32 knownCount = 0;
+        uint32 invalidCount = 0;
+
+        do
+        {
+            Field* fields = result->Fetch();
+            uint32 spellId = fields[0].Get<uint32>();
+
+            if (!sSpellMgr->GetSpellInfo(spellId))
+            {
+                ++invalidCount;
+                continue;
+            }
+
+            if (player->HasSpell(spellId))
+            {
+                ++knownCount;
+                continue;
+            }
+
+            player->learnSpell(spellId);
+            ++learnedCount;
+        } while (result->NextRow());
+
+        std::ostringstream message;
+        message << "|cff00ff00카라잔 탈것 도감: "
+                << learnedCount << "개 습득, "
+                << knownCount << "개 이미 보유";
+        if (invalidCount)
+            message << ", " << invalidCount << "개 주문 누락";
+        message << ".|r";
+        handler.PSendSysMessage(message.str().c_str());
+
+        player->DestroyItemCount(item->GetEntry(), 1, true);
+        return true;
+    }
+};
+
 void Add_SC_npc_item_karazhan()
 {
     new npc_item_karazhan();
+    new item_karazhan_forge_playerscript();
+    new item_karazhan_mount_collection();
 }

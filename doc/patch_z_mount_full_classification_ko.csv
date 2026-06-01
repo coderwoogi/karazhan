@@ -1,0 +1,354 @@
+﻿model_id,model_path,display_count,display_ids,reflected,status_detail,mount_type,reason
+900003,Creature\AllianceShipMount\allianceshipmount.m2,2,"900003,900103",반영됨,910003:스톰윈드 스카이체이서; 930003:사나운 전투사자 (구리색),날탈,Skychaser/ship mount 계열
+900004,Creature\CelestialSerpent\CelestialSerpentMount.M2,2,"900004,900104",반영됨,910004:천공의 운룡; 930004:사나운 전투사자 (붉은색),날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900006,Creature\DarkPhoenix\DarkPhoenixMount_Spectral.M2,2,"900006,900106",반영됨,910006:암흙 불사조; 930006:스톰윈드 스카이체이서,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900046,Creature\dragonhawk\dragonhawkarmormountalliance.m2,2,"900060,900160",반영됨,910060:크림슨 드래곤호크 (얼라이언스 장갑형); 930060:붉은 비룡 (붉은색),날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900047,Creature\dragonhawk\dragonhawkarmormounthorde.m2,2,"900061,900161",반영됨,910061:크림슨 드래곤호크 (호드 장갑형); 930061:X-53 순회 로켓,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900008,Creature\dragonhawk\dragonhawkmount.m2,18,"900008,900052,900053,900054,900055,900056,900057,900058,900059,900108,900152,900153,900154,900155,900156,900157,900158,900159",반영됨,910008:크림슨 드래곤호크; 910052:크림슨 드래곤호크 (스킨01); 910053:크림슨 드래곤호크 (스킨02); 910054:크림슨 드래곤호크 (스킨03); 910055:크림슨 드래곤호크 (스킨04); 910056:크림슨 드래곤호크 (스킨05) ...,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900009,Creature\faeriedragonmount\faeriedragonmount.m2,6,"900009,900062,900063,900109,900162,900163",반영됨,910009:마력 깃든 요정용; 910062:마력 깃든 요정용 (색상 02); 910063:마력 깃든 요정용 (색상 03); 930009:암흑 불사조; 930062:X-53 순회 로켓; 930063:호랑이탈것,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900017,Creature\hordezeppelinmount\hordezeppelinmount.m2,2,"900017,900117",반영됨,910017:사나운; 930017:크림슨 드래곤호크 (색상 3),날탈,Zeppelin mount 계열
+900018,Creature\magemount_arcane\magemount_arcane.m2,2,"900018,900118",반영됨,910018:대마법사의 무지개원반; 930018:크림슨 드래곤호크 (색상 4),날탈,Mage disc mount 계열
+900019,Creature\magemount_fire\magemount_fire.m2,2,"900019,900119",반영됨,910019:대마법사의 무지개원반; 930019:크림슨 드래곤호크 (색상 5),날탈,Mage disc mount 계열
+900020,Creature\magemount_frost\magemount_frost.m2,2,"900020,900120",반영됨,910020:대마법사의 무지개원반; 930020:크림슨 드래곤호크 (색상 6),날탈,Mage disc mount 계열
+900024,Creature\PandarenPhoenixMount\PandarenPhoenixMount.M2,8,"900024,900067,900068,900069,900124,900167,900168,900169",반영됨,910024:판다렌 불사조; 910067:잿가죽 무산야수; 910068:판다렌 불사조 (보라색); 910069:판다렌 불사조 (붉은색); 930024:크림슨 드래곤호크 (호드 장갑형); 930067:공허 수정 표범 (보라색) ...,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900025,Creature\PandarenSerpent\PandarenSerpentMount.M2,10,"900025,900070,900071,900072,900073,900125,900170,900171,900172,900173",반영됨,910025:운룡; 910070:운룡 (파란색); 910071:운룡; 910072:운룡 (붉은색); 910073:운룡; 930025:마력 깃든 요정용 (기본) ...,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900048,Creature\protodragon\korkronprotodrakemount.m2,2,"900074,900174",반영됨,910074:원시비룡 (코르크론); 930074:비전술사의 마나호랑이,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900026,Creature\protodragon\mdprotodrakemount.m2,2,"900026,900126",반영됨,910026:원시비룡; 930026:마력 깃든 요정용 (색상 2),날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900027,Creature\Quilin\QuilinFlyingMount.M2,2,"900027,900127",반영됨,910027:제국의 기렌; 930027:마력 깃든 요정용 (색상 3),날탈,모델명 QuilinFlyingMount
+900029,Creature\RedDrakeMount\RedDrakeMount.M2,6,"900029,900075,900076,900129,900175,900176",반영됨,910029:붉은 비룡; 910075:붉은 비룡 (주황색); 910076:붉은 비룡 (보라색); 930029:일리다리 공포추적자; 930075:바다거북; 930076:티리엘의 군마,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900030,Creature\rocketmount3\rocketmount3.m2,2,"900030,900130",반영됨,910030:X-53 순회 로켓; 930030:일리다리 지옥추적자,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900031,Creature\rocketmount4\rocketmount4.m2,2,"900031,900131",반영됨,910031:X-53 순회 로켓; 930031:사나운 불꽃호랑이,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900033,Creature\scaleddrakemount\scaleddrakemount.m2,2,"900033,900133",반영됨,910033:비룡 계열; 930033:사나운 전투여우 (녹색),날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900038,Creature\stormcrowmount\stormcrowmount.m2,2,"900038,900138",반영됨,910038:보랏빛 마법날개; 930038:공식 탈것명 매칭,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900049,Creature\stormcrowmount_solar\stormcrowmount_arcane.m2,2,"900079,900179",반영됨,910079:태양 첨탑매 (비전); 930079:물꼬리의 고삐 (비취색),날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900039,Creature\stormcrowmount_solar\stormcrowmount_solar.m2,2,"900039,900139",반영됨,910039:태양 첨탑매; 930039:대마법사의 무지개원반 (비전),날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900042,Creature\TyraelMount\TyraelMount.M2,2,"900042,900142",반영됨,"910042:티리엘의 군마; 930042:반루, 대사부의 동무",날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900045,Creature\WingedLionMount\WingedLionMount.M2,4,"900045,900084,900145,900184",반영됨,910045:날개 달린 수호자; 910084:날개 달린 수호자 (스킨02); 930045:판다렌 불사조; 930084:날개 달린 수호자 (색상 2),날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+900005,Creature\Crane\CraneMount.M2,2,"900005,900105",반영됨,910005:크레인의 고삐; 930005:사나운 전투사자 (은색),지상탈,모델명 CraneMount: 학 탈것 계열은 지상탈로 분류
+900014,Creature\FoxMount\FoxMount.m2,2,"900014,900114",반영됨,910014:여우 탈것; 930014:크림슨 드래곤호크 (기본),지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+900016,Creature\HordeScorpionMount\HordeScorpionMount.M2,2,"900016,900116",반영됨,910016:사나운 전투전갈; 930016:크림슨 드래곤호크 (색상 2),지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+900021,Creature\monkmount\monkmount.m2,2,"900021,900121",반영됨,"910021:반루, 대사부의 동무; 930021:크림슨 드래곤호크 (색상 7)",지상탈,모델명 monkmount/Ban-Lu 계열
+900022,Creature\moosemount2nightmare\moosemount2nightmare.m2,2,"900022,900122",반영됨,910022:에체로의 영혼; 930022:크림슨 드래곤호크 (선리버),지상탈,모델명 moosemount 계열
+900023,Creature\MushanBeast\MushanBeastMount.M2,2,"900023,900123",반영됨,910023:잿가죽 무산야수; 930023:크림슨 드래곤호크 (얼라이언스 장갑형),지상탈,모델명 MushanBeast 계열
+900028,Creature\ravenlord\ravenlordmount.m2,2,"900028,900128",반영됨,910028:까마귀 군주; 930028:일리다리 지옥추적자,지상탈,까마귀 군주 계열은 WotLK 기준 지상탈
+900032,Creature\saber2\saber2mount.m2,2,"900032,900132",반영됨,910032:호랑이탈것; 930032:여우 탈것,지상탈,Saber 계열
+900036,Creature\SiberianTiger\SiberianTigerMount.M2,2,"900036,900136",반영됨,910036:겨울빙호; 930036:사나운 전투여우 (붉은색),지상탈,Tiger 계열
+900037,Creature\SkeletalRaptor\SkeletalRaptorMount.M2,2,"900037,900137",반영됨,910037:해골 랩터; 930037:사나운 전투전갈,지상탈,Raptor 계열
+900040,Creature\suramarmount\suramarmount.m2,2,"900040,900140",반영됨,910040:비전술사의 마나호랑이; 930040:대마법사의 무지개원반 (화염),지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+900043,Creature\voidelfhawkstridermount\voidelfhawkstridermount.m2,2,"900043,900143",반영됨,910043:저주받은 공허타조; 930043:에체로의 영혼,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+900034,Creature\Seahorse\SeahorseMount.M2,2,"900034,900134",반영됨,910034:순치된 해마; 930034:사나운 전투여우 (주황색),수중탈,Seahorse 계열
+900041,Creature\turtlemount\turtlemount.m2,2,"900041,900141",반영됨,910041:바다거북; 930041:대마법사의 무지개원반 (냉기),수중/지상,Sea Turtle/Turtle 계열
+900044,Creature\WaterStrider\WaterStriderMount.M2,10,"900044,900080,900081,900082,900083,900144,900180,900181,900182,900183",반영됨,910044:물꼬리의 고삐; 910080:물꼬리의 고삐 (비취색); 910081:물꼬리의 고삐 (주황색); 910082:물꼬리의 고삐 (붉은색); 910083:순치된 해마; 930044:잿가죽 무산야수 ...,수상/지상,Water Strider 계열
+900002,Creature\AlliancePVPMount\AlliancePVPMount.M2,10,"900001,900002,900046,900047,900048,900101,900102,900146,900147,900148",반영됨,910001:황금왕의 고삐; 910002:사나운 전투사자; 910046:사나운 전투사자 (구리색); 910047:사나운 전투사자 (붉은색); 910048:사나운 전투u사자 (은색); 930001:황금왕의 고삐 ...,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+900007,Creature\dragondeepholm\dragondeepholmmount.m2,8,"900007,900049,900050,900051,900107,900149,900150,900151",반영됨,910007:인광 돌 드레이크의 고삐; 910049:인광 돌 드레이크의 고삐 (주황색); 910050:인광 돌 드레이크의 고삐 (보라색); 910051:인광 돌 드레이크의 고삐 (붉은색); 930007:천공의 운룡; 930049:운룡 (검은색) ...,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+900010,Creature\felhound3_fire_mount\felhound3_fire_mount.m2,2,"900010,900110",반영됨,910010:일리다리 지옥추적자; 930010:인광 돌 드레이크의 고삐 (푸른색),검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+900011,Creature\felhound3_shadow_mount\felhound3_shadow_mount.m2,2,"900011,900111",반영됨,910011:일리다리 공포추적자; 930011:인광 돌 드레이크의 고삐 (주황색),검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+900012,Creature\felstalkermount\felstalkermount.m2,2,"900012,900112",반영됨,910012:일리다리 지옥추적자; 930012:인광 돌 드레이크의 고삐 (보라색),검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+900013,Creature\FireCatMount\FireCatMount.m2,2,"900013,900113",반영됨,910013:사나운 불꽃호랑이; 930013:인광 돌 드레이크의 고삐 (붉은색),검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+900015,Creature\HordePVPMount\HordePVPMount.M2,8,"900015,900064,900065,900066,900115,900164,900165,900166",반영됨,910015:사나운 전투여우; 910064:사나운 전투여우 (주황색); 910065:사나운 전투u여우 (보라색); 910066:사나운 전투u여우 (붉은색); 930015:크림슨 드래곤호크 (색상 1); 930064:비룡 계열 ...,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+900035,Creature\shadowstalkerpanthermount\shadowstalkerpanthermount.m2,6,"900035,900077,900078,900135,900177,900178",반영됨,910035:공허 수정 표범; 910077:공허 수정 표범 (보라색); 910078:순치된 해마; 930035:사나운 전투여우 (보라색); 930077:저주받은 공허타조; 930078:물꼬리의 고삐 (푸른색),검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+3025,Creature\alexstraszadragon\alexstraszadragon.mdx,1,27569,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3358,Creature\CelestialHorse\CelestialHorse.mdx,1,31958,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3357,Creature\CelestialHorse\CelestialHorse_NonFlying.mdx,1,31957,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2071,Creature\ChineseDragon\ChineseDragon.mdx,7,"14778,14779,24392,24393,24569,24620,29629",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2490,Creature\cosmicflyermount\CosmicRayNew.mdx,14,"19400,19401,19403,19404,19405,19406,19407,19416,19554,20098,20596,21282,23516,25457",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2551,Creature\cosmicflyermount\CosmicRayNew.mdx,7,"21152,21155,21156,21157,21158,21423,21444",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2584,Creature\cosmicflyermount\CosmicRayNew.mdx,1,21486,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+203,Creature\dragon2\dragon2fixed.mdx,43,"1686,1687,2717,2718,2719,2720,2930,7806,8574,9909,12869,13992,15413,15414,15474,15500,15946,17156,17256,19270 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2739,Creature\dragon2\dragon2fixed.mdx,19,"24137,24139,24140,24141,24142,24173,24174,24175,24176,24190,24781,24782,25013,25710,27568,27570,27635,27811,28110",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2478,Creature\Dragon\Dragon.mdx,2,"19260,19371",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2489,Creature\Dragon\Dragon.mdx,2,"19373,22965",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2723,Creature\Dragon\Dragon.mdx,1,23746,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2931,Creature\Dragon\Dragon.mdx,1,26699,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+1651,Creature\Dragon\DragonAzurgoz.mdx,7,"11460,15473,22676,23704,23743,27340,29549",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2363,Creature\Dragonhawk2\Dragonhawk2.mdx,22,"17545,17546,17547,18920,19298,19299,19663,19669,19685,20026,20027,20029,20037,20263,21831,21901,22841,22860,23458,23515 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2425,Creature\Dragonhawk2\Dragonhawk2.mdx,2,"19259,29362",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2669,Creature\Dragonhawk2\Dragonhawk2.mdx,1,22840,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3045,CREATURE\Dragonhawk2\Dragonhawk2mount.mdx,7,"27525,28402,28417,29364,29674,29695,29696",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2593,Creature\DragonhawkGod\DragonHawkGod.mdx,1,21633,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2970,Creature\DragonRedCrystal\RedCrystalDragon.mdx,1,24307,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3008,Creature\DragonRedCrystal\RedCrystalDragonHologram.mdx,1,27634,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+571,Creature\Drake2\Drake2.mdx,52,"5145,5645,6369,6370,6371,6372,6373,6374,6375,6376,6377,6378,6379,7553,7975,8317,8318,9231,9584,9585 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2417,Creature\Drake2\Drake2.mdx,1,18164,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2710,Creature\Drake2\Drake2.mdx,1,23522,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2711,Creature\Drake2\Drake2.mdx,1,23524,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+9571,Creature\Drake2\drake2Azure.mdx,3,"24743,25256,28080",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3019,Creature\Drake2\northrenddrake2old.mdx,5,"28457,28667,28686,28687,28828",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+1931,Creature\Drakeadon\Drakeadon.mdx,2,"14367,29539",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3200,Creature\drakegrand2\drakemount2grandonyxia.mdx,1,30346,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2858,Creature\drakemount2\drakemount2.mdx,15,"24714,25803,25831,25832,25833,25834,25835,25836,25852,25853,25854,27796,27797,27798,31627",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+9858,Creature\drakemount2\drakemount2armored.mdx,1,27785,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+147,Creature\elitegryphon\elitegryphon.mdx,1,6852,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+792,Creature\elitegryphon\elitegryphon.mdx,7,"935,1147,1148,1149,7268,7269,7270",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2375,Creature\elitegryphon\elitegryphon.mdx,5,"17693,17694,17696,17697,25579",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2376,Creature\elitegryphon\elitegryphonarmored.mdx,9,"17698,17703,17717,17718,17759,24472,24688,27913,28652",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2443,Creature\elitegryphon\elitegryphonarmored.mdx,1,18736,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2758,Creature\elitegryphon\elitegryphonarmored.mdx,1,24665,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2767,Creature\elitegryphon\elitegryphonarmored.mdx,1,24784,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2771,Creature\elitegryphon\elitegryphonarmored.mdx,1,24869,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2844,Creature\elitegryphon\elitegryphonarmored.mdx,1,25679,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+85,Creature\elitewyvern\elitewyvern.mdx,1,6851,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+791,Creature\elitewyvern\elitewyvern.mdx,11,"295,2154,2155,2156,2157,2297,2298,4585,11011,11012,20964",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2377,Creature\elitewyvern\elitewyvern.mdx,4,"17699,17700,17701,24891",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2501,Creature\elitewyvern\elitewyvern.mdx,1,19608,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2374,Creature\elitewyvern\elitewyvernarmored.mdx,1,17675,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2378,Creature\elitewyvern\elitewyvernarmored.mdx,7,"17702,17719,17720,17721,17722,27721,27914",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2436,Creature\elitewyvern\elitewyvernarmored.mdx,1,18712,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2500,Creature\elitewyvern\elitewyvernarmored.mdx,1,19609,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2683,Creature\elitewyvern\elitewyvernarmored.mdx,1,23056,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2732,Creature\elitewyvern\elitewyvernarmored.mdx,2,"24044,24045",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+175,Creature\FaerieDragon\FaerieDragon.mdx,9,"1267,2158,6294,8471,9345,15404,15405,15991,19728",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+177,Creature\FaerieDragon\FaerieDragon_Ghost.mdx,1,19269,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2444,Creature\FelOrcNetherdrake\FelOrcNetherDrake.mdx,1,18812,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2445,Creature\FelOrcNetherdrake\FelOrcNetherDrakeMounted.mdx,3,"18813,18944,22409",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3014,Creature\FlyingCarpetMount\FlyingCarpetMount.mdx,7,"28060,28061,28063,28064,28082,28117,31837",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2847,Creature\FrostwyrmPet\FrostWyrmPet.mdx,3,"25750,28456,30640",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2195,Creature\GnomeRocketCar\GnomeRocketCar.mdx,1,2490,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+1471,Creature\GoblinRocketCar\GoblinRocketCar.mdx,1,10318,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2326,Creature\Gryphon\Gryphon_Skeletal.mdx,2,"17166,17378",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2748,Creature\Gryphon\Gryphon_Skeletal.mdx,1,24446,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2889,Creature\Gryphon\Gryphon_Skeletal_Mount.mdx,3,"26303,26363,29842",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2890,Creature\Gryphon\Gryphon_Skeletal_Mount.mdx,1,26308,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3024,Creature\Gryphon\Gryphon_Skeletal_Mount.mdx,1,28108,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3046,CREATURE\GRYPHON\Gryphon_Skeletal_Mount.mdx,1,28421,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2365,Creature\gryphonghost_new\gryphonghost_new.mdx,1,17328,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2508,Creature\gryphonghost_new\gryphonghost_new.mdx,1,20065,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2509,Creature\gryphonghost_new\gryphonghost_new.mdx,1,20070,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2749,Creature\gryphonghost_new\gryphonghost_new.mdx,1,24447,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2930,Creature\gryphonghost_new\gryphonghost_new.mdx,1,26691,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3044,CREATURE\gryphonghost_new\gryphonghost_new.mdx,1,28400,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3212,Creature\GryphonPet\GryphonPet.mdx,1,30412,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+90,Creature\Hippogryph2\Hippogryph.mdx,14,"479,3210,3211,3212,6756,6757,10889,10890,10891,10892,10893,10894,12589,22546",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+209,Creature\Hippogryph2\Hippogryph.mdx,1,1936,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3341,Creature\Hippogryph\BurntHippoGryph.mdx,1,31803,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2356,Creature\Hippogryph\HippogryphPet.mdx,2,"16943,22500",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2639,Creature\HippogryphMount\hippogryph2mount.mdx,7,"22470,22471,22472,22473,22474,29361,31714",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2746,Creature\HippogryphMount\hippogryph2mount.mdx,1,24324,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2974,Creature\HippogryphMount\hippogryph2mount.mdx,2,"27561,29627",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+10057,Creature\merithradragon\merithradragon.mdx,1,15412,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2919,Creature\MissileRocketMount\MissileRocketMount.mdx,1,26578,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2922,Creature\MissileRocketMount\MissileRocketMount.mdx,1,26611,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2397,Creature\NetherDragon\NetherDragon.mdx,7,"17889,18273,19114,23315,23329,23333,23747",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+9973,Creature\Netherdrak2\netherdrake2.mdx,20,"17772,17888,19272,19891,19980,20344,20516,20517,20519,20539,20540,20541,20684,20809,21425,21545,21548,22620,24725,27507",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+19973,Creature\Netherdrak2\netherdrakeNoArmorPreview2.mdx,7,"16314,21520,21521,21522,21523,21524,21525",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+1291,Creature\orcdrakerider2\orcdrakerider2.mdx,1,9723,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2384,Creature\PHOENIX\Phoenix.mdx,5,"17765,17784,18945,18987,19682",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2719,Creature\PhoenixPet\PhoenixPet.mdx,1,23574,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3013,Creature\ProtoDragon\MDProtoDrakeMount.mdx,7,"28040,28041,28042,28043,28044,28045,28053",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3020,Creature\ProtoDragon\MDProtoDrakeMount.mdx,2,"28081,28083",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2650,Creature\ProtoDragon\ProtoDragon.mdx,27,"24636,24717,24718,24874,24875,26507,26616,26709,26710,26711,26712,26713,26714,26715,26726,26727,26733,26735,26739,26740 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2680,Creature\ProtoDragon\ProtoDragon.mdx,4,"22657,24101,25141,27043",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3041,Creature\ProtoDragon\ProtoDragon.mdx,1,28345,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3364,Creature\ProtoDragon\ProtoDragon.mdx,1,31986,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3075,CREATURE\ProtoDragon\ProtoDragon_Razorscale.mdx,4,"28787,28949,28952,30806",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3101,CREATURE\ProtoDragon\ProtoDragon_Razorscale_Mount.mdx,2,"28953,28954",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2932,Creature\ProtoDragon\ProtoDragonMount.mdx,14,"26717,26718,26719,26720,26721,26722,26723,26724,26742,26881,26882,26883,27454,27781",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2971,Creature\ProtoDragon\ProtoDragonMount.mdx,1,27515,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2398,Creature\RidingPhoenix\RidingPhoenix.mdx,1,17890,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3287,Creature\RidingUndeadDrake\ArmoredRidingUndeadDrake.mdx,4,"31154,31155,31156,31157",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2828,Creature\RidingUndeadDrake\RidingUndeadDrake.mdx,5,"25511,25593,26645,29794,31047",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2969,Creature\RidingUndeadDrake\RidingUndeadDrake.mdx,1,27480,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2674,Creature\RocketChicken\RocketChicken.mdx,1,22903,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3367,Creature\RocketMount2\RocketMount2.mdx,1,31992,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2718,Creature\RocketMount\RocketMount.mdx,3,"23647,23656,30989",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2755,Creature\RocketMount\RocketMount.mdx,1,24614,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2762,Creature\RocketMount\RocketMount.mdx,1,24710,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3353,Creature\TwighlightDragon\TwighlightDragon.mdx,1,31952,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2950,Creature\UndeadDrake\NorthrendUndeadDrake.mdx,7,"27064,27065,27066,27479,27767,27981,27982",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3258,Creature\UndeadDrake\NorthrendUndeadDrake.mdx,1,30902,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3271,Creature\WingedHorse\WingedHorse.mdx,1,31007,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3296,Creature\WingedHorse\WingedHorse_NonFlying.mdx,1,31248,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3213,Creature\WyvernPet\WyvernPet.mdx,1,30413,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+9739,Creature\yseradragon\yseradragon.mdx,1,24808,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+2954,SPELLS\RocketLauncher_PreCast.mdx,2,"27121,29070",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3001,World\GENERIC\GOBLIN\PassiveDoodads\GoblinRocketCarts\GoblinRocketCart02_RC.mdx,1,27829,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3043,World\GENERIC\Goblin\PassiveDoodads\GoblinRocketCarts\GoblinRocketCart_RC.mdx,1,28393,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,날탈,Wowhead WotLK 분류 및 비행 모델 계열명 기준
+3445,Character\Vulpera_HD\Male\Vulperamale.M2,1,57664,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+9638,Creature\amanibearmount2\amanibearmount2.mdx,4,"22463,22464,22466,22467",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2577,Creature\BabyElekk\BabyElekk.mdx,7,"21393,22629,23434,23435,23436,23437,23894",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2576,Creature\BabyHawkstrider\Babyhawkstrider.mdx,1,21382,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+83,Creature\Bear2\Bear.mdx,51,"706,707,719,762,806,820,822,865,902,913,982,1006,1007,1082,1083,1990,2378,3200,3201,5510 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3276,Creature\Bear2\SpectralBear.mdx,1,31094,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2591,Creature\BearGod\beargod.mdx,1,21631,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2638,Creature\Bearmount2\bearmountZulaman.mdx,2,"22462,22465",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2817,Creature\BearMountAltNew\BearMountAltNew.mdx,1,25335,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2612,Creature\BroomMount\BroomMount.mdx,1,21939,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3132,Creature\ChickenMount\ChickenMount.mdx,1,29344,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3138,Creature\ChickenMount\ChickenMount15.mdx,1,29378,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3137,Creature\ChickenMount\ChickenMount35.mdx,1,29379,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2810,Creature\DeathKnightMount\DeathKnightMount.mdx,13,"25278,25279,25280,25445,25678,26500,26539,26540,26541,26572,26681,27517,30695",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+73,Creature\DireWolf\DireWolf.mdx,48,"73,246,720,741,1030,2352,9369,9370,9371,9372,9562,9563,9564,9567,9568,9569,9572,10209,10278,11411 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+217,Creature\DireWolf\RidingDireWolf.mdx,14,"207,247,1166,2320,2326,2327,2328,2833,17408,18509,19036,19040,21895,23581",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2313,Creature\Elekk\elekkdraenormount.mdx,5,"17063,17142,19869,19870,23471",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2364,Creature\Elekk\elekkdraenormount.mdx,1,17549,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2399,Creature\Elekk\elekkdraenormount.mdx,2,"17891,18511",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2358,Creature\Elekk\ElekkWild.mdx,25,"17620,17677,17678,17679,17896,17897,17899,17901,17902,17908,17909,18045,20164,20166,22732,23346,23347,23353,23733,23734 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2707,Creature\Elekk\ElekkWild.mdx,2,"23309,23460",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2782,CREATURE\ELEKK\ElekkWild.mdx,1,24913,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1916,Creature\FastRidingRaptor\PvPRidingRaptor.mdx,12,"14339,14340,14341,14342,14343,14344,14345,14388,15271,15289,27722,29261",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1912,Creature\frostsabre2fast\nightsaber2mountarmored.mdx,8,"14329,14330,14331,14332,14333,14632,15290,29256",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2626,Creature\frostsabre2fast\spectraltiger2mountarmored.mdx,1,21974,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2619,Creature\frostsabre2fast\spectraltiger2slow.mdx,1,22004,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2620,Creature\frostsabre2fast\spectraltiger2slow.mdx,2,"21973,28583",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+457,Creature\frostsabre2slow\RidingFrostSabre.mdx,14,"4805,6079,6080,6442,6443,6444,6447,6448,9695,9714,9952,9991,10426,29755",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3174,Creature\frostwolfhowler\frostwolfhowler.mdx,24,"14334,14335,14336,14573,14574,14575,14776,19014,19039,21241,21896,24455,24456,24457,29260,29283,29879,29972,29973,29974 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2915,Creature\GoblinShredderMount\GoblinShredderMount.mdx,2,"26558,26559",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2917,Creature\GoblinShredderMount\GoblinShredderMount.mdx,1,26573,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2923,Creature\GoblinShredderMount\GoblinShredderMount.mdx,1,26612,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2435,Creature\hawkstrider2\hawkstrider2_mount.mdx,10,"18697,19482,19483,19484,20359,20675,20937,28607,28889,29262",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2434,Creature\hawkstrider2\hawkstrider2_mount_noarmor.mdx,5,"18696,19478,19479,19480,21147",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2634,Creature\HeadlessHorseman\Headlesshorseman.mdx,1,22352,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2647,CREATURE\HeadlessHorsemanHorse\HeadlessHorsemanHorse.mdx,2,"23940,24177",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+9798,Creature\headlesshorsemanmount2\headlesshorsemanmount2.mdx,5,"19250,19640,22653,25159,25958",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2633,Creature\HeadlessHorsemanMount\HeadlessHorsemanMount.mdx,1,22351,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2760,CREATURE\horse2_zebramount2\horse2_zebramount2.mdx,1,24693,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2764,Creature\horse2_zebramount2\horse2_zebramount2.mdx,2,"24745,28888",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+65,Creature\Horse\Horse.mdx,22,"65,229,236,237,238,239,1170,2325,14585,16043,16044,23958,23959,23960,24922,24923,25030,25571,25572,25573 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+143,Creature\Horse\Horse.mdx,1,908,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+7027,Creature\Horse\Zebra.mdx,3,"1531,1910,1911",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+216,Creature\horsemultisaddle\horsemultisaddle.mdx,8,"2402,2404,2405,2408,2409,2410,29975,30518",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1917,Creature\humanridinghorse2\humanridinghorse2.mdx,8,"14337,14338,14582,14583,28912,29043,29284,29976",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+9974,Creature\Kodobeas2\kodobeastbrewfest.mdx,1,24757,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1914,Creature\Kodobeas2\kodobeastpvpt2.mdx,12,"6269,14348,14349,14578,14579,19027,23484,23486,23997,28556,29259,29880",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+9975,Creature\Kodobeas2\kodobeastslowfest.mdx,1,24758,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+27,Creature\kodobeast2\kodobeast2.mdx,17,"179,1230,1231,1232,1241,1308,1309,1451,1452,1453,1454,2767,2768,6081,10283,10284,10918",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1711,Creature\kodobeast2mount\kodobeast2mount.mdx,14,"11641,12240,12241,12242,12244,12245,12246,12247,19023,19024,19025,19026,23485,23873",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1071,Creature\kodobeast2mount\kodobeast2pack.mdx,4,"7933,8470,9342,23646",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+9963,Creature\kodobeast2wooly\kodobeast2wooly.mdx,6,"10914,10915,10916,10917,10919,23265",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+210,Creature\Lion2\Lion.mdx,11,"1057,1934,1971,1972,1973,1977,4424,10055,10114,17077,26618",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2784,Creature\LionSeal\LionSeal.mdx,11,"24926,24927,24928,24929,24932,24933,26332,26333,26334,26416,26768",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2822,Creature\Mammoth\mammoth.mdx,35,"23445,25145,25449,26423,26425,26483,26485,26486,26487,26488,26489,26490,26491,26969,27233,27234,27235,27236,27265,27266 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2823,Creature\Mammoth\MammothMount_1seat.mdx,15,"25450,26424,26510,26511,26512,26615,26624,26625,26755,27243,27244,27245,27246,27247,27248",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2824,Creature\Mammoth\MammothMount_3seat.mdx,8,"25451,26215,27237,27238,27239,27240,27241,27242",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+852,Creature\MechaStriderFix\gnomeFixMechaStrider.mdx,2,"6978,6979",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+751,Creature\MechaStriderNew\MechaStrider.mdx,12,"6544,6569,9473,9474,9475,9476,10661,10662,10664,10666,10667,28539",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1915,Creature\MechaStriderNew\PvPMechaStrider.mdx,11,"14372,14373,14374,14375,14376,14377,14581,28571,29877,31670,31692",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2897,Creature\NorthrendBearMount\NorthrendBearMountArmored.mdx,10,"26358,27649,27650,27659,27660,27818,27819,27820,27821,28428",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3022,Creature\NorthrendBearMount\NorthrendBearMountArmored.mdx,1,26388,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2975,Creature\NorthrendBearMount\NorthrendBearMountBlizzcon.mdx,1,27567,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+229,Creature\Ram2\Ram.mdx,15,"10000,10001,10002,10003,12429,13340,14939,21717,22104,22318,22319,22673,22674,26205,26661",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1371,Creature\Ram2\ridingram.mdx,7,"2736,2784,2785,2786,2787,22265,22630",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+34,Creature\raptor2\raptor2.mdx,59,"180,322,615,648,649,670,671,672,673,674,675,676,677,695,755,787,788,945,948,949 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3123,Creature\Raptor\RaptorPet.mdx,11,"29251,29274,29802,29803,29804,29805,29806,29807,29808,29809,29810",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2293,Creature\RaptorOutland\Raptor_Outland.mdx,22,"17561,19732,19733,19734,19735,19736,19742,19743,19758,19759,19760,19764,19766,19767,19768,19769,19770,19781,19911,19972 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1991,Creature\RIDINGHORSE\PackMule.mdx,7,"14546,14547,14548,14549,14550,14551,16075",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+458,Creature\RidingRaptor\RidingRaptor.mdx,9,"4806,6468,6469,6470,6471,6472,6473,29102,30141",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2618,Creature\saberworg\Saberworg.mdx,28,"22003,22042,22044,22088,22089,22233,22243,22475,22501,22502,22611,23793,24235,24708,26201,26331,26371,26823,26824,26829 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3090,CREATURE\saberworg\Saberworg.mdx,1,28879,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3178,Creature\saberworg\Saberworg.mdx,1,30077,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3228,Creature\saberworg\Saberworg.mdx,1,30652,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3155,Creature\saberworg\SpectralSaberWorg.mdx,1,29673,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+218,Creature\Scorpion\Scorpion.mdx,57,"2414,2485,2486,2487,2488,2489,2491,2729,2730,2731,2732,2765,2766,2864,3247,5905,5985,6068,6069,6070 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3077,CREATURE\SpectralTiger\Sandbox_SpectralTiger_01.mdx,1,28811,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3209,Creature\SpectralTiger\SpectralTigerCub.mdx,1,30409,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3087,CREATURE\SpectralTigerFeral\SpectralTigerFeral.mdx,10,"28866,28867,28868,28869,28870,28871,28872,28873,28874,30158",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2072,Creature\Spells\BattleStandard_Frostwolf_A_01.mdx,1,14782,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1913,Creature\stormpikebattlecharger\stormpikebattlecharger.mdx,10,"14346,14347,14576,14577,14777,22350,22631,26272,28612,29258",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+7022,Creature\Tiger2\DruidTravel.mdx,1,918,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+82,Creature\Tiger2\Tiger.mdx,30,"320,471,598,614,616,698,2279,6210,6248,9230,9953,9954,9992,9993,10054,10113,11029,11031,11445,11446 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1331,Creature\Tiger2\Tiger.mdx,3,"9956,14364,17090",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2355,Creature\Tiger2\Tiger.mdx,1,16942,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+4000,Creature\Tiger2\Tiger2.mdx,24,"632,917,1008,1043,1055,1056,1058,1059,1933,1978,2031,2278,2300,5066,5069,6082,6942,11451,21192,25005 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+4002,Creature\Tiger2\Tigernohair.mdx,46,"321,599,613,633,748,749,954,1095,2437,3029,3030,3031,4472,5067,5068,6805,6943,9949,9950,9951 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2499,Creature\Tiger\TigerGem.mdx,10,"19607,25112,25682,25708,29065,29081,29082,29605,29819,30402",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+491,Creature\UndeadHorse2\ridingundeadhorse.mdx,9,"5228,10670,10671,10672,10673,16041,16407,16452,29130",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1511,Creature\UndeadHorse2\ridingundeadwarhorse.mdx,12,"10718,10719,10720,10721,16937,16938,16939,28605,29129,29252,29257,29754",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+552,Creature\UndeadHorse2Var\UndeadHorseNew.mdx,4,"5050,16039,16045,16408",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2400,Creature\viciouswarelekk\viciouswarelekk.mdx,9,"17906,19374,19871,19872,19873,23465,23928,28606,29255",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+711,Creature\viciouswarkodo\viciouswarkodo.mdx,2,"6268,6270",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+3166,Creature\warhorse3a\Argentwarhorse2.mdx,2,"29937,29938",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1191,Creature\warhorse3a\warhorse2.mdx,7,"8469,18223,19296,19783,24627,28917,28918",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2756,Creature\warhorse3a\warhorse2.mdx,1,24628,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2799,Creature\warhorse3a\warhorse2.mdx,1,25174,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+1952,Creature\warhorse3b\pvpwarhorse2.mdx,6,"14584,14590,19085,28919,28931,29971",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+43,Creature\Wolf\Wolf.mdx,61,"161,165,372,380,447,557,604,643,644,647,666,776,780,781,782,783,784,785,801,802 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+2716,Creature\Wolf\Wolf.mdx,2,"23579,23580",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+171,Creature\Wolf\Wolf_ghost.mdx,7,"1236,2446,3123,17283,21114,22130,27482",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,지상탈,Wowhead WotLK 분류 및 지상 모델 계열명 기준
+173,Creature\SeaTurtle\SeaTurtle.mdx,32,"1244,2307,2308,2902,4829,5026,5027,5030,5052,5126,5127,6126,6368,7046,7114,7836,7837,7839,7840,10947 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,수중/수상,모델명 기준
+331,Creature\bat\batmounttaxi2.mdx,2,"1566,14562",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2747,Creature\bat\batmounttaxi2.mdx,1,24377,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+3343,Creature\bat\batmounttaxi2.mdx,1,31725,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2259,Creature\bearcub001new\bearcub001new.mdx,4,"16189,23946,23947,23948",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+3054,CREATURE\bearcub001new\bearcub001new.mdx,3,"28489,30059,30060",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2288,Creature\Broom\BE_Broom01.mdx,1,16910,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+3356,Creature\CelestialDragonWyrm\CelestialDragonWyrm.mdx,1,31956,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+1591,Creature\Dragon\DragonNefarian.mdx,2,"11380,21400",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+1551,Creature\Dragon\DragonOnyxia.mdx,3,"8570,17251,21401",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+9203,Creature\dragon_undead\dragon_undead.mdx,1,15366,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2563,Creature\DragonFootSoldier\DragonFootSoldier.mdx,1,21250,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2698,Creature\DragonKalecgos\DragonKalecgos.mdx,2,"23345,23487",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2676,Creature\dragonkite\DragonKite.mdx,4,"22966,22990,22991,22992",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+1411,Creature\dragonspaw02boss\dragonspawn2boss.mdx,7,"10115,12649,14519,20943,23326,27226,32179",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2480,Creature\dragonspaw02boss\dragonspawn2darkshade.mdx,4,"19273,19326,22425,27873",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+1973,Creature\dragonspaw02boss\dragonspawn2greater.mdx,1,14544,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2807,Creature\dragonspaw02boss\dragonspawn2lordnexus.mdx,5,"25246,25252,27032,27218,27474",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+47,Creature\dragonspawn2\dragonspawn2.mdx,25,"143,177,181,182,196,332,363,623,624,625,716,2534,2552,2554,6762,8311,8972,10094,12893,17555 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+1031,Creature\dragonspawn2\dragonspawn2armored.mdx,18,"6760,7903,7976,8310,8313,8315,8711,9489,9581,9753,10116,12509,12529,12890,12891,28665,28666,32104",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2802,Creature\dragonspawn2\dragonspawn2armored.mdx,4,"25195,25225,25226,27219",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+1011,Creature\dragonspawn2caster\dragonspawn2caster.mdx,18,"6761,7863,7974,8249,8309,8312,8314,8316,12530,12889,12892,12894,22231,25247,25249,25250,27227,27473",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2456,Creature\dragonspawn2casterdarkshade\dragonspawn2casterdarkshade.mdx,4,"19061,19063,20102,27647",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2453,Creature\dragonspawn2darkshade\dragonspawn2darkshade.mdx,3,"19058,19065,27902",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2454,Creature\dragonspawn2darkshade\dragonspawn2darkshadeArmored.mdx,3,"19059,19062,19064",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2197,Creature\DragonVar\Lethon.mdx,5,"15364,15365,28662,28663,28664",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+6,Creature\dragonwhelp3\dragonwhelp3.mdx,38,"387,397,399,400,457,497,505,621,622,694,715,956,4465,6288,6290,6291,6292,6293,7908,8712 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2520,Creature\dragonwhelp3\dragonwhelp3.mdx,2,"20511,20515",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+3204,Creature\DragonWhelp\DragonWhelpOnyxia.mdx,1,30356,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2334,Creature\dragonwhelpoutland2\dragonwhelpoutland2.mdx,1,17204,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2381,Creature\dragonwhelpoutland2\dragonwhelpoutland2.mdx,1,17723,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2386,Creature\dragonwhelpoutland2\dragonwhelpoutland2.mdx,5,"18272,19191,19295,20138,21238",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2450,Creature\dragonwhelpoutland2\dragonwhelpoutland2.mdx,1,18946,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2532,Creature\drakonid2\drakonid2nether.mdx,8,"20726,20732,20733,20734,20776,20896,20935,25257",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+213,Creature\DruidBear\DruidBear.mdx,9,"2281,23950,29413,29414,29415,29416,29417,29438,29440",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+214,Creature\DruidBear\DruidBearTauren.mdx,5,"2289,29418,29419,29420,29421",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2199,Creature\DruidOwlbear\DruidOwlBear.mdx,2,"15374,29764",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2200,Creature\DruidOwlbear\DruidOwlBearTauren.mdx,2,"15375,29781",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+3093,CREATURE\Mimiron\Mimiron_Head_Mount.mdx,1,28890,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2482,Creature\MountainGiantCrystal\MountainGiantCrystal.mdx,16,"18275,19302,19324,19458,19688,19689,20021,20048,20750,20903,20908,20909,20973,21330,23693,26298",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2488,Creature\MountainGiantCrystal\MountainGiantCrystal_Boss.mdx,14,"19325,19332,19383,19414,20049,20101,20224,20261,20547,20611,20701,20971,22756,26302",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2587,Creature\MountainGiantCrystalOgrila\MountainGiantCrystalOgrila.mdx,1,21585,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+205,Creature\MountainGiantNew\MountainGiant.mdx,40,"1918,3166,3216,5229,6028,6209,6910,6912,8269,9210,9490,10037,10040,10041,10042,10044,10317,11986,12162,12232 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2700,Creature\MountainGiantNorthrend\MountainGiant_Howling.mdx,9,"22383,23355,23356,23357,23358,23723,23724,23827,23828",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2315,Creature\MountainGiantOutland\MountainGiant_Bladesedge.mdx,2,"17073,17832",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2322,Creature\MountainGiantOutland\MountainGiant_Bladesedge.mdx,4,"17102,17525,20862,20934",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2316,Creature\MountainGiantOutland\MountainGiant_Netherstorm.mdx,5,"17074,18631,18700,18713,18837",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2323,Creature\MountainGiantOutland\MountainGiant_Netherstorm.mdx,1,17103,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2317,Creature\MountainGiantOutland\MountainGiant_Zangarmarsh.mdx,2,"17075,23829",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+2324,Creature\MountainGiantOutland\MountainGiant_Zangarmarsh.mdx,2,"17104,17569",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+731,Creature\MountedDeathKnight\MountedDeathKnight.mdx,4,"6353,6380,10729,14591",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2255,Creature\MOUNTEDDEATHKNIGHT\MountedDeathKnight_Blaumeux.mdx,4,"16153,16327,24794,25116",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2257,Creature\MOUNTEDDEATHKNIGHT\MountedDeathKnight_Korthazz.mdx,3,"16155,16329,24802",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2254,Creature\MOUNTEDDEATHKNIGHT\MountedDeathKnight_Mograine.mdx,2,"16139,16326",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2256,Creature\MOUNTEDDEATHKNIGHT\MountedDeathKnight_Zeliek.mdx,3,"16154,16328,24800",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2470,Creature\MOUNTEDDEATHKNIGHT\UnMountedDeathKnight.mdx,2,"16416,25684",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2215,Creature\MountedDemonKnight\MountedDemonKnight.mdx,4,"15649,16040,20465,25762",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+195,Creature\MountedKnight\MountedKnight.mdx,5,"16277,17323,17389,18088,26537",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+9738,Creature\nozdormudragon2\nozdormudragon2.mdx,1,24934,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2578,Creature\RavenGod\RavenGod.mdx,4,"21427,21473,21474,21492",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2233,Creature\ReinDeer\ReinDeerMount.mdx,2,"15902,15904",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2219,Creature\RidingSilithid\RidingSilithid.mdx,5,"15672,15673,15674,15675,15676",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2220,Creature\RidingSilithid\RidingSilithid.mdx,5,"15677,15678,15679,15680,15681",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2483,Creature\RIDINGTALBUK\RidingTalbuk.mdx,6,"19221,21073,21074,21075,21076,21077",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2484,Creature\ridingtalbuk\RidingTalbukEpic.mdx,5,"19303,19375,19376,19377,19378",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2325,Creature\RidingTurtle\RidingTurtle.mdx,2,"17158,29161",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+224,Creature\SeaLion\SeaLion.mdx,5,"2428,17002,21834,22637,22643",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,모델명은 탈것 후보이나 플레이어 탑승용 여부 불명확
+1111,Creature\SkeletalSerpent\SkeletalSerpent.mdx,9,"7690,7752,7755,7757,8053,14852,21296,27072,27637",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+190,Creature\Spells\Serpent_Totem.mdx,1,1529,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2302,Creature\SPELLS\Serpent_Totem.mdx,1,16986,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2920,Creature\StoneTreeLog\StoneTreeLog02_Mount.mdx,1,26609,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2921,Creature\StoneTreeLog\StoneTreeLog03_Mount.mdx,1,26610,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+38,Creature\Tallstrider\TallStrider.mdx,24,"38,178,1040,1041,1042,1219,1220,1221,1281,1283,1284,1961,2741,6076,16992,17011,17012,18470,20375,20376 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+459,Creature\Tallstrider\TallStrider.mdx,6,"4807,6474,6475,6476,6477,6478",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2589,Creature\Tauren_MountedCanoe\Tauren_MountedCanoe.mdx,1,21602,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2568,Creature\TeronGorefiend_Mounted\TeronGorefiend_Mounted.mdx,1,21263,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+1611,Creature\turkeymount\turkey_hd.mdx,2,"21774,22191",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2265,Creature\Turtle\Turtle.mdx,11,"16259,16359,16360,16361,27677,27678,27679,27880,27881,27882,27883",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+75,Creature\WindSerpent\WindSerpent.mdx,29,"1336,1742,1974,1975,2699,2700,2702,2703,2705,2706,2707,2708,3006,3204,3205,4065,4091,7569,7691,7829 ...",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2295,Creature\WindserpentOutland\WindSerpentOutland.mdx,20,"16897,16898,16899,16900,16901,16902,17562,19704,19709,19786,19788,19974,20094,20837,20838,20839,20842,24753,25460,27073",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+3334,Creature\WOOLYRHINO\WoolyRhinoMount.mdx,1,31721,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2772,World\Expansion02\Doodads\DragonBlight\DB_Flowers02.mdx,1,24882,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2991,World\Expansion02\Doodads\Nexus\Nexus_DragonEgg_01.mdx,1,27743,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2992,World\Expansion02\Doodads\Nexus\Nexus_DragonEgg_02.mdx,1,27745,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2893,World\GENERIC\DWARF\PASSIVE DOODADS\ChainLinks\TS_Chainmounting01.mdx,1,26319,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2964,World\Goober\G_DragonEggChromatic.mdx,2,"27396,28014",미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2926,World\KALIMDOR\FELWOOD\PASSIVEDOODADS\PLANTSQUEST\NightDragon01.mdx,1,26622,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요
+2778,World\KALIMDOR\FELWOOD\PASSIVEDOODADS\PLANTSQUEST\NightDragon02.mdx,1,24897,미반영,patch-Z DBC에는 있으나 910/930 탑승 크리처에는 미연결,검토필요,탈것 키워드는 있으나 날탈/지상탈 확정 필요

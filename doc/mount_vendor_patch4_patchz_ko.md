@@ -1,0 +1,149 @@
+# 190059 탈것 판매 최종 정리
+
+- 총 탈것 아이템: 137개
+- patch-4 중복 제거 후 유지: 48개
+- patch-Z 신규 추가: 89개
+- 날탈: 68개
+- 지상탈: 69개
+- 아이템 범위: 970001~970137
+- 주문 범위: 960001~960137
+
+| 순서 | 출처 | 아이템 | 주문 | 크리처 | display | 구분 | 한글 이름 | 모델 |
+|---:|---|---:|---:|---:|---:|---|---|---|
+| 1 | patch-4 | 970001 | 960001 | 910001 | 900001 | 날탈 | 사나운 전투사자 | Creature\AlliancePVPMount\AlliancePVPMount.M2 |
+| 2 | patch-4 | 970002 | 960002 | 910003 | 900003 | 날탈 | 스톰윈드 하늘추적선 | Creature\AllianceShipMount\allianceshipmount.m2 |
+| 3 | patch-4 | 970003 | 960003 | 910004 | 900004 | 날탈 | 천공의 운룡 | Creature\CelestialSerpent\CelestialSerpentMount.M2 |
+| 4 | patch-4 | 970004 | 960004 | 910005 | 900005 | 지상탈 | 학 탈것 | Creature\Crane\CraneMount.M2 |
+| 5 | patch-4 | 970005 | 960005 | 910006 | 900006 | 날탈 | 암흑 불사조 | Creature\DarkPhoenix\DarkPhoenixMount_Spectral.M2 |
+| 6 | patch-4 | 970006 | 960006 | 910007 | 900007 | 날탈 | 심연 바위 비룡 | Creature\dragondeepholm\dragondeepholmmount.m2 |
+| 7 | patch-4 | 970007 | 960007 | 910008 | 900008 | 날탈 | 용매 | Creature\dragonhawk\dragonhawkmount.m2 |
+| 8 | patch-4 | 970008 | 960008 | 910009 | 900009 | 날탈 | 마력 깃든 요정용 | Creature\faeriedragonmount\faeriedragonmount.m2 |
+| 9 | patch-4 | 970009 | 960009 | 910010 | 900010 | 날탈 | 일리다리 지옥추적자 | Creature\felhound3_fire_mount\felhound3_fire_mount.m2 |
+| 10 | patch-4 | 970010 | 960010 | 910011 | 900011 | 날탈 | 일리다리 공포추적자 | Creature\felhound3_shadow_mount\felhound3_shadow_mount.m2 |
+| 11 | patch-4 | 970011 | 960011 | 910012 | 900012 | 날탈 | 지옥추적자 | Creature\felstalkermount\felstalkermount.m2 |
+| 12 | patch-4 | 970012 | 960012 | 910013 | 900013 | 날탈 | 불꽃호랑이 | Creature\FireCatMount\FireCatMount.m2 |
+| 13 | patch-4 | 970013 | 960013 | 910014 | 900014 | 지상탈 | 여우 탈것 | Creature\FoxMount\FoxMount.m2 |
+| 14 | patch-4 | 970014 | 960014 | 910015 | 900015 | 날탈 | 사나운 전투여우 | Creature\HordePVPMount\HordePVPMount.M2 |
+| 15 | patch-4 | 970015 | 960015 | 910016 | 900016 | 지상탈 | 사나운 전투전갈 | Creature\HordeScorpionMount\HordeScorpionMount.M2 |
+| 16 | patch-4 | 970016 | 960016 | 910017 | 900017 | 날탈 | 호드 비행선 | Creature\hordezeppelinmount\hordezeppelinmount.m2 |
+| 17 | patch-4 | 970017 | 960017 | 910018 | 900018 | 날탈 | 대마법사의 비전 원반 | Creature\magemount_arcane\magemount_arcane.m2 |
+| 18 | patch-4 | 970018 | 960018 | 910019 | 900019 | 날탈 | 대마법사의 화염 원반 | Creature\magemount_fire\magemount_fire.m2 |
+| 19 | patch-4 | 970019 | 960019 | 910020 | 900020 | 날탈 | 대마법사의 냉기 원반 | Creature\magemount_frost\magemount_frost.m2 |
+| 20 | patch-4 | 970020 | 960020 | 910021 | 900021 | 지상탈 | 반루 | Creature\monkmount\monkmount.m2 |
+| 21 | patch-4 | 970021 | 960021 | 910022 | 900022 | 지상탈 | 에체로의 영혼 | Creature\moosemount2nightmare\moosemount2nightmare.m2 |
+| 22 | patch-4 | 970022 | 960022 | 910023 | 900023 | 지상탈 | 무산야수 | Creature\MushanBeast\MushanBeastMount.M2 |
+| 23 | patch-4 | 970023 | 960023 | 910024 | 900024 | 날탈 | 판다렌 불사조 | Creature\PandarenPhoenixMount\PandarenPhoenixMount.M2 |
+| 24 | patch-4 | 970024 | 960024 | 910025 | 900025 | 날탈 | 운룡 | Creature\PandarenSerpent\PandarenSerpentMount.M2 |
+| 25 | patch-4 | 970025 | 960025 | 910026 | 900026 | 날탈 | 원시비룡 | Creature\protodragon\mdprotodrakemount.m2 |
+| 26 | patch-4 | 970026 | 960026 | 910027 | 900027 | 날탈 | 제국의 기렌 | Creature\Quilin\QuilinFlyingMount.M2 |
+| 27 | patch-4 | 970027 | 960027 | 910028 | 900028 | 지상탈 | 까마귀 군주 | Creature\ravenlord\ravenlordmount.m2 |
+| 28 | patch-4 | 970028 | 960028 | 910029 | 900029 | 날탈 | 붉은 비룡 | Creature\RedDrakeMount\RedDrakeMount.M2 |
+| 29 | patch-4 | 970029 | 960029 | 910030 | 900030 | 날탈 | X-53 순회 로켓 | Creature\rocketmount3\rocketmount3.m2 |
+| 30 | patch-4 | 970030 | 960030 | 910031 | 900031 | 날탈 | X-54 순회 로켓 | Creature\rocketmount4\rocketmount4.m2 |
+| 31 | patch-4 | 970031 | 960031 | 910032 | 900032 | 지상탈 | 호랑이 탈것 | Creature\saber2\saber2mount.m2 |
+| 32 | patch-4 | 970032 | 960032 | 910033 | 900033 | 날탈 | 비룡 | Creature\scaleddrakemount\scaleddrakemount.m2 |
+| 33 | patch-4 | 970033 | 960033 | 910034 | 900034 | 지상탈 | 해마 | Creature\Seahorse\SeahorseMount.M2 |
+| 34 | patch-4 | 970034 | 960034 | 910035 | 900035 | 날탈 | 공허 수정 표범 | Creature\shadowstalkerpanthermount\shadowstalkerpanthermount.m2 |
+| 35 | patch-4 | 970035 | 960035 | 910036 | 900036 | 지상탈 | 겨울빙호 | Creature\SiberianTiger\SiberianTigerMount.M2 |
+| 36 | patch-4 | 970036 | 960036 | 910037 | 900037 | 지상탈 | 해골 랩터 | Creature\SkeletalRaptor\SkeletalRaptorMount.M2 |
+| 37 | patch-4 | 970037 | 960037 | 910038 | 900038 | 날탈 | 폭풍까마귀 | Creature\stormcrowmount\stormcrowmount.m2 |
+| 38 | patch-4 | 970038 | 960038 | 910039 | 900039 | 날탈 | 태양 폭풍까마귀 | Creature\stormcrowmount_solar\stormcrowmount_solar.m2 |
+| 39 | patch-4 | 970039 | 960039 | 910040 | 900040 | 지상탈 | 수라마르 마나호랑이 | Creature\suramarmount\suramarmount.m2 |
+| 40 | patch-4 | 970040 | 960040 | 910041 | 900041 | 지상탈 | 바다거북 | Creature\turtlemount\turtlemount.m2 |
+| 41 | patch-4 | 970041 | 960041 | 910042 | 900042 | 날탈 | 티리엘의 군마 | Creature\TyraelMount\TyraelMount.M2 |
+| 42 | patch-4 | 970042 | 960042 | 910043 | 900043 | 지상탈 | 공허타조 | Creature\voidelfhawkstridermount\voidelfhawkstridermount.m2 |
+| 43 | patch-4 | 970043 | 960043 | 910044 | 900044 | 지상탈 | 물꼬리 | Creature\WaterStrider\WaterStriderMount.M2 |
+| 44 | patch-4 | 970044 | 960044 | 910045 | 900045 | 날탈 | 날개 달린 수호자 | Creature\WingedLionMount\WingedLionMount.M2 |
+| 45 | patch-4 | 970045 | 960045 | 910060 | 900060 | 날탈 | 얼라이언스 장갑 용매 | Creature\dragonhawk\dragonhawkarmormountalliance.m2 |
+| 46 | patch-4 | 970046 | 960046 | 910061 | 900061 | 날탈 | 호드 장갑 용매 | Creature\dragonhawk\dragonhawkarmormounthorde.m2 |
+| 47 | patch-4 | 970047 | 960047 | 910074 | 900074 | 날탈 | 코르크론 원시비룡 | Creature\protodragon\korkronprotodrakemount.m2 |
+| 48 | patch-4 | 970048 | 960048 | 910079 | 900079 | 날탈 | 비전 폭풍까마귀 | Creature\stormcrowmount_solar\stormcrowmount_arcane.m2 |
+| 49 | patch-Z | 970049 | 960049 | 940001 | 900185 | 날탈 | 얼라이언스 사자 | Creature\AllianceLionMount\AllianceLion.M2 |
+| 50 | patch-Z | 970050 | 960050 | 940002 | 900186 | 지상탈 | 아마니 전투곰 | Creature\amanibearmount2\amanibearmount2.m2 |
+| 51 | patch-Z | 970051 | 960051 | 940003 | 900187 | 날탈 | 박쥐 탈것 | Creature\bat\batmounttaxi2.m2 |
+| 52 | patch-Z | 970052 | 960052 | 940004 | 900188 | 지상탈 | 줄아만 전투곰 | Creature\Bearmount2\bearmountZulaman.m2 |
+| 53 | patch-Z | 970053 | 960053 | 940005 | 900189 | 지상탈 | 전투곰 | Creature\BearMountAltNew\BearMountAltNew.m2 |
+| 54 | patch-Z | 970054 | 960054 | 940006 | 900190 | 지상탈 | 카라잔 탈것 chogall2 | Creature\chogall\chogall2.m2 |
+| 55 | patch-Z | 970055 | 960055 | 940007 | 900191 | 날탈 | 황천 가오리 | Creature\cosmicflyermount\CosmicRayNew.m2 |
+| 56 | patch-Z | 970056 | 960056 | 940008 | 900192 | 지상탈 | 전투 늑대 | Creature\Direwolf\ridingdirewolf.m2 |
+| 57 | patch-Z | 970057 | 960057 | 940009 | 900193 | 날탈 | 카라잔 탈것 Dragonhawk2mount | Creature\Dragonhawk2\Dragonhawk2mount.m2 |
+| 58 | patch-Z | 970058 | 960058 | 940010 | 900194 | 날탈 | 카라잔 탈것 Dragonhawk2mountelite | Creature\Dragonhawk2\Dragonhawk2mountelite.m2 |
+| 59 | patch-Z | 970059 | 960059 | 940011 | 900195 | 날탈 | 거대 비룡 | Creature\drakegrand2\drakemount2grand.m2 |
+| 60 | patch-Z | 970060 | 960060 | 940012 | 900196 | 날탈 | 알렉스트라자 거대 비룡 | Creature\drakegrand2\drakemount2GrandAlex.m2 |
+| 61 | patch-Z | 970061 | 960061 | 940013 | 900197 | 날탈 | 할리온 거대 비룡 | Creature\drakegrand2\drakemount2grandHalion.m2 |
+| 62 | patch-Z | 970062 | 960062 | 940014 | 900198 | 날탈 | 말리고스 거대 비룡 | Creature\drakegrand2\drakemount2grandMalygos.m2 |
+| 63 | patch-Z | 970063 | 960063 | 940015 | 900199 | 날탈 | 네파리안 거대 비룡 | Creature\drakegrand2\drakemount2grandNefarian.m2 |
+| 64 | patch-Z | 970064 | 960064 | 940016 | 900200 | 날탈 | 노즈도르무 거대 비룡 | Creature\drakegrand2\drakemount2grandnozdormu.m2 |
+| 65 | patch-Z | 970065 | 960065 | 940017 | 900201 | 날탈 | 오닉시아 거대 비룡 | Creature\drakegrand2\drakemount2grandonyxia.m2 |
+| 66 | patch-Z | 970066 | 960066 | 940018 | 900202 | 날탈 | 테라제인 거대 비룡 | Creature\drakegrand2\drakemount2GrandTerac.m2 |
+| 67 | patch-Z | 970067 | 960067 | 940019 | 900203 | 날탈 | 이세라 거대 비룡 | Creature\drakegrand2\drakemount2GrandYsera.m2 |
+| 68 | patch-Z | 970068 | 960068 | 940020 | 900204 | 날탈 | 비룡 #2 | Creature\drakemount2\drakemount2.m2 |
+| 69 | patch-Z | 970069 | 960069 | 940021 | 900205 | 날탈 | 장갑 비룡 | Creature\drakemount2\drakemount2armored.m2 |
+| 70 | patch-Z | 970070 | 960070 | 940022 | 900206 | 날탈 | 하늘빛 비룡 | Creature\drakemount2\drakemount2azure.m2 |
+| 71 | patch-Z | 970071 | 960071 | 940023 | 900207 | 날탈 | 정예 비룡 | Creature\drakemount2\drakemount2elite.m2 |
+| 72 | patch-Z | 970072 | 960072 | 940024 | 900208 | 지상탈 | 드레나이 엘레크 | Creature\Elekk\elekkdraenormount.m2 |
+| 73 | patch-Z | 970073 | 960073 | 940025 | 900209 | 날탈 | 요정용 | Creature\faeriedragonmount\faeriedragoncreature.m2 |
+| 74 | patch-Z | 970074 | 960074 | 940026 | 900210 | 지상탈 | 전투 랩터 | Creature\FastRidingRaptor\PvPRidingRaptor.m2 |
+| 75 | patch-Z | 970075 | 960075 | 940027 | 900211 | 지상탈 | 호랑이 탈것 #2 | Creature\frostsabre2fast\nightsaber2mountarmored.m2 |
+| 76 | patch-Z | 970076 | 960076 | 940028 | 900212 | 지상탈 | 장갑 유령호랑이 | Creature\frostsabre2fast\spectraltiger2mountarmored.m2 |
+| 77 | patch-Z | 970077 | 960077 | 940029 | 900213 | 지상탈 | 겨울빙호 #2 | Creature\frostsabre2slow\RidingFrostSabre.M2 |
+| 78 | patch-Z | 970078 | 960078 | 940030 | 900214 | 지상탈 | 겨울빙호 #3 | Creature\Frostsabre\New\ridingfrostsabre2.m2 |
+| 79 | patch-Z | 970079 | 960079 | 940031 | 900215 | 지상탈 | 전투 겨울빙호 | Creature\Frostsabre\pvpridingfrostsabre.m2 |
+| 80 | patch-Z | 970080 | 960080 | 940032 | 900216 | 지상탈 | 겨울빙호 #4 | Creature\Frostsabre\ridingfrostsabre.m2 |
+| 81 | patch-Z | 970081 | 960081 | 940033 | 900217 | 지상탈 | 안장 없는 겨울빙호 | Creature\Frostsabre\ridingfrostsabrenaked.m2 |
+| 82 | patch-Z | 970082 | 960082 | 940034 | 900218 | 지상탈 | 고블린 벌목기 | Creature\Goblinshreddermount\goblinShredderMount.M2 |
+| 83 | patch-Z | 970083 | 960083 | 940035 | 900219 | 날탈 | 장갑 그리핀 | Creature\Gryphon2\Gryphon_Armoredmount.M2 |
+| 84 | patch-Z | 970084 | 960084 | 940036 | 900220 | 날탈 | 그리핀 | Creature\Gryphon2\Gryphon_mount.M2 |
+| 85 | patch-Z | 970085 | 960085 | 940037 | 900221 | 날탈 | 그리핀 #2 | Creature\Gryphon2\Gryphonmount.M2 |
+| 86 | patch-Z | 970086 | 960086 | 940038 | 900222 | 지상탈 | 매타조 | Creature\hawkstrider2\hawkstrider2_mount.m2 |
+| 87 | patch-Z | 970087 | 960087 | 940039 | 900223 | 지상탈 | 날쌘 매타조 | Creature\hawkstrider2\hawkstrider2_mount_noarmor.m2 |
+| 88 | patch-Z | 970088 | 960088 | 940040 | 900224 | 지상탈 | 저주받은 기사의 군마 | Creature\headlesshorsemanmount2\headlesshorsemanmount2.m2 |
+| 89 | patch-Z | 970089 | 960089 | 940041 | 900225 | 지상탈 | 저주받은 기사의 군마 #2 | Creature\headlesshorsemanmount\headlesshorsemanmount.m2 |
+| 90 | patch-Z | 970090 | 960090 | 940042 | 900226 | 날탈 | 히포그리프 | Creature\Hippogryphmount\hippogryph2mount.m2 |
+| 91 | patch-Z | 970091 | 960091 | 940043 | 900227 | 날탈 | 장갑 히포그리프 | Creature\Hippogryphmount\hippogryph2mountarmored.m2 |
+| 92 | patch-Z | 970092 | 960092 | 940044 | 900228 | 지상탈 | 얼룩말 | Creature\horse2_zebramount2\horse2_zebramount2.m2 |
+| 93 | patch-Z | 970093 | 960093 | 940045 | 900229 | 지상탈 | 인간 군마 | Creature\humanridinghorse2\humanridinghorse2.m2 |
+| 94 | patch-Z | 970094 | 960094 | 940046 | 900230 | 지상탈 | 전투 코도 | Creature\Kodobeas2\kodobeastpvpt2.m2 |
+| 95 | patch-Z | 970095 | 960095 | 940047 | 900231 | 지상탈 | 코도 | Creature\kodobeast2mount\kodobeast2mount.m2 |
+| 96 | patch-Z | 970096 | 960096 | 940048 | 900232 | 지상탈 | 짐 싣는 코도 | Creature\kodobeast2mount\kodobeast2pack.m2 |
+| 97 | patch-Z | 970097 | 960097 | 940049 | 900233 | 지상탈 | 전투 기계타조 | Creature\MechaStriderNew\pvpmechastrider.m2 |
+| 98 | patch-Z | 970098 | 960098 | 940050 | 900234 | 지상탈 | 노스렌드 장갑곰 | Creature\northrendbearmount2\northrendbearmount2armored.m2 |
+| 99 | patch-Z | 970099 | 960099 | 940051 | 900235 | 지상탈 | 노스렌드 전투곰 | Creature\northrendbearmount\northrendbearmountarmored.m2 |
+| 100 | patch-Z | 970100 | 960100 | 940052 | 900236 | 지상탈 | 블리즈컨 전투곰 | Creature\northrendbearmount\northrendbearmountblizzcon.m2 |
+| 101 | patch-Z | 970101 | 960101 | 940053 | 900237 | 날탈 | 폭풍 비룡 | Creature\OldDrake\StormDragonMount2.m2 |
+| 102 | patch-Z | 970102 | 960102 | 940054 | 900238 | 날탈 | 고대 비룡 | Creature\OldDrakemount\drakemount.m2 |
+| 103 | patch-Z | 970103 | 960103 | 940055 | 900239 | 날탈 | 폭풍 비룡 #2 | Creature\OldDrakemount\StormDragonMount2.m2 |
+| 104 | patch-Z | 970104 | 960104 | 940056 | 900240 | 지상탈 | 성기사 전투마 | Creature\PaladinMount\Paladinwarhorse.m2 |
+| 105 | patch-Z | 970105 | 960105 | 940057 | 900241 | 지상탈 | 성기사 군마 | Creature\PaladinMount\paladinwarhorse_slow.m2 |
+| 106 | patch-Z | 970106 | 960106 | 940058 | 900242 | 지상탈 | 성기사 군마 #2 | Creature\PaladinMount\paladinwarhorse_slow2.m2 |
+| 107 | patch-Z | 970107 | 960107 | 940059 | 900243 | 지상탈 | 산양 | Creature\Ram2\ridingram.m2 |
+| 108 | patch-Z | 970108 | 960108 | 940060 | 900244 | 지상탈 | 가을축제 산양 | Creature\Ram2\ridingrambrew.m2 |
+| 109 | patch-Z | 970109 | 960109 | 940061 | 900245 | 지상탈 | 안장 군마 | Creature\RidingHorse\Horse_Sattel1.m2 |
+| 110 | patch-Z | 970110 | 960110 | 940062 | 900246 | 지상탈 | 안장 군마 #2 | Creature\RidingHorse\Horse_Sattel2.m2 |
+| 111 | patch-Z | 970111 | 960111 | 940063 | 900247 | 지상탈 | 짐노새 | Creature\RidingHorse\Packmule.m2 |
+| 112 | patch-Z | 970112 | 960112 | 940064 | 900248 | 지상탈 | 군마 | Creature\RidingHorse\ridinghorse.m2 |
+| 113 | patch-Z | 970113 | 960113 | 940065 | 900249 | 지상탈 | 전투 군마 | Creature\RidingHorse\ridinghorsepvpt2.m2 |
+| 114 | patch-Z | 970114 | 960114 | 940066 | 900250 | 지상탈 | 전투 군마 #2 | Creature\RidingHorse\ridinghorsepvpt2_noshield.m2 |
+| 115 | patch-Z | 970115 | 960115 | 940067 | 900251 | 지상탈 | 전투 랩터 #2 | Creature\Ridingraptor\pvpridingraptor.m2 |
+| 116 | patch-Z | 970116 | 960116 | 940068 | 900252 | 지상탈 | 랩터 | Creature\Ridingraptor\RidingRaptor.m2 |
+| 117 | patch-Z | 970117 | 960117 | 940069 | 900253 | 지상탈 | 줄구룹 랩터 | Creature\Ridingraptor\Zulgurubraptor.m2 |
+| 118 | patch-Z | 970118 | 960118 | 940070 | 900254 | 지상탈 | 실리시드 | Creature\Ridingsilithid\ridingsilithid.m2 |
+| 119 | patch-Z | 970119 | 960119 | 940071 | 900255 | 지상탈 | 탈부크 | Creature\Ridingtalbuk\ridingtalbuk.m2 |
+| 120 | patch-Z | 970120 | 960120 | 940072 | 900256 | 지상탈 | 날쌘 탈부크 | Creature\Ridingtalbuk\RidingTalbukEpic.m2 |
+| 121 | patch-Z | 970121 | 960121 | 940073 | 900257 | 날탈 | 와이번 | Creature\Ridingwyver2\RidingWyvern.M2 |
+| 122 | patch-Z | 970122 | 960122 | 940074 | 900258 | 날탈 | 와이번 #2 | Creature\Ridingwyver2\wyvern.M2 |
+| 123 | patch-Z | 970123 | 960123 | 940075 | 900259 | 날탈 | 장갑 와이번 | Creature\Ridingwyvernarmore2\RidingWyvernArmored.M2 |
+| 124 | patch-Z | 970124 | 960124 | 940076 | 900260 | 날탈 | 장갑 와이번 #2 | Creature\Ridingwyvernarmore2\Wyvern_Armored_vehicle.M2 |
+| 125 | patch-Z | 970125 | 960125 | 940077 | 900261 | 지상탈 | 호랑이 탈것 #3 | Creature\saber2\saber2mountsimple.m2 |
+| 126 | patch-Z | 970126 | 960126 | 940078 | 900262 | 날탈 | 태양 폭풍까마귀 #2 | Creature\stormcrowmount_solar\stormcrowmount_low.m2 |
+| 127 | patch-Z | 970127 | 960127 | 940079 | 900263 | 날탈 | 작은 태양 폭풍까마귀 | Creature\stormcrowmount_solar\stormcrowmount_solar_low.m2 |
+| 128 | patch-Z | 970128 | 960128 | 940080 | 900264 | 날탈 | 칠면조 탈것 | Creature\turkeymount\turkey_hd.m2 |
+| 129 | patch-Z | 970129 | 960129 | 940081 | 900265 | 지상탈 | 언데드 군마 | Creature\UndeadHorse2\ridingundeadhorse.m2 |
+| 130 | patch-Z | 970130 | 960130 | 940082 | 900266 | 지상탈 | 언데드 전투마 | Creature\UndeadHorse2\ridingundeadwarhorse.m2 |
+| 131 | patch-Z | 970131 | 960131 | 940083 | 900267 | 지상탈 | 전투 군마 #3 | Creature\warhorse2\pvpwarhorse2.m2 |
+| 132 | patch-Z | 970132 | 960132 | 940084 | 900268 | 지상탈 | 전투 군마 #4 | Creature\warhorse3a\PVPWarHorse.M2 |
+| 133 | patch-Z | 970133 | 960133 | 940085 | 900269 | 지상탈 | 전투 군마 #5 | Creature\warhorse3a\pvpwarhorse2.m2 |
+| 134 | patch-Z | 970134 | 960134 | 940086 | 900270 | 지상탈 | 전투 군마 #6 | Creature\warhorse3b\PVPWarHorse.M2 |
+| 135 | patch-Z | 970135 | 960135 | 940087 | 900271 | 지상탈 | 전투 군마 #7 | Creature\warhorse3b\pvpwarhorse2.m2 |
+| 136 | patch-Z | 970136 | 960136 | 940088 | 900272 | 날탈 | 와이번 #3 | Creature\Wyver2\Wyvern_mount.M2 |
+| 137 | patch-Z | 970137 | 960137 | 940089 | 900273 | 지상탈 | 얼룩말 탈것 | Creature\ZebraMount2\Zebramount.m2 |

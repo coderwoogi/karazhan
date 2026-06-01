@@ -1,0 +1,755 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AzerothCore 크리처 룻 테이블 초보자 가이드</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f1e8;
+      --paper: #fffaf0;
+      --ink: #252018;
+      --muted: #6c6255;
+      --line: #dfd3c2;
+      --accent: #8b4513;
+      --accent-soft: #efe0c8;
+      --code: #2f2418;
+      --code-bg: #f1e6d4;
+      --good: #236b4a;
+      --warn: #9a5b00;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top left, rgba(139, 69, 19, 0.12), transparent 34rem),
+        linear-gradient(135deg, #f8f2e8 0%, var(--bg) 48%, #eadcc8 100%);
+      color: var(--ink);
+      font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+      line-height: 1.72;
+    }
+
+    .page {
+      width: min(1080px, calc(100% - 32px));
+      margin: 32px auto;
+      padding: 36px;
+      background: rgba(255, 250, 240, 0.96);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 24px 70px rgba(67, 45, 20, 0.16);
+    }
+
+    header {
+      padding: 8px 0 26px;
+      border-bottom: 2px solid var(--line);
+    }
+
+    h1 {
+      margin: 0 0 14px;
+      font-size: clamp(2rem, 4vw, 3.4rem);
+      line-height: 1.14;
+      letter-spacing: -0.04em;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .summary {
+      margin: 24px 0 0;
+      padding: 18px 20px;
+      background: var(--accent-soft);
+      border-left: 5px solid var(--accent);
+      border-radius: 14px;
+      font-weight: 700;
+    }
+
+    nav {
+      margin: 26px 0;
+      padding: 20px;
+      background: #fff4df;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+    }
+
+    nav h2 {
+      margin-top: 0;
+    }
+
+    nav ol {
+      margin-bottom: 0;
+      columns: 2;
+      column-gap: 36px;
+    }
+
+    section {
+      padding: 24px 0;
+      border-top: 1px solid rgba(223, 211, 194, 0.85);
+    }
+
+    section:first-of-type {
+      border-top: 0;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      color: var(--accent);
+      font-size: 1.55rem;
+      line-height: 1.35;
+      letter-spacing: -0.02em;
+    }
+
+    p {
+      margin: 10px 0;
+    }
+
+    table {
+      width: 100%;
+      margin: 16px 0 22px;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: white;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #ead8bd;
+      color: #3a2818;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    code {
+      padding: 0.12rem 0.35rem;
+      background: var(--code-bg);
+      border-radius: 6px;
+      color: var(--code);
+      font-family: Consolas, "Cascadia Mono", monospace;
+      font-size: 0.95em;
+    }
+
+    pre {
+      margin: 16px 0 22px;
+      padding: 18px;
+      overflow-x: auto;
+      background: #2f2418;
+      border-radius: 16px;
+      color: #fff7e8;
+      line-height: 1.55;
+    }
+
+    pre code {
+      padding: 0;
+      background: transparent;
+      color: inherit;
+    }
+
+    .note {
+      margin: 16px 0;
+      padding: 15px 18px;
+      background: #f7ead6;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    .good {
+      color: var(--good);
+      font-weight: 700;
+    }
+
+    .warn {
+      color: var(--warn);
+      font-weight: 700;
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 18px, 1080px);
+        margin: 10px auto;
+        padding: 20px 14px;
+        border-radius: 18px;
+      }
+
+      nav ol {
+        columns: 1;
+      }
+
+      table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1>AzerothCore 크리처 룻 테이블 초보자 가이드</h1>
+      <p class="lead">몬스터가 아이템을 드랍하는 구조를 비개발자도 이해할 수 있도록 정리한 문서입니다.</p>
+      <div class="summary">
+        핵심: 몬스터 룻은 단순히 "아이템 A가 10%로 나온다"만 보는 구조가 아닙니다. 어떤 룻 목록을 쓰는지, 독립 확률인지, 그룹 안에서 하나를 고르는지, 다른 룻 묶음을 참조하는지를 함께 봐야 합니다.
+      </div>
+    </header>
+
+    <nav aria-label="문서 목차">
+      <h2>목차</h2>
+      <ol>
+        <li><a href="#start">몬스터 룻은 어디서 시작되나</a></li>
+        <li><a href="#columns">주요 컬럼</a></li>
+        <li><a href="#independent">독립 드랍</a></li>
+        <li><a href="#group">그룹 룻</a></li>
+        <li><a href="#zero">0.0%인데 드랍되는 이유</a></li>
+        <li><a href="#reference">Reference 룻</a></li>
+        <li><a href="#count">수량</a></li>
+        <li><a href="#quest">퀘스트 조건</a></li>
+        <li><a href="#lootmode">LootMode</a></li>
+        <li><a href="#check">확인 순서</a></li>
+        <li><a href="#misunderstanding">흔한 오해</a></li>
+        <li><a href="#safe-edit">안전한 수정 방식</a></li>
+      </ol>
+    </nav>
+
+    <section id="start">
+      <h2>1. 몬스터 룻은 어디서 시작되나</h2>
+      <p>몬스터가 죽었을 때 어떤 룻을 줄지는 보통 <code>creature_template</code> 테이블의 <code>lootid</code> 값에서 시작합니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>테이블</th>
+            <th>역할</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>creature_template</code></td>
+            <td>몬스터 기본 정보</td>
+          </tr>
+          <tr>
+            <td><code>creature_template.lootid</code></td>
+            <td>이 몬스터가 사용할 룻 목록 번호</td>
+          </tr>
+          <tr>
+            <td><code>creature_loot_template.Entry</code></td>
+            <td>실제 룻 목록 번호</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>예를 들어 어떤 몬스터의 <code>lootid</code>가 <code>12345</code>라면, 실제 룻 목록은 <code>creature_loot_template</code>에서 <code>Entry = 12345</code>인 행들을 보면 됩니다.</p>
+      <pre><code class="language-sql">SELECT entry, name, lootid
+FROM creature_template
+WHERE entry = 몬스터ID;
+
+SELECT *
+FROM creature_loot_template
+WHERE Entry = 룻ID
+ORDER BY GroupId, Chance DESC;</code></pre>
+    </section>
+
+    <section id="columns">
+      <h2>2. creature_loot_template의 주요 컬럼</h2>
+      <p><code>creature_loot_template</code>는 몬스터가 어떤 아이템을 드랍할 수 있는지 정의하는 테이블입니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>컬럼</th>
+            <th>쉬운 설명</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>Entry</code></td>
+            <td>룻 목록 번호입니다. 보통 <code>creature_template.lootid</code>와 연결됩니다.</td>
+          </tr>
+          <tr>
+            <td><code>Item</code></td>
+            <td>드랍될 아이템 ID입니다.</td>
+          </tr>
+          <tr>
+            <td><code>Reference</code></td>
+            <td>다른 룻 묶음을 가져올 때 사용하는 번호입니다.</td>
+          </tr>
+          <tr>
+            <td><code>Chance</code></td>
+            <td>드랍 확률입니다. 단, 그룹 여부에 따라 의미가 달라집니다.</td>
+          </tr>
+          <tr>
+            <td><code>QuestRequired</code></td>
+            <td>특정 퀘스트가 있어야 보이는 룻인지 여부입니다.</td>
+          </tr>
+          <tr>
+            <td><code>LootMode</code></td>
+            <td>일반/영웅/난이도 같은 룻 모드 조건입니다.</td>
+          </tr>
+          <tr>
+            <td><code>GroupId</code></td>
+            <td>같은 그룹 안에서 하나를 고르는 룻 묶음 번호입니다.</td>
+          </tr>
+          <tr>
+            <td><code>MinCount</code></td>
+            <td>최소 드랍 수량입니다.</td>
+          </tr>
+          <tr>
+            <td><code>MaxCount</code></td>
+            <td>최대 드랍 수량입니다.</td>
+          </tr>
+          <tr>
+            <td><code>Comment</code></td>
+            <td>사람이 보기 위한 설명입니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="independent">
+      <h2>3. 가장 기본적인 룻 방식: 독립 드랍</h2>
+      <p><code>GroupId = 0</code>인 아이템은 보통 각각 따로 확률을 굴립니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Chance</th>
+            <th>GroupId</th>
+            <th>의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1001</td>
+            <td>50</td>
+            <td>0</td>
+            <td>50% 확률로 따로 드랍</td>
+          </tr>
+          <tr>
+            <td>1002</td>
+            <td>20</td>
+            <td>0</td>
+            <td>20% 확률로 따로 드랍</td>
+          </tr>
+          <tr>
+            <td>1003</td>
+            <td>5</td>
+            <td>0</td>
+            <td>5% 확률로 따로 드랍</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>이 경우 세 아이템은 서로 독립입니다. 운이 좋으면 세 개가 한 번에 모두 나올 수도 있고, 아무것도 안 나올 수도 있습니다.</p>
+    </section>
+
+    <section id="group">
+      <h2>4. 그룹 룻: 여러 개 중 하나만 고르는 방식</h2>
+      <p><code>GroupId</code>가 0보다 크면, 같은 <code>Entry</code>와 같은 <code>GroupId</code>를 가진 아이템들은 하나의 그룹으로 묶입니다.</p>
+      <p>쉽게 말하면 <strong>"이 목록 중 하나를 골라라"</strong>입니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Chance</th>
+            <th>GroupId</th>
+            <th>의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2001</td>
+            <td>0</td>
+            <td>1</td>
+            <td>그룹 1 후보</td>
+          </tr>
+          <tr>
+            <td>2002</td>
+            <td>0</td>
+            <td>1</td>
+            <td>그룹 1 후보</td>
+          </tr>
+          <tr>
+            <td>2003</td>
+            <td>0</td>
+            <td>1</td>
+            <td>그룹 1 후보</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>이 경우 <code>Chance</code>가 모두 <code>0</code>이어도 드랍이 안 되는 것이 아닙니다. 그룹 안에서 세 아이템 중 하나가 선택됩니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>실제 느낌</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>2001</td>
+            <td>약 33.33%</td>
+          </tr>
+          <tr>
+            <td>2002</td>
+            <td>약 33.33%</td>
+          </tr>
+          <tr>
+            <td>2003</td>
+            <td>약 33.33%</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="zero">
+      <h2>5. 0.0%인데 드랍되는 이유</h2>
+      <p>DB에서 <code>Chance = 0.0</code>으로 보이는데 실제로 드랍되는 경우가 있습니다. 이것은 대부분 버그가 아니라 룻 시스템의 정상 동작입니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>상황</th>
+            <th><code>0.0%</code>의 의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>GroupId &gt; 0</code>이고 같은 그룹에 여러 아이템이 있음</td>
+            <td>남은 확률을 자동으로 나눠 가짐</td>
+          </tr>
+          <tr>
+            <td>같은 그룹의 아이템이 전부 <code>0.0%</code>임</td>
+            <td>서로 균등 확률로 선택됨</td>
+          </tr>
+          <tr>
+            <td><code>Reference</code>가 0이 아님</td>
+            <td>실제 확률은 다른 룻 테이블에서 계산됨</td>
+          </tr>
+          <tr>
+            <td><code>GroupId = 0</code>, <code>Reference = 0</code>, <code>Chance = 0</code></td>
+            <td>보통 직접 드랍 설정으로는 부자연스러움</td>
+          </tr>
+        </tbody>
+      </table>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Chance</th>
+            <th>GroupId</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>3001</td>
+            <td>20</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td>3002</td>
+            <td>30</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td>3003</td>
+            <td>0</td>
+            <td>1</td>
+          </tr>
+          <tr>
+            <td>3004</td>
+            <td>0</td>
+            <td>1</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>이 경우 3001은 20%, 3002는 30%입니다. 남은 50%를 3003과 3004가 나눠 가집니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>실제 확률</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>3001</td>
+            <td>20%</td>
+          </tr>
+          <tr>
+            <td>3002</td>
+            <td>30%</td>
+          </tr>
+          <tr>
+            <td>3003</td>
+            <td>25%</td>
+          </tr>
+          <tr>
+            <td>3004</td>
+            <td>25%</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <span class="warn">중요:</span> <code>0.0%</code>는 항상 "안 나옴"이 아닙니다. 그룹 안에서는 "남은 확률을 알아서 나눠 가져라"라는 의미로 쓰일 수 있습니다.
+      </div>
+    </section>
+
+    <section id="reference">
+      <h2>6. Reference 룻이란</h2>
+      <p><code>Reference</code>는 "다른 룻 묶음을 가져와서 사용하라"는 뜻입니다.</p>
+      <p>여러 몬스터가 같은 보석 묶음, 같은 전문기술 재료 묶음, 같은 월드 드랍 묶음을 공유할 때 사용합니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>테이블</th>
+            <th>역할</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>creature_loot_template</code></td>
+            <td>몬스터가 직접 사용하는 룻 목록</td>
+          </tr>
+          <tr>
+            <td><code>reference_loot_template</code></td>
+            <td>여러 곳에서 재사용할 수 있는 공용 룻 묶음</td>
+          </tr>
+        </tbody>
+      </table>
+      <table>
+        <thead>
+          <tr>
+            <th>Entry</th>
+            <th>Item</th>
+            <th>Reference</th>
+            <th>Chance</th>
+            <th>의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>12345</td>
+            <td>0</td>
+            <td>90000</td>
+            <td>10</td>
+            <td>10% 확률로 참조 룻 90000을 사용</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>이 경우 실제 아이템은 <code>creature_loot_template</code>에 직접 없을 수 있습니다. 대신 <code>reference_loot_template</code>에서 <code>Entry = 90000</code>인 목록을 다시 봐야 합니다.</p>
+      <pre><code class="language-sql">SELECT *
+FROM reference_loot_template
+WHERE Entry = 90000
+ORDER BY GroupId, Chance DESC;</code></pre>
+    </section>
+
+    <section id="count">
+      <h2>7. 수량은 Chance가 아니라 MinCount와 MaxCount가 정한다</h2>
+      <p>아이템이 몇 개 나오는지는 <code>Chance</code>가 아니라 <code>MinCount</code>, <code>MaxCount</code>가 정합니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Chance</th>
+            <th>MinCount</th>
+            <th>MaxCount</th>
+            <th>의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>50</td>
+            <td>1</td>
+            <td>1</td>
+            <td>50% 확률로 1개 드랍</td>
+          </tr>
+          <tr>
+            <td>50</td>
+            <td>2</td>
+            <td>5</td>
+            <td>50% 확률로 2개에서 5개 드랍</td>
+          </tr>
+          <tr>
+            <td>100</td>
+            <td>3</td>
+            <td>3</td>
+            <td>항상 3개 드랍</td>
+          </tr>
+        </tbody>
+      </table>
+      <p><code>Chance</code>는 "나올지 말지"이고, <code>MinCount</code>, <code>MaxCount</code>는 "나온다면 몇 개 나올지"입니다.</p>
+    </section>
+
+    <section id="quest">
+      <h2>8. QuestRequired는 퀘스트 조건이다</h2>
+      <p><code>QuestRequired</code>가 1이면, 보통 관련 퀘스트를 가진 플레이어에게만 보이는 룻입니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>QuestRequired</th>
+            <th>의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>0</td>
+            <td>일반 룻</td>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td>퀘스트 조건이 있을 때만 보이는 룻</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>어떤 아이템이 DB에는 있는데 일반 사냥에서는 안 보인다면 <code>QuestRequired</code>를 확인해야 합니다.</p>
+    </section>
+
+    <section id="lootmode">
+      <h2>9. LootMode는 난이도나 모드 조건이다</h2>
+      <p><code>LootMode</code>는 해당 룻이 어떤 모드에서 적용되는지 정하는 값입니다.</p>
+      <p>일반 던전, 영웅 던전, 공격대 난이도 등에 따라 다른 룻을 쓰게 할 수 있습니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>LootMode</th>
+            <th>쉬운 의미</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>기본 룻 모드에서 사용</td>
+          </tr>
+          <tr>
+            <td>그 외 값</td>
+            <td>특정 난이도나 조건에서만 사용될 수 있음</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>정확한 의미는 코어 설정과 난이도 구조에 따라 달라질 수 있으므로, 특정 몬스터의 룻을 수정할 때는 기존 같은 몬스터나 같은 던전의 다른 룻 설정을 참고하는 것이 안전합니다.</p>
+    </section>
+
+    <section id="check">
+      <h2>10. 룻을 확인할 때 보는 순서</h2>
+      <ol>
+        <li>몬스터의 <code>lootid</code>를 확인합니다.</li>
+        <li><code>creature_loot_template</code>에서 해당 <code>Entry</code>를 찾습니다.</li>
+        <li><code>GroupId</code>가 0인지 아닌지 확인합니다.</li>
+        <li><code>Reference</code>가 0인지 아닌지 확인합니다.</li>
+        <li><code>Reference</code>가 있으면 <code>reference_loot_template</code>도 확인합니다.</li>
+        <li><code>Chance</code>, <code>MinCount</code>, <code>MaxCount</code>를 확인합니다.</li>
+        <li><code>QuestRequired</code>, <code>LootMode</code> 조건을 확인합니다.</li>
+      </ol>
+      <pre><code class="language-sql">-- 몬스터가 어떤 룻 ID를 쓰는지 확인
+SELECT entry, name, lootid
+FROM creature_template
+WHERE entry = 몬스터ID;
+
+-- 몬스터 룻 목록 확인
+SELECT *
+FROM creature_loot_template
+WHERE Entry = 룻ID
+ORDER BY GroupId, Chance DESC, Item;
+
+-- 참조 룻 목록 확인
+SELECT *
+FROM reference_loot_template
+WHERE Entry = 참조ID
+ORDER BY GroupId, Chance DESC, Item;</code></pre>
+    </section>
+
+    <section id="misunderstanding">
+      <h2>11. 흔한 오해</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>오해</th>
+            <th>실제</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>0.0%</code>면 절대 안 나온다</td>
+            <td>그룹 룻에서는 정상적으로 나올 수 있습니다.</td>
+          </tr>
+          <tr>
+            <td><code>Chance</code>만 보면 실제 확률을 알 수 있다</td>
+            <td><code>GroupId</code>, <code>Reference</code>까지 같이 봐야 합니다.</td>
+          </tr>
+          <tr>
+            <td><code>Item</code>에 적힌 값이 항상 실제 드랍 아이템이다</td>
+            <td><code>Reference</code>가 있으면 실제 아이템은 참조 테이블에 있을 수 있습니다.</td>
+          </tr>
+          <tr>
+            <td>수량은 확률과 관련 있다</td>
+            <td>수량은 <code>MinCount</code>, <code>MaxCount</code>가 정합니다.</td>
+          </tr>
+          <tr>
+            <td>DB에 있는데 안 나온다면 확률 문제다</td>
+            <td>퀘스트 조건, 룻 모드, 참조 테이블 문제일 수도 있습니다.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="analogy">
+      <h2>12. 간단한 비유</h2>
+      <p>룻 테이블은 뽑기 상자라고 보면 됩니다.</p>
+      <p><code>GroupId = 0</code>은 각각 따로 뽑는 뽑기입니다. 예를 들어 사탕 50%, 초콜릿 20%, 쿠키 5%를 각각 따로 뽑습니다. 운이 좋으면 셋 다 나올 수 있습니다.</p>
+      <p><code>GroupId &gt; 0</code>은 한 상자 안에서 하나만 뽑는 방식입니다. 예를 들어 칼, 도끼, 지팡이가 같은 그룹이면 그중 하나만 선택됩니다.</p>
+      <p><code>Reference</code>는 다른 상자를 가져오는 방식입니다. 예를 들어 몬스터 룻 상자 안에 "보석 상자 열기"가 들어 있고, 실제 보석 목록은 <code>reference_loot_template</code>에 따로 있는 구조입니다.</p>
+    </section>
+
+    <section id="safe-edit">
+      <h2>13. 실무에서 안전하게 수정하는 방법</h2>
+      <p>룻을 수정할 때는 기존 구조를 유지하는 것이 안전합니다.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>하고 싶은 일</th>
+            <th>권장 방식</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>특정 아이템을 독립 확률로 추가</td>
+            <td><code>GroupId = 0</code>, 원하는 <code>Chance</code> 지정</td>
+          </tr>
+          <tr>
+            <td>여러 아이템 중 하나만 나오게 하기</td>
+            <td>같은 <code>GroupId</code>로 묶기</td>
+          </tr>
+          <tr>
+            <td>같은 룻 묶음을 여러 몬스터가 쓰게 하기</td>
+            <td><code>reference_loot_template</code> 사용</td>
+          </tr>
+          <tr>
+            <td>무조건 드랍하게 하기</td>
+            <td><code>Chance = 100</code>, <code>MinCount</code>, <code>MaxCount</code> 설정</td>
+          </tr>
+          <tr>
+            <td>퀘스트 아이템으로 만들기</td>
+            <td><code>QuestRequired = 1</code> 여부 검토</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="note">
+        <span class="good">정리:</span> <code>0.0%</code>가 보인다고 바로 잘못된 데이터로 판단하면 안 됩니다. 반드시 <code>GroupId</code>와 <code>Reference</code>를 같이 확인해야 합니다.
+      </div>
+    </section>
+  </main>
+</body>
+</html>

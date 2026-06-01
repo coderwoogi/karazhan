@@ -232,7 +232,12 @@ namespace
         EVENT_BURST = 5,
         EVENT_UTILITY = 6,
         EVENT_CC = 7,
-        EVENT_AOE = 8
+        EVENT_AOE = 8,
+        EVENT_INTERRUPT = 9,
+        EVENT_MOBILITY = 10,
+        EVENT_TAUNT = 11,
+        EVENT_HEAL = 12,
+        EVENT_RESOURCE = 13
     };
 
     struct StageConfig
@@ -462,6 +467,17 @@ namespace
         TacticalSpell Utility;
         TacticalSpell CrowdControl;
         TacticalSpell Area;
+        TacticalSpell Interrupt;
+        TacticalSpell Mobility;
+        TacticalSpell Taunt;
+        TacticalSpell Heal;
+        TacticalSpell Resource;
+    };
+
+    struct OpeningPackage
+    {
+        uint32 BuffSpell = 0;
+        uint32 StanceSpell = 0;
     };
 
     ShadowArchetype GetShadowArchetype(uint8 playerClass, uint32 activeSpec)
@@ -560,6 +576,7 @@ namespace
             case 36554: // Shadowstep
             case 49576: // Death Grip
             case 16979: // Feral Charge
+            case 49377: // Feral Charge
                 return true;
             default:
                 return false;
@@ -2353,7 +2370,7 @@ namespace
             ChatHandler(player->GetSession()).PSendSysMessage("{}", message);
         }
 
-        static void SendShadowStatsToGMs(Player* player,
+        static void SendShadowStatsToPlayer(Player* player,
             ArenaSession const& session, Creature* summon,
             ShadowProfile const& profile)
         {
@@ -2390,16 +2407,7 @@ namespace
                     profile.HasteRating, profile.CastSpeedRate);
             }
 
-            for (auto const& [_, worldSession] : sWorldSessionMgr->GetAllSessions())
-            {
-                if (!worldSession ||
-                    worldSession->GetSecurity() < SEC_GAMEMASTER)
-                {
-                    continue;
-                }
-
-                ChatHandler(worldSession).SendGMText(message);
-            }
+            SendSystem(player, message);
         }
 
         std::unordered_map<uint8, StageConfig> _stages;
@@ -2419,6 +2427,7 @@ namespace
 
     SpellPackage GetSpellPackage(uint8 playerClass, uint32 activeSpec);
     TacticalPackage GetTacticalPackage(uint8 playerClass, uint32 activeSpec);
+    OpeningPackage GetOpeningPackage(uint8 playerClass, uint32 activeSpec);
     uint32 ComputeShadowSpellDamage(Creature* me,
         ShadowProfile const& profile,
         float factor);
@@ -4873,7 +4882,7 @@ bool SoloArenaMgr::SpawnShadow(Player* player, ArenaSession& session)
         session.State = SessionState::WaitingForStart;
 
     _shadowProfiles[summon->GetGUID().GetCounter()] = profile;
-    SendShadowStatsToGMs(player, session, summon, profile);
+    SendShadowStatsToPlayer(player, session, summon, profile);
 
     summon->ClearInCombat();
     player->ClearInCombat();
@@ -6014,7 +6023,7 @@ void SoloArenaMgr::GrantStageRewards(Player* player, ArenaSession const& session
         "reward_rank_value, reward_rank_label "
         "FROM solo_arena_stage_reward "
         "WHERE stage_id = {} AND enabled = 1 "
-        "AND (reward_rank_value = 0 OR reward_rank_value <= {}) "
+        "AND reward_rank_value = {} "
         "ORDER BY sort_order, id",
         session.StageId, session.RankValue);
 
@@ -7045,7 +7054,7 @@ namespace
                 switch (activeSpec)
                 {
                     case TALENT_TREE_WARRIOR_FURY:
-                        return { 23881, 47450, 47520, 12975,
+                        return { 47450, 47471, 47520, 871,
                             SPELL_SCHOOL_MASK_NORMAL,
                             SPELL_SCHOOL_MASK_NORMAL,
                             SPELL_SCHOOL_MASK_NORMAL,
@@ -7054,7 +7063,7 @@ namespace
                             5.0f, 5.0f, 8.0f, 0.0f,
                             3200, 4500, 6500, 15000, 0.40f };
                     case TALENT_TREE_WARRIOR_PROTECTION:
-                        return { 47488, 57823, 47498, 871,
+                        return { 47488, 57823, 47475, 871,
                             SPELL_SCHOOL_MASK_NORMAL,
                             SPELL_SCHOOL_MASK_NORMAL,
                             SPELL_SCHOOL_MASK_NORMAL,
@@ -7063,7 +7072,7 @@ namespace
                             5.0f, 5.0f, 5.0f, 0.0f,
                             3300, 4800, 7000, 18000, 0.45f };
                     default:
-                        return { 47486, 47450, 7384, 871,
+                        return { 47450, 47471, 7384, 871,
                             SPELL_SCHOOL_MASK_NORMAL,
                             SPELL_SCHOOL_MASK_NORMAL,
                             SPELL_SCHOOL_MASK_NORMAL,
@@ -7076,16 +7085,16 @@ namespace
                 switch (activeSpec)
                 {
                     case TALENT_TREE_PALADIN_HOLY:
-                        return { 48825, 48819, 48817, 48785,
+                        return { 48801, 20271, 48806, 48785,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
                             0.95f, 0.90f, 1.05f, 0.0f,
-                            20.0f, 8.0f, 20.0f, 0.0f,
+                            30.0f, 20.0f, 20.0f, 0.0f,
                             3200, 5200, 6500, 16000, 0.50f };
                     case TALENT_TREE_PALADIN_PROTECTION:
-                        return { 53595, 48827, 48806, 642,
+                        return { 61411, 48819, 48806, 642,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
@@ -7094,7 +7103,7 @@ namespace
                             5.0f, 10.0f, 20.0f, 0.0f,
                             3200, 5200, 7000, 18000, 0.45f };
                     default:
-                        return { 35395, 48806, 48801, 642,
+                        return { 48806, 48801, 20271, 642,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
@@ -7104,7 +7113,7 @@ namespace
                             3000, 5200, 7000, 18000, 0.40f };
                 }
             case CLASS_HUNTER:
-                return { 49045, 49052, 49050, 19263,
+                return { 49045, 49052, 49048, 19263,
                     SPELL_SCHOOL_MASK_ARCANE,
                     SPELL_SCHOOL_MASK_NORMAL,
                     SPELL_SCHOOL_MASK_NORMAL,
@@ -7125,16 +7134,16 @@ namespace
                 switch (activeSpec)
                 {
                     case TALENT_TREE_PRIEST_DISCIPLINE:
-                        return { 48066, 53007, 48123, 47585,
+                        return { 48123, 48135, 48127, 48066,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
+                            SPELL_SCHOOL_MASK_SHADOW,
                             SPELL_SCHOOL_MASK_HOLY,
-                            SPELL_SCHOOL_MASK_HOLY,
-                            0.0f, 1.00f, 0.95f, 0.0f,
-                            0.0f, 30.0f, 30.0f, 0.0f,
-                            5000, 3500, 5200, 16000, 0.45f };
+                            0.95f, 1.00f, 1.05f, 0.0f,
+                            30.0f, 30.0f, 30.0f, 0.0f,
+                            3200, 4500, 5200, 16000, 0.45f };
                     case TALENT_TREE_PRIEST_HOLY:
-                        return { 48135, 48134, 48071, 47788,
+                        return { 48135, 48123, 48071, 48066,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
                             SPELL_SCHOOL_MASK_HOLY,
@@ -7143,7 +7152,7 @@ namespace
                             30.0f, 30.0f, 0.0f, 0.0f,
                             3200, 4500, 6200, 16000, 0.45f };
                     default:
-                        return { 48127, 48156, 48300, 47585,
+                        return { 48127, 48125, 48300, 48066,
                             SPELL_SCHOOL_MASK_SHADOW,
                             SPELL_SCHOOL_MASK_SHADOW,
                             SPELL_SCHOOL_MASK_SHADOW,
@@ -7165,7 +7174,7 @@ namespace
                             5.0f, 20.0f, 5.0f, 0.0f,
                             3200, 4800, 6500, 16000, 0.45f };
                     case TALENT_TREE_DEATH_KNIGHT_UNHOLY:
-                        return { 49909, 49895, 49938, 48792,
+                        return { 49909, 49930, 49938, 48792,
                             SPELL_SCHOOL_MASK_FROST,
                             SPELL_SCHOOL_MASK_SHADOW,
                             SPELL_SCHOOL_MASK_SHADOW,
@@ -7187,7 +7196,7 @@ namespace
                 switch (activeSpec)
                 {
                     case TALENT_TREE_SHAMAN_ENHANCEMENT:
-                        return { 17364, 49231, 49238, 30823,
+                        return { 49231, 49238, 49233, 49276,
                             SPELL_SCHOOL_MASK_NATURE,
                             SPELL_SCHOOL_MASK_NATURE,
                             SPELL_SCHOOL_MASK_NATURE,
@@ -7196,16 +7205,16 @@ namespace
                             5.0f, 20.0f, 25.0f, 0.0f,
                             2800, 4300, 6000, 15000, 0.45f };
                     case TALENT_TREE_SHAMAN_RESTORATION:
-                        return { 49238, 49276, 49233, 30823,
-                            SPELL_SCHOOL_MASK_NATURE,
+                        return { 49238, 60043, 49233, 49276,
                             SPELL_SCHOOL_MASK_NATURE,
                             SPELL_SCHOOL_MASK_FIRE,
+                            SPELL_SCHOOL_MASK_FIRE,
                             SPELL_SCHOOL_MASK_NATURE,
-                            0.90f, 0.0f, 1.00f, 0.0f,
-                            30.0f, 0.0f, 20.0f, 0.0f,
-                            3200, 7000, 5200, 15000, 0.40f };
+                            0.90f, 1.10f, 1.00f, 0.0f,
+                            30.0f, 30.0f, 20.0f, 0.0f,
+                            3200, 4500, 5200, 15000, 0.40f };
                     default:
-                        return { 49238, 60043, 49233, 30823,
+                        return { 49238, 60043, 49233, 49276,
                             SPELL_SCHOOL_MASK_NATURE,
                             SPELL_SCHOOL_MASK_FIRE,
                             SPELL_SCHOOL_MASK_FIRE,
@@ -7218,7 +7227,7 @@ namespace
                 switch (activeSpec)
                 {
                     case TALENT_TREE_MAGE_FIRE:
-                        return { 42833, 55360, 42891, 45438,
+                        return { 42833, 42873, 42926, 45438,
                             SPELL_SCHOOL_MASK_FIRE,
                             SPELL_SCHOOL_MASK_FIRE,
                             SPELL_SCHOOL_MASK_FIRE,
@@ -7227,7 +7236,7 @@ namespace
                             30.0f, 30.0f, 30.0f, 0.0f,
                             2800, 5200, 4200, 16000, 0.40f };
                     case TALENT_TREE_MAGE_ARCANE:
-                        return { 42897, 42846, 44781, 45438,
+                        return { 42897, 42846, 42921, 45438,
                             SPELL_SCHOOL_MASK_ARCANE,
                             SPELL_SCHOOL_MASK_ARCANE,
                             SPELL_SCHOOL_MASK_ARCANE,
@@ -7236,7 +7245,7 @@ namespace
                             30.0f, 30.0f, 30.0f, 0.0f,
                             2600, 4200, 5600, 16000, 0.40f };
                     default:
-                        return { 42842, 42917, 33395, 45438,
+                        return { 42842, 42917, 42914, 45438,
                             SPELL_SCHOOL_MASK_FROST,
                             SPELL_SCHOOL_MASK_FROST,
                             SPELL_SCHOOL_MASK_FROST,
@@ -7258,7 +7267,7 @@ namespace
                             30.0f, 30.0f, 30.0f, 0.0f,
                             2800, 4500, 6200, 17000, 0.45f };
                     case TALENT_TREE_WARLOCK_DESTRUCTION:
-                        return { 47811, 17962, 47809, 48020,
+                        return { 47811, 47838, 47809, 48020,
                             SPELL_SCHOOL_MASK_FIRE,
                             SPELL_SCHOOL_MASK_FIRE,
                             SPELL_SCHOOL_MASK_SHADOW,
@@ -7308,7 +7317,7 @@ namespace
                             2800, 5000, 4200, 15000, 0.45f };
                 }
             default:
-                return { 585, 589, 48135, 17,
+                return { 48123, 48125, 48135, 48066,
                     SPELL_SCHOOL_MASK_HOLY,
                     SPELL_SCHOOL_MASK_SHADOW,
                     SPELL_SCHOOL_MASK_HOLY,
@@ -7326,7 +7335,7 @@ namespace
         switch (playerClass)
         {
             case CLASS_WARRIOR:
-                package.Burst = { 12292, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                package.Burst = { 1719, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                     0.0f, 24000, true, 1.0f, 1.0f, false, false };
                 package.Utility = { 11578, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                     25.0f, 12000, false, 1.0f, 1.0f, false, false };
@@ -7334,40 +7343,64 @@ namespace
                     0.0f, 8.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 1680, SPELL_SCHOOL_MASK_NORMAL, 1.05f,
                     8.0f, 9000, true, 1.0f, 1.0f, false, true };
+                package.Interrupt = { 6552, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    5.0f, 8000, false, 1.0f, 1.0f, true, false };
+                package.Mobility = { 11578, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    25.0f, 12000, false, 1.0f, 1.0f, false, false };
+                package.Taunt = { 1161, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    8.0f, 20000, true, 1.0f, 1.0f, false, true };
+                package.Heal = { 55694, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 25000, true, 0.45f, 1.0f, false, false };
+                package.Resource = { 18499, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 18000, true, 0.85f, 1.0f, false, false };
                 return package;
             case CLASS_PALADIN:
                 package.Burst = { 31884, SPELL_SCHOOL_MASK_HOLY, 0.0f,
                     0.0f, 30000, true, 1.0f, 1.0f, false, false };
-                package.Utility = { 20066, SPELL_SCHOOL_MASK_HOLY, 0.0f,
-                    20.0f, 16000, false, 1.0f, 1.0f, false, false };
+                package.Utility = { 54428, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                    0.0f, 30000, true, 0.85f, 1.0f, false, false };
                 package.CrowdControl = { 10308, SPELL_SCHOOL_MASK_HOLY,
                     0.0f, 10.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 48819, SPELL_SCHOOL_MASK_HOLY, 0.95f,
                     8.0f, 10000, true, 1.0f, 1.0f, false, true };
+                package.Taunt = { 62124, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                    30.0f, 12000, false, 1.0f, 1.0f, false, false };
+                package.Heal = { 48785, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                    0.0f, 10000, true, 0.50f, 1.0f, false, false };
                 return package;
             case CLASS_HUNTER:
                 package.Burst = { 3045, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                     0.0f, 26000, true, 1.0f, 1.0f, false, false };
-                package.Utility = { 34490, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
-                    30.0f, 14000, false, 1.0f, 1.0f, true, false };
-                package.CrowdControl = { 19503, SPELL_SCHOOL_MASK_NORMAL,
+                package.Utility = { 19801, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    30.0f, 14000, false, 1.0f, 1.0f, false, false };
+                package.CrowdControl = { 14311, SPELL_SCHOOL_MASK_FROST,
                     0.0f, 30.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 58434, SPELL_SCHOOL_MASK_NORMAL, 1.00f,
                     35.0f, 12000, false, 1.0f, 1.0f, false, true };
+                package.Mobility = { 781, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 18000, true, 1.0f, 1.0f, false, false };
+                package.Taunt = { 34477, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    30.0f, 30000, false, 1.0f, 1.0f, false, false };
+                package.Heal = { 48990, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                    0.0f, 14000, true, 0.55f, 1.0f, false, false };
                 return package;
             case CLASS_ROGUE:
-                package.Burst = { 13750, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                package.Burst = { 26889, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                     0.0f, 25000, true, 1.0f, 1.0f, false, false };
-                package.Utility = { 36554, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
-                    25.0f, 12000, false, 1.0f, 1.0f, false, false };
+                package.Utility = { 11305, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 18000, true, 1.0f, 1.0f, false, false };
                 package.CrowdControl = { 2094, SPELL_SCHOOL_MASK_NORMAL,
                     0.0f, 10.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 51723, SPELL_SCHOOL_MASK_NORMAL, 1.00f,
                     8.0f, 11000, true, 1.0f, 1.0f, false, true };
+                package.Interrupt = { 1766, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    5.0f, 8000, false, 1.0f, 1.0f, true, false };
+                package.Mobility = { 11305, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 18000, true, 1.0f, 1.0f, false, false };
+                package.Taunt = { 57934, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    30.0f, 30000, false, 1.0f, 1.0f, false, false };
                 return package;
             case CLASS_PRIEST:
-                package.Utility = { 15487, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
-                    30.0f, 14000, false, 1.0f, 1.0f, true, false };
                 package.CrowdControl = { 10890, SPELL_SCHOOL_MASK_SHADOW,
                     0.0f, 8.0f, 18000, true, 1.0f, 1.0f, false, true };
                 if (activeSpec == TALENT_TREE_PRIEST_SHADOW)
@@ -7375,26 +7408,38 @@ namespace
                     package.Burst = { 34433, SPELL_SCHOOL_MASK_SHADOW,
                         0.0f, 30.0f, 24000, false, 1.0f, 0.60f, false,
                         false };
-                    package.Area = { 53022, SPELL_SCHOOL_MASK_SHADOW, 0.95f,
+                    package.Area = { 53023, SPELL_SCHOOL_MASK_SHADOW, 0.95f,
                         30.0f, 12000, false, 1.0f, 1.0f, false, true };
                 }
                 else
                 {
-                    package.Burst = { 10060, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                    package.Burst = { 48066, SPELL_SCHOOL_MASK_HOLY, 0.0f,
                         0.0f, 26000, true, 1.0f, 1.0f, false, false };
                     package.Area = { 48078, SPELL_SCHOOL_MASK_HOLY, 0.85f,
                         10.0f, 11000, true, 1.0f, 1.0f, false, true };
                 }
+                package.Heal = { 48071, SPELL_SCHOOL_MASK_HOLY, 0.0f,
+                    0.0f, 8500, true, 0.55f, 1.0f, false, false };
+                package.Taunt = { 586, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                    0.0f, 20000, true, 0.85f, 1.0f, false, false };
                 return package;
             case CLASS_DEATH_KNIGHT:
-                package.Burst = { 55268, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                package.Burst = { 48743, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
                     0.0f, 26000, true, 0.80f, 1.0f, false, false };
-                package.Utility = { 49576, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                package.Utility = { 56222, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
                     30.0f, 12000, false, 1.0f, 1.0f, false, false };
                 package.CrowdControl = { 47476, SPELL_SCHOOL_MASK_SHADOW,
                     0.0f, 20.0f, 16000, false, 1.0f, 1.0f, true, false };
                 package.Area = { 49938, SPELL_SCHOOL_MASK_SHADOW, 1.00f,
                     20.0f, 12000, false, 1.0f, 1.0f, false, true };
+                package.Interrupt = { 47528, SPELL_SCHOOL_MASK_FROST, 0.0f,
+                    5.0f, 8000, false, 1.0f, 1.0f, true, false };
+                package.Taunt = { 56222, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                    30.0f, 12000, false, 1.0f, 1.0f, false, false };
+                package.Heal = { 48743, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                    0.0f, 18000, true, 0.50f, 1.0f, false, false };
+                package.Resource = { 47568, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    0.0f, 18000, true, 1.0f, 1.0f, false, false };
                 return package;
             case CLASS_SHAMAN:
                 package.Burst = { 2825, SPELL_SCHOOL_MASK_NATURE, 0.0f,
@@ -7405,16 +7450,20 @@ namespace
                     0.0f, 30.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 49271, SPELL_SCHOOL_MASK_NATURE, 1.00f,
                     30.0f, 11000, false, 1.0f, 1.0f, false, true };
+                package.Interrupt = { 57994, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                    25.0f, 8000, false, 1.0f, 1.0f, true, false };
+                package.Heal = { 49276, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                    0.0f, 8500, true, 0.55f, 1.0f, false, false };
                 return package;
             case CLASS_MAGE:
                 if (activeSpec == TALENT_TREE_MAGE_FIRE)
-                    package.Burst = { 11129, SPELL_SCHOOL_MASK_FIRE, 0.0f,
+                    package.Burst = { 55342, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
                         0.0f, 26000, true, 1.0f, 1.0f, false, false };
                 else if (activeSpec == TALENT_TREE_MAGE_ARCANE)
-                    package.Burst = { 12042, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
+                    package.Burst = { 55342, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
                         0.0f, 26000, true, 1.0f, 1.0f, false, false };
                 else
-                    package.Burst = { 12472, SPELL_SCHOOL_MASK_FROST, 0.0f,
+                    package.Burst = { 55342, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
                         0.0f, 26000, true, 1.0f, 1.0f, false, false };
                 package.Utility = { 2139, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
                     30.0f, 12000, false, 1.0f, 1.0f, true, false };
@@ -7422,9 +7471,17 @@ namespace
                     0.0f, 10.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 42926, SPELL_SCHOOL_MASK_FIRE, 1.05f,
                     30.0f, 12000, false, 1.0f, 1.0f, false, true };
+                package.Interrupt = { 2139, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
+                    30.0f, 12000, false, 1.0f, 1.0f, true, false };
+                package.Mobility = { 1953, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
+                    0.0f, 15000, true, 0.90f, 1.0f, false, false };
+                package.Heal = { 45438, SPELL_SCHOOL_MASK_FROST, 0.0f,
+                    0.0f, 30000, true, 0.35f, 1.0f, false, false };
+                package.Resource = { 12051, SPELL_SCHOOL_MASK_ARCANE, 0.0f,
+                    0.0f, 30000, true, 0.90f, 1.0f, false, false };
                 return package;
             case CLASS_WARLOCK:
-                package.Burst = { 17962, SPELL_SCHOOL_MASK_FIRE, 1.20f,
+                package.Burst = { 47838, SPELL_SCHOOL_MASK_FIRE, 1.20f,
                     20.0f, 12000, false, 1.0f, 0.65f, false, false };
                 package.Utility = { 47860, SPELL_SCHOOL_MASK_SHADOW, 0.90f,
                     20.0f, 16000, false, 1.0f, 1.0f, false, false };
@@ -7432,11 +7489,17 @@ namespace
                     0.0f, 30.0f, 18000, false, 1.0f, 1.0f, false, false };
                 package.Area = { 47820, SPELL_SCHOOL_MASK_FIRE, 0.95f,
                     30.0f, 12000, false, 1.0f, 1.0f, false, true };
+                package.Taunt = { 29858, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                    0.0f, 22000, true, 0.80f, 1.0f, false, false };
+                package.Heal = { 47856, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                    0.0f, 12000, true, 0.55f, 1.0f, false, false };
+                package.Resource = { 57946, SPELL_SCHOOL_MASK_SHADOW, 0.0f,
+                    0.0f, 16000, true, 0.75f, 1.0f, false, false };
                 return package;
             case CLASS_DRUID:
                 if (activeSpec == TALENT_TREE_DRUID_FERAL_COMBAT)
                 {
-                    package.Burst = { 17116, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    package.Burst = { 5229, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
                         0.0f, 22000, true, 1.0f, 1.0f, false, false };
                     package.Utility = { 16979, SPELL_SCHOOL_MASK_NATURE, 0.0f,
                         25.0f, 12000, false, 1.0f, 1.0f, false, false };
@@ -7457,17 +7520,55 @@ namespace
                     package.Area = { 48467, SPELL_SCHOOL_MASK_ARCANE, 1.00f,
                         30.0f, 12000, false, 1.0f, 1.0f, false, true };
                 }
+                package.Mobility = { 16979, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                    25.0f, 12000, false, 1.0f, 1.0f, false, false };
+                package.Taunt = { 5209, SPELL_SCHOOL_MASK_NORMAL, 0.0f,
+                    8.0f, 18000, true, 1.0f, 1.0f, false, true };
+                package.Heal = { 48441, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                    0.0f, 9000, true, 0.55f, 1.0f, false, false };
+                package.Resource = { 29166, SPELL_SCHOOL_MASK_NATURE, 0.0f,
+                    0.0f, 28000, true, 0.85f, 1.0f, false, false };
                 return package;
             default:
                 package.Burst = { 48135, SPELL_SCHOOL_MASK_HOLY, 1.00f,
                     30.0f, 10000, false, 1.0f, 0.60f, false, false };
-                package.Utility = { 15487, SPELL_SCHOOL_MASK_HOLY, 0.0f,
-                    30.0f, 14000, false, 1.0f, 1.0f, true, false };
                 package.CrowdControl = { 10890, SPELL_SCHOOL_MASK_SHADOW,
                     0.0f, 8.0f, 18000, true, 1.0f, 1.0f, false, true };
                 package.Area = { 48078, SPELL_SCHOOL_MASK_HOLY, 0.80f,
                     10.0f, 12000, true, 1.0f, 1.0f, false, true };
                 return package;
+        }
+    }
+
+    OpeningPackage GetOpeningPackage(uint8 playerClass, uint32 activeSpec)
+    {
+        switch (playerClass)
+        {
+            case CLASS_WARRIOR:
+                return { 47436u, 0u }; // Battle Shout
+            case CLASS_PALADIN:
+                return { activeSpec == TALENT_TREE_PALADIN_PROTECTION ?
+                    20217u : 20217u, 19746u }; // Blessing, Concentration Aura
+            case CLASS_PRIEST:
+                return { 48161u, activeSpec == TALENT_TREE_PRIEST_SHADOW ?
+                    48168u : 48168u }; // Fortitude, Inner Fire
+            case CLASS_DEATH_KNIGHT:
+                return { 57623u, activeSpec == TALENT_TREE_DEATH_KNIGHT_UNHOLY ?
+                    48265u : 48263u }; // Horn of Winter, Presence
+            case CLASS_SHAMAN:
+                return { 57960u, activeSpec == TALENT_TREE_SHAMAN_ENHANCEMENT ?
+                    58804u : 51994u }; // Shield, weapon imbue
+            case CLASS_MAGE:
+                return { 42995u, activeSpec == TALENT_TREE_MAGE_FIRE ?
+                    43046u : 43024u }; // Intellect, Armor
+            case CLASS_WARLOCK:
+                return { 47889u, 0u }; // Demon Armor
+            case CLASS_DRUID:
+                if (activeSpec == TALENT_TREE_DRUID_FERAL_COMBAT)
+                    return { 48469u, 768u }; // Mark, Cat Form
+                return { 48469u, 0u }; // Mark
+            default:
+                return {};
         }
     }
 
@@ -7569,6 +7670,8 @@ namespace
             if (!_initialized)
                 return;
 
+            ApplyOpeningSpells();
+
             events.ScheduleEvent(EVENT_PRIMARY,
                 Milliseconds(_package.PrimaryCooldownMs));
             events.ScheduleEvent(EVENT_SECONDARY,
@@ -7608,6 +7711,22 @@ namespace
                 events.ScheduleEvent(EVENT_AOE,
                     Milliseconds(_tactical.Area.CooldownMs));
             }
+
+            if (_tactical.Interrupt.SpellId)
+                events.ScheduleEvent(EVENT_INTERRUPT,
+                    Milliseconds(_tactical.Interrupt.CooldownMs));
+            if (_tactical.Mobility.SpellId)
+                events.ScheduleEvent(EVENT_MOBILITY,
+                    Milliseconds(_tactical.Mobility.CooldownMs));
+            if (_tactical.Taunt.SpellId)
+                events.ScheduleEvent(EVENT_TAUNT,
+                    Milliseconds(_tactical.Taunt.CooldownMs));
+            if (_tactical.Heal.SpellId)
+                events.ScheduleEvent(EVENT_HEAL,
+                    Milliseconds(_tactical.Heal.CooldownMs));
+            if (_tactical.Resource.SpellId)
+                events.ScheduleEvent(EVENT_RESOURCE,
+                    Milliseconds(_tactical.Resource.CooldownMs));
         }
 
         void KilledUnit(Unit* victim) override
@@ -7812,6 +7931,31 @@ namespace
                         events.ScheduleEvent(EVENT_AOE,
                             Milliseconds(_tactical.Area.CooldownMs));
                         break;
+                    case EVENT_INTERRUPT:
+                        ExecuteTacticalSpell(_tactical.Interrupt);
+                        events.ScheduleEvent(EVENT_INTERRUPT,
+                            Milliseconds(_tactical.Interrupt.CooldownMs));
+                        break;
+                    case EVENT_MOBILITY:
+                        ExecuteTacticalSpell(_tactical.Mobility);
+                        events.ScheduleEvent(EVENT_MOBILITY,
+                            Milliseconds(_tactical.Mobility.CooldownMs));
+                        break;
+                    case EVENT_TAUNT:
+                        ExecuteTacticalSpell(_tactical.Taunt);
+                        events.ScheduleEvent(EVENT_TAUNT,
+                            Milliseconds(_tactical.Taunt.CooldownMs));
+                        break;
+                    case EVENT_HEAL:
+                        ExecuteTacticalSpell(_tactical.Heal);
+                        events.ScheduleEvent(EVENT_HEAL,
+                            Milliseconds(_tactical.Heal.CooldownMs));
+                        break;
+                    case EVENT_RESOURCE:
+                        ExecuteTacticalSpell(_tactical.Resource);
+                        events.ScheduleEvent(EVENT_RESOURCE,
+                            Milliseconds(_tactical.Resource.CooldownMs));
+                        break;
                 }
             }
 
@@ -7832,6 +7976,8 @@ namespace
                 _profile.ActiveSpec);
             _tactical = GetTacticalPackage(_profile.PlayerClass,
                 _profile.ActiveSpec);
+            _opening = GetOpeningPackage(_profile.PlayerClass,
+                _profile.ActiveSpec);
             float cooldownScale = std::clamp(_profile.CastSpeedRate,
                 0.55f, 1.25f);
             _package.PrimaryCooldownMs = std::max<uint32>(900u,
@@ -7849,7 +7995,29 @@ namespace
                 cooldownScale));
             _tactical.Area.CooldownMs = std::max<uint32>(3500u,
                 uint32(float(_tactical.Area.CooldownMs) * cooldownScale));
+            _tactical.Interrupt.CooldownMs = std::max<uint32>(2500u,
+                uint32(float(_tactical.Interrupt.CooldownMs) *
+                cooldownScale));
+            _tactical.Mobility.CooldownMs = std::max<uint32>(3500u,
+                uint32(float(_tactical.Mobility.CooldownMs) *
+                cooldownScale));
+            _tactical.Taunt.CooldownMs = std::max<uint32>(3500u,
+                uint32(float(_tactical.Taunt.CooldownMs) * cooldownScale));
+            _tactical.Heal.CooldownMs = std::max<uint32>(3500u,
+                uint32(float(_tactical.Heal.CooldownMs) * cooldownScale));
+            _tactical.Resource.CooldownMs = std::max<uint32>(4500u,
+                uint32(float(_tactical.Resource.CooldownMs) *
+                cooldownScale));
             _initialized = true;
+        }
+
+        void ApplyOpeningSpells()
+        {
+            if (_opening.BuffSpell)
+                me->CastSpell(me, _opening.BuffSpell, true);
+
+            if (_opening.StanceSpell && !me->HasAura(_opening.StanceSpell))
+                me->CastSpell(me, _opening.StanceSpell, true);
         }
 
         void ExecuteSpell(uint32 spellId, SpellSchoolMask schoolMask,
@@ -8165,6 +8333,7 @@ namespace
         ShadowProfile _profile;
         SpellPackage _package;
         TacticalPackage _tactical;
+        OpeningPackage _opening;
         bool _initialized = false;
         uint32 _petInterceptMs = 0;
         uint32 _petInterceptCooldownMs = 0;

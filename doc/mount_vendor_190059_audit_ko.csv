@@ -1,0 +1,138 @@
+﻿slot,item_id,item_name,name_duplicate,duplicate_count,mount_type,item_exists,item_spell,spell_dbc_exists,spell_name,item_spell_matches_collection,collection_exists,creature_entry,creature_exists,display_id,creature_model_exists,model_path
+1,970001,사나운 전투사자,False,1,날탈,True,960001,True,사나운 전투사자,True,True,910001,True,900001,True,Creature\AlliancePVPMount\AlliancePVPMount.M2
+2,970002,스톰윈드 하늘추적선,False,1,날탈,True,960002,True,스톰윈드 하늘추적선,True,True,910003,True,900003,True,Creature\AllianceShipMount\allianceshipmount.m2
+3,970003,천공의 운룡,False,1,날탈,True,960003,True,천공의 운룡,True,True,910004,True,900004,True,Creature\CelestialSerpent\CelestialSerpentMount.M2
+4,970004,학 탈것,False,1,지상탈,True,960004,True,학 탈것,True,True,910005,True,900005,True,Creature\Crane\CraneMount.M2
+5,970005,암흑 불사조,False,1,날탈,True,960005,True,암흑 불사조,True,True,910006,True,900006,True,Creature\DarkPhoenix\DarkPhoenixMount_Spectral.M2
+6,970006,심연 바위 비룡,False,1,날탈,True,960006,True,심연 바위 비룡,True,True,910007,True,900007,True,Creature\dragondeepholm\dragondeepholmmount.m2
+7,970007,용매,False,1,날탈,True,960007,True,용매,True,True,910008,True,900008,True,Creature\dragonhawk\dragonhawkmount.m2
+8,970008,마력 깃든 요정용,False,1,날탈,True,960008,True,마력 깃든 요정용,True,True,910009,True,900009,True,Creature\faeriedragonmount\faeriedragonmount.m2
+9,970009,일리다리 지옥추적자,False,1,날탈,True,960009,True,일리다리 지옥추적자,True,True,910010,True,900010,True,Creature\felhound3_fire_mount\felhound3_fire_mount.m2
+10,970010,일리다리 공포추적자,False,1,날탈,True,960010,True,일리다리 공포추적자,True,True,910011,True,900011,True,Creature\felhound3_shadow_mount\felhound3_shadow_mount.m2
+11,970011,지옥추적자,False,1,날탈,True,960011,True,지옥추적자,True,True,910012,True,900012,True,Creature\felstalkermount\felstalkermount.m2
+12,970012,불꽃호랑이,False,1,날탈,True,960012,True,불꽃호랑이,True,True,910013,True,900013,True,Creature\FireCatMount\FireCatMount.m2
+13,970013,여우 탈것,False,1,지상탈,True,960013,True,여우 탈것,True,True,910014,True,900014,True,Creature\FoxMount\FoxMount.m2
+14,970014,사나운 전투여우,False,1,날탈,True,960014,True,사나운 전투여우,True,True,910015,True,900015,True,Creature\HordePVPMount\HordePVPMount.M2
+15,970015,사나운 전투전갈,False,1,지상탈,True,960015,True,사나운 전투전갈,True,True,910016,True,900016,True,Creature\HordeScorpionMount\HordeScorpionMount.M2
+16,970016,호드 비행선,False,1,날탈,True,960016,True,호드 비행선,True,True,910017,True,900017,True,Creature\hordezeppelinmount\hordezeppelinmount.m2
+17,970017,대마법사의 비전 원반,False,1,날탈,True,960017,True,대마법사의 비전 원반,True,True,910018,True,900018,True,Creature\magemount_arcane\magemount_arcane.m2
+18,970018,대마법사의 화염 원반,False,1,날탈,True,960018,True,대마법사의 화염 원반,True,True,910019,True,900019,True,Creature\magemount_fire\magemount_fire.m2
+19,970019,대마법사의 냉기 원반,False,1,날탈,True,960019,True,대마법사의 냉기 원반,True,True,910020,True,900020,True,Creature\magemount_frost\magemount_frost.m2
+20,970020,반루,False,1,지상탈,True,960020,True,반루,True,True,910021,True,900021,True,Creature\monkmount\monkmount.m2
+21,970021,에체로의 영혼,False,1,지상탈,True,960021,True,에체로의 영혼,True,True,910022,True,900022,True,Creature\moosemount2nightmare\moosemount2nightmare.m2
+22,970022,무산야수,False,1,지상탈,True,960022,True,무산야수,True,True,910023,True,900023,True,Creature\MushanBeast\MushanBeastMount.M2
+23,970023,판다렌 불사조,False,1,날탈,True,960023,True,판다렌 불사조,True,True,910024,True,900024,True,Creature\PandarenPhoenixMount\PandarenPhoenixMount.M2
+24,970024,운룡,False,1,날탈,True,960024,True,운룡,True,True,910025,True,900025,True,Creature\PandarenSerpent\PandarenSerpentMount.M2
+25,970025,원시비룡,False,1,날탈,True,960025,True,원시비룡,True,True,910026,True,900026,True,Creature\protodragon\mdprotodrakemount.m2
+26,970026,제국의 기렌,False,1,날탈,True,960026,True,제국의 기렌,True,True,910027,True,900027,True,Creature\Quilin\QuilinFlyingMount.M2
+27,970027,까마귀 군주,False,1,지상탈,True,960027,True,까마귀 군주,True,True,910028,True,900028,True,Creature\ravenlord\ravenlordmount.m2
+28,970028,붉은 비룡,False,1,날탈,True,960028,True,붉은 비룡,True,True,910029,True,900029,True,Creature\RedDrakeMount\RedDrakeMount.M2
+29,970029,X-53 순회 로켓,False,1,날탈,True,960029,True,X-53 순회 로켓,True,True,910030,True,900030,True,Creature\rocketmount3\rocketmount3.m2
+30,970030,X-54 순회 로켓,False,1,날탈,True,960030,True,X-54 순회 로켓,True,True,910031,True,900031,True,Creature\rocketmount4\rocketmount4.m2
+31,970031,호랑이 탈것,False,1,지상탈,True,960031,True,호랑이 탈것,True,True,910032,True,900032,True,Creature\saber2\saber2mount.m2
+32,970032,비룡,False,1,날탈,True,960032,True,비룡,True,True,910033,True,900033,True,Creature\scaleddrakemount\scaleddrakemount.m2
+33,970033,해마,False,1,지상탈,True,960033,True,해마,True,True,910034,True,900034,True,Creature\Seahorse\SeahorseMount.M2
+34,970034,공허 수정 표범,False,1,날탈,True,960034,True,공허 수정 표범,True,True,910035,True,900035,True,Creature\shadowstalkerpanthermount\shadowstalkerpanthermount.m2
+35,970035,겨울빙호,False,1,지상탈,True,960035,True,겨울빙호,True,True,910036,True,900036,True,Creature\SiberianTiger\SiberianTigerMount.M2
+36,970036,해골 랩터,False,1,지상탈,True,960036,True,해골 랩터,True,True,910037,True,900037,True,Creature\SkeletalRaptor\SkeletalRaptorMount.M2
+37,970037,폭풍까마귀,False,1,날탈,True,960037,True,폭풍까마귀,True,True,910038,True,900038,True,Creature\stormcrowmount\stormcrowmount.m2
+38,970038,태양 폭풍까마귀,False,1,날탈,True,960038,True,태양 폭풍까마귀,True,True,910039,True,900039,True,Creature\stormcrowmount_solar\stormcrowmount_solar.m2
+39,970039,수라마르 마나호랑이,False,1,지상탈,True,960039,True,수라마르 마나호랑이,True,True,910040,True,900040,True,Creature\suramarmount\suramarmount.m2
+40,970040,바다거북,False,1,지상탈,True,960040,True,바다거북,True,True,910041,True,900041,True,Creature\turtlemount\turtlemount.m2
+41,970041,티리엘의 군마,False,1,날탈,True,960041,True,티리엘의 군마,True,True,910042,True,900042,True,Creature\TyraelMount\TyraelMount.M2
+42,970042,공허타조,False,1,지상탈,True,960042,True,공허타조,True,True,910043,True,900043,True,Creature\voidelfhawkstridermount\voidelfhawkstridermount.m2
+43,970043,물꼬리,False,1,지상탈,True,960043,True,물꼬리,True,True,910044,True,900044,True,Creature\WaterStrider\WaterStriderMount.M2
+44,970044,날개 달린 수호자,False,1,날탈,True,960044,True,날개 달린 수호자,True,True,910045,True,900045,True,Creature\WingedLionMount\WingedLionMount.M2
+45,970045,얼라이언스 장갑 용매,False,1,날탈,True,960045,True,얼라이언스 장갑 용매,True,True,910060,True,900060,True,Creature\dragonhawk\dragonhawkarmormountalliance.m2
+46,970046,호드 장갑 용매,False,1,날탈,True,960046,True,호드 장갑 용매,True,True,910061,True,900061,True,Creature\dragonhawk\dragonhawkarmormounthorde.m2
+47,970047,코르크론 원시비룡,False,1,날탈,True,960047,True,코르크론 원시비룡,True,True,910074,True,900074,True,Creature\protodragon\korkronprotodrakemount.m2
+48,970048,비전 폭풍까마귀,False,1,날탈,True,960048,True,비전 폭풍까마귀,True,True,910079,True,900079,True,Creature\stormcrowmount_solar\stormcrowmount_arcane.m2
+49,970049,얼라이언스 사자,False,1,날탈,True,960049,True,얼라이언스 사자,True,True,940001,True,900185,True,Creature\AllianceLionMount\AllianceLion.M2
+50,970050,아마니 전투곰,False,1,지상탈,True,960050,True,아마니 전투곰,True,True,940002,True,900186,True,Creature\amanibearmount2\amanibearmount2.m2
+51,970051,박쥐 탈것,False,1,날탈,True,960051,True,박쥐 탈것,True,True,940003,True,900187,True,Creature\bat\batmounttaxi2.m2
+52,970052,줄아만 전투곰,False,1,지상탈,True,960052,True,줄아만 전투곰,True,True,940004,True,900188,True,Creature\Bearmount2\bearmountZulaman.m2
+53,970053,전투곰,False,1,지상탈,True,960053,True,전투곰,True,True,940005,True,900189,True,Creature\BearMountAltNew\BearMountAltNew.m2
+54,970054,카라잔 탈것 chogall2,False,1,지상탈,True,960054,True,카라잔 탈것 chogall2,True,True,940006,True,900190,True,Creature\chogall\chogall2.m2
+55,970055,황천 가오리,False,1,날탈,True,960055,True,황천 가오리,True,True,940007,True,900191,True,Creature\cosmicflyermount\CosmicRayNew.m2
+56,970056,전투 늑대,False,1,지상탈,True,960056,True,전투 늑대,True,True,940008,True,900192,True,Creature\Direwolf\ridingdirewolf.m2
+57,970057,카라잔 탈것 Dragonhawk2mount,False,1,날탈,True,960057,True,카라잔 탈것 Dragonhawk2mount,True,True,940009,True,900193,True,Creature\Dragonhawk2\Dragonhawk2mount.m2
+58,970058,카라잔 탈것 Dragonhawk2mountelite,False,1,날탈,True,960058,True,카라잔 탈것 Dragonhawk2mountelite,True,True,940010,True,900194,True,Creature\Dragonhawk2\Dragonhawk2mountelite.m2
+59,970059,거대 비룡,False,1,날탈,True,960059,True,거대 비룡,True,True,940011,True,900195,True,Creature\drakegrand2\drakemount2grand.m2
+60,970060,알렉스트라자 거대 비룡,False,1,날탈,True,960060,True,알렉스트라자 거대 비룡,True,True,940012,True,900196,True,Creature\drakegrand2\drakemount2GrandAlex.m2
+61,970061,할리온 거대 비룡,False,1,날탈,True,960061,True,할리온 거대 비룡,True,True,940013,True,900197,True,Creature\drakegrand2\drakemount2grandHalion.m2
+62,970062,말리고스 거대 비룡,False,1,날탈,True,960062,True,말리고스 거대 비룡,True,True,940014,True,900198,True,Creature\drakegrand2\drakemount2grandMalygos.m2
+63,970063,네파리안 거대 비룡,False,1,날탈,True,960063,True,네파리안 거대 비룡,True,True,940015,True,900199,True,Creature\drakegrand2\drakemount2grandNefarian.m2
+64,970064,노즈도르무 거대 비룡,False,1,날탈,True,960064,True,노즈도르무 거대 비룡,True,True,940016,True,900200,True,Creature\drakegrand2\drakemount2grandnozdormu.m2
+65,970065,오닉시아 거대 비룡,False,1,날탈,True,960065,True,오닉시아 거대 비룡,True,True,940017,True,900201,True,Creature\drakegrand2\drakemount2grandonyxia.m2
+66,970066,테라제인 거대 비룡,False,1,날탈,True,960066,True,테라제인 거대 비룡,True,True,940018,True,900202,True,Creature\drakegrand2\drakemount2GrandTerac.m2
+67,970067,이세라 거대 비룡,False,1,날탈,True,960067,True,이세라 거대 비룡,True,True,940019,True,900203,True,Creature\drakegrand2\drakemount2GrandYsera.m2
+68,970068,비룡 #2,False,1,날탈,True,960068,True,비룡 #2,True,True,940020,True,900204,True,Creature\drakemount2\drakemount2.m2
+69,970069,장갑 비룡,False,1,날탈,True,960069,True,장갑 비룡,True,True,940021,True,900205,True,Creature\drakemount2\drakemount2armored.m2
+70,970070,하늘빛 비룡,False,1,날탈,True,960070,True,하늘빛 비룡,True,True,940022,True,900206,True,Creature\drakemount2\drakemount2azure.m2
+71,970071,정예 비룡,False,1,날탈,True,960071,True,정예 비룡,True,True,940023,True,900207,True,Creature\drakemount2\drakemount2elite.m2
+72,970072,드레나이 엘레크,False,1,지상탈,True,960072,True,드레나이 엘레크,True,True,940024,True,900208,True,Creature\Elekk\elekkdraenormount.m2
+73,970073,요정용,False,1,날탈,True,960073,True,요정용,True,True,940025,True,900209,True,Creature\faeriedragonmount\faeriedragoncreature.m2
+74,970074,전투 랩터,False,1,지상탈,True,960074,True,전투 랩터,True,True,940026,True,900210,True,Creature\FastRidingRaptor\PvPRidingRaptor.m2
+75,970075,호랑이 탈것 #2,False,1,지상탈,True,960075,True,호랑이 탈것 #2,True,True,940027,True,900211,True,Creature\frostsabre2fast\nightsaber2mountarmored.m2
+76,970076,장갑 유령호랑이,False,1,지상탈,True,960076,True,장갑 유령호랑이,True,True,940028,True,900212,True,Creature\frostsabre2fast\spectraltiger2mountarmored.m2
+77,970077,겨울빙호 #2,False,1,지상탈,True,960077,True,겨울빙호 #2,True,True,940029,True,900213,True,Creature\frostsabre2slow\RidingFrostSabre.M2
+78,970078,겨울빙호 #3,False,1,지상탈,True,960078,True,겨울빙호 #3,True,True,940030,True,900214,True,Creature\Frostsabre\New\ridingfrostsabre2.m2
+79,970079,전투 겨울빙호,False,1,지상탈,True,960079,True,전투 겨울빙호,True,True,940031,True,900215,True,Creature\Frostsabre\pvpridingfrostsabre.m2
+80,970080,겨울빙호 #4,False,1,지상탈,True,960080,True,겨울빙호 #4,True,True,940032,True,900216,True,Creature\Frostsabre\ridingfrostsabre.m2
+81,970081,안장 없는 겨울빙호,False,1,지상탈,True,960081,True,안장 없는 겨울빙호,True,True,940033,True,900217,True,Creature\Frostsabre\ridingfrostsabrenaked.m2
+82,970082,고블린 벌목기,False,1,지상탈,True,960082,True,고블린 벌목기,True,True,940034,True,900218,True,Creature\Goblinshreddermount\goblinShredderMount.M2
+83,970083,장갑 그리핀,False,1,날탈,True,960083,True,장갑 그리핀,True,True,940035,True,900219,True,Creature\Gryphon2\Gryphon_Armoredmount.M2
+84,970084,그리핀,False,1,날탈,True,960084,True,그리핀,True,True,940036,True,900220,True,Creature\Gryphon2\Gryphon_mount.M2
+85,970085,그리핀 #2,False,1,날탈,True,960085,True,그리핀 #2,True,True,940037,True,900221,True,Creature\Gryphon2\Gryphonmount.M2
+86,970086,매타조,False,1,지상탈,True,960086,True,매타조,True,True,940038,True,900222,True,Creature\hawkstrider2\hawkstrider2_mount.m2
+87,970087,날쌘 매타조,False,1,지상탈,True,960087,True,날쌘 매타조,True,True,940039,True,900223,True,Creature\hawkstrider2\hawkstrider2_mount_noarmor.m2
+88,970088,저주받은 기사의 군마,False,1,지상탈,True,960088,True,저주받은 기사의 군마,True,True,940040,True,900224,True,Creature\headlesshorsemanmount2\headlesshorsemanmount2.m2
+89,970089,저주받은 기사의 군마 #2,False,1,지상탈,True,960089,True,저주받은 기사의 군마 #2,True,True,940041,True,900225,True,Creature\headlesshorsemanmount\headlesshorsemanmount.m2
+90,970090,히포그리프,False,1,날탈,True,960090,True,히포그리프,True,True,940042,True,900226,True,Creature\Hippogryphmount\hippogryph2mount.m2
+91,970091,장갑 히포그리프,False,1,날탈,True,960091,True,장갑 히포그리프,True,True,940043,True,900227,True,Creature\Hippogryphmount\hippogryph2mountarmored.m2
+92,970092,얼룩말,False,1,지상탈,True,960092,True,얼룩말,True,True,940044,True,900228,True,Creature\horse2_zebramount2\horse2_zebramount2.m2
+93,970093,인간 군마,False,1,지상탈,True,960093,True,인간 군마,True,True,940045,True,900229,True,Creature\humanridinghorse2\humanridinghorse2.m2
+94,970094,전투 코도,False,1,지상탈,True,960094,True,전투 코도,True,True,940046,True,900230,True,Creature\Kodobeas2\kodobeastpvpt2.m2
+95,970095,코도,False,1,지상탈,True,960095,True,코도,True,True,940047,True,900231,True,Creature\kodobeast2mount\kodobeast2mount.m2
+96,970096,짐 싣는 코도,False,1,지상탈,True,960096,True,짐 싣는 코도,True,True,940048,True,900232,True,Creature\kodobeast2mount\kodobeast2pack.m2
+97,970097,전투 기계타조,False,1,지상탈,True,960097,True,전투 기계타조,True,True,940049,True,900233,True,Creature\MechaStriderNew\pvpmechastrider.m2
+98,970098,노스렌드 장갑곰,False,1,지상탈,True,960098,True,노스렌드 장갑곰,True,True,940050,True,900234,True,Creature\northrendbearmount2\northrendbearmount2armored.m2
+99,970099,노스렌드 전투곰,False,1,지상탈,True,960099,True,노스렌드 전투곰,True,True,940051,True,900235,True,Creature\northrendbearmount\northrendbearmountarmored.m2
+100,970100,블리즈컨 전투곰,False,1,지상탈,True,960100,True,블리즈컨 전투곰,True,True,940052,True,900236,True,Creature\northrendbearmount\northrendbearmountblizzcon.m2
+101,970101,폭풍 비룡,False,1,날탈,True,960101,True,폭풍 비룡,True,True,940053,True,900237,True,Creature\OldDrake\StormDragonMount2.m2
+102,970102,고대 비룡,False,1,날탈,True,960102,True,고대 비룡,True,True,940054,True,900238,True,Creature\OldDrakemount\drakemount.m2
+103,970103,폭풍 비룡 #2,False,1,날탈,True,960103,True,폭풍 비룡 #2,True,True,940055,True,900239,True,Creature\OldDrakemount\StormDragonMount2.m2
+104,970104,성기사 전투마,False,1,지상탈,True,960104,True,성기사 전투마,True,True,940056,True,900240,True,Creature\PaladinMount\Paladinwarhorse.m2
+105,970105,성기사 군마,False,1,지상탈,True,960105,True,성기사 군마,True,True,940057,True,900241,True,Creature\PaladinMount\paladinwarhorse_slow.m2
+106,970106,성기사 군마 #2,False,1,지상탈,True,960106,True,성기사 군마 #2,True,True,940058,True,900242,True,Creature\PaladinMount\paladinwarhorse_slow2.m2
+107,970107,산양,False,1,지상탈,True,960107,True,산양,True,True,940059,True,900243,True,Creature\Ram2\ridingram.m2
+108,970108,가을축제 산양,False,1,지상탈,True,960108,True,가을축제 산양,True,True,940060,True,900244,True,Creature\Ram2\ridingrambrew.m2
+109,970109,안장 군마,False,1,지상탈,True,960109,True,안장 군마,True,True,940061,True,900245,True,Creature\RidingHorse\Horse_Sattel1.m2
+110,970110,안장 군마 #2,False,1,지상탈,True,960110,True,안장 군마 #2,True,True,940062,True,900246,True,Creature\RidingHorse\Horse_Sattel2.m2
+111,970111,짐노새,False,1,지상탈,True,960111,True,짐노새,True,True,940063,True,900247,True,Creature\RidingHorse\Packmule.m2
+112,970112,군마,False,1,지상탈,True,960112,True,군마,True,True,940064,True,900248,True,Creature\RidingHorse\ridinghorse.m2
+113,970113,전투 군마,False,1,지상탈,True,960113,True,전투 군마,True,True,940065,True,900249,True,Creature\RidingHorse\ridinghorsepvpt2.m2
+114,970114,전투 군마 #2,False,1,지상탈,True,960114,True,전투 군마 #2,True,True,940066,True,900250,True,Creature\RidingHorse\ridinghorsepvpt2_noshield.m2
+115,970115,전투 랩터 #2,False,1,지상탈,True,960115,True,전투 랩터 #2,True,True,940067,True,900251,True,Creature\Ridingraptor\pvpridingraptor.m2
+116,970116,랩터,False,1,지상탈,True,960116,True,랩터,True,True,940068,True,900252,True,Creature\Ridingraptor\RidingRaptor.m2
+117,970117,줄구룹 랩터,False,1,지상탈,True,960117,True,줄구룹 랩터,True,True,940069,True,900253,True,Creature\Ridingraptor\Zulgurubraptor.m2
+118,970118,실리시드,False,1,지상탈,True,960118,True,실리시드,True,True,940070,True,900254,True,Creature\Ridingsilithid\ridingsilithid.m2
+119,970119,탈부크,False,1,지상탈,True,960119,True,탈부크,True,True,940071,True,900255,True,Creature\Ridingtalbuk\ridingtalbuk.m2
+120,970120,날쌘 탈부크,False,1,지상탈,True,960120,True,날쌘 탈부크,True,True,940072,True,900256,True,Creature\Ridingtalbuk\RidingTalbukEpic.m2
+121,970121,와이번,False,1,날탈,True,960121,True,와이번,True,True,940073,True,900257,True,Creature\Ridingwyver2\RidingWyvern.M2
+122,970122,와이번 #2,False,1,날탈,True,960122,True,와이번 #2,True,True,940074,True,900258,True,Creature\Ridingwyver2\wyvern.M2
+123,970123,장갑 와이번,False,1,날탈,True,960123,True,장갑 와이번,True,True,940075,True,900259,True,Creature\Ridingwyvernarmore2\RidingWyvernArmored.M2
+124,970124,장갑 와이번 #2,False,1,날탈,True,960124,True,장갑 와이번 #2,True,True,940076,True,900260,True,Creature\Ridingwyvernarmore2\Wyvern_Armored_vehicle.M2
+125,970125,호랑이 탈것 #3,False,1,지상탈,True,960125,True,호랑이 탈것 #3,True,True,940077,True,900261,True,Creature\saber2\saber2mountsimple.m2
+126,970126,태양 폭풍까마귀 #2,False,1,날탈,True,960126,True,태양 폭풍까마귀 #2,True,True,940078,True,900262,True,Creature\stormcrowmount_solar\stormcrowmount_low.m2
+127,970127,작은 태양 폭풍까마귀,False,1,날탈,True,960127,True,작은 태양 폭풍까마귀,True,True,940079,True,900263,True,Creature\stormcrowmount_solar\stormcrowmount_solar_low.m2
+128,970128,칠면조 탈것,False,1,날탈,True,960128,True,칠면조 탈것,True,True,940080,True,900264,True,Creature\turkeymount\turkey_hd.m2
+129,970129,언데드 군마,False,1,지상탈,True,960129,True,언데드 군마,True,True,940081,True,900265,True,Creature\UndeadHorse2\ridingundeadhorse.m2
+130,970130,언데드 전투마,False,1,지상탈,True,960130,True,언데드 전투마,True,True,940082,True,900266,True,Creature\UndeadHorse2\ridingundeadwarhorse.m2
+131,970131,전투 군마 #3,False,1,지상탈,True,960131,True,전투 군마 #3,True,True,940083,True,900267,True,Creature\warhorse2\pvpwarhorse2.m2
+132,970132,전투 군마 #4,False,1,지상탈,True,960132,True,전투 군마 #4,True,True,940084,True,900268,True,Creature\warhorse3a\PVPWarHorse.M2
+133,970133,전투 군마 #5,False,1,지상탈,True,960133,True,전투 군마 #5,True,True,940085,True,900269,True,Creature\warhorse3a\pvpwarhorse2.m2
+134,970134,전투 군마 #6,False,1,지상탈,True,960134,True,전투 군마 #6,True,True,940086,True,900270,True,Creature\warhorse3b\PVPWarHorse.M2
+135,970135,전투 군마 #7,False,1,지상탈,True,960135,True,전투 군마 #7,True,True,940087,True,900271,True,Creature\warhorse3b\pvpwarhorse2.m2
+136,970136,와이번 #3,False,1,날탈,True,960136,True,와이번 #3,True,True,940088,True,900272,True,Creature\Wyver2\Wyvern_mount.M2
+137,970137,얼룩말 탈것,False,1,지상탈,True,960137,True,얼룩말 탈것,True,True,940089,True,900273,True,Creature\ZebraMount2\Zebramount.m2

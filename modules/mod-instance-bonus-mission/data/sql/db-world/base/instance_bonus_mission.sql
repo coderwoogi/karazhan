@@ -496,15 +496,22 @@ CREATE TABLE `instance_bonus_llm_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO `instance_bonus_map_config` (
-    `map_id`, `map_name`, `enabled`, `allow_llm`, `allow_vote`,
+    `map_id`, `map_name`, `difficulty_mask`,
+    `enabled`, `allow_llm`, `allow_vote`,
     `daily_limit_per_player`, `vote_timeout_sec`, `default_time_limit_sec`, `min_party_size`,
     `max_party_size`, `theme_selection_mode`, `mission_selection_mode`,
     `max_active_missions`
 ) VALUES
 (
-    557, '마나 무덤', 1, 1, 1, 0,
+    557, '마나 무덤', 0, 1, 1, 1, 0,
     30, 900, 1,
     5, 1, 1,
+    1
+),
+(
+    631, '얼음왕관 성채', 4, 1, 1, 1, 3,
+    30, 0, 1,
+    10, 1, 1,
     1
 );
 
@@ -575,6 +582,15 @@ INSERT INTO `instance_bonus_mission` (
     '팬더모니우스', 1, 0,
     2, 1001,
     1, 5, 1
+),
+(
+    8, 631, 'icc_10n_speed_lk', '얼음왕관 성채 10인 일반 스피드런',
+    '얼음왕관 성채 10인 일반 난이도 스피드런 미션',
+    '얼음왕관 성채 10인 일반 스피드런 미션입니다. 빠르게 클리어할수록 보상이 좋아집니다.',
+    2, 2, 36597,
+    '리치왕(10인 일반)', 1, 3600,
+    1, 1003,
+    10, 10, 1
 );
 
 INSERT INTO `instance_bonus_theme` (

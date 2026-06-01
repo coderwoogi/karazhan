@@ -1,0 +1,1523 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>3.3.5 시련 전투용 직업 스펠 카테고리</title>
+<style>
+:root {
+  --bg: #f5efe4;
+  --panel: #fffaf0;
+  --ink: #21190f;
+  --muted: #6f604b;
+  --line: #d8c7aa;
+  --accent: #8a4d21;
+  --accent-2: #1f5d58;
+}
+body {
+  margin: 0;
+  background: radial-gradient(circle at top left, #fdf4db 0, #f5efe4 32rem, #eadcc5 100%);
+  color: var(--ink);
+  font-family: "Malgun Gothic", "Noto Sans KR", sans-serif;
+  line-height: 1.62;
+}
+.layout {
+  display: grid;
+  grid-template-columns: 18rem minmax(0, 1fr);
+  gap: 2rem;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+nav {
+  position: sticky;
+  top: 1rem;
+  align-self: start;
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  padding: 1rem;
+  background: rgba(255, 250, 240, .9);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 0 18px 48px rgba(69, 48, 20, .12);
+}
+nav a {
+  display: block;
+  color: var(--accent-2);
+  text-decoration: none;
+  padding: .18rem 0;
+  font-size: .9rem;
+}
+.nav-l3 { padding-left: 1rem; color: var(--muted); }
+main {
+  min-width: 0;
+  padding: 2rem;
+  background: rgba(255, 250, 240, .94);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 0 24px 70px rgba(69, 48, 20, .16);
+}
+h1, h2, h3 {
+  line-height: 1.25;
+}
+h1 {
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  margin-top: 0;
+  color: #3b2614;
+}
+h2 {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 2px solid var(--line);
+  color: var(--accent);
+}
+h3 { color: #594026; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 2rem;
+  font-size: .94rem;
+  background: #fffdf7;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: .55rem .7rem;
+  vertical-align: top;
+}
+th {
+  background: #efe1c8;
+  color: #332313;
+}
+tr:nth-child(even) td { background: #fbf4e6; }
+code {
+  background: #eadcc5;
+  padding: .1rem .32rem;
+  border-radius: .35rem;
+}
+a { color: var(--accent-2); }
+@media (max-width: 980px) {
+  .layout { display: block; padding: 1rem; }
+  nav { position: relative; max-height: none; margin-bottom: 1rem; }
+  main { padding: 1rem; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+<strong>목차</strong>
+<a class="nav-l2" href="#기준">기준</a>
+<a class="nav-l2" href="#카테고리-요약">카테고리 요약</a>
+<a class="nav-l2" href="#시련-전투-적용-가이드">시련 전투 적용 가이드</a>
+<a class="nav-l2" href="#직업별-전투-스펠-분류">직업별 전투 스펠 분류</a>
+<a class="nav-l2" href="#전사-warrior">전사 (Warrior)</a>
+<a class="nav-l3" href="#카테고리-요약-2">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비">전투 전 버프/준비</a>
+<a class="nav-l3" href="#태세-형상-오라-폼-전환">태세/형상/오라/폼 전환</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#전투-중-cc-메즈-이동-제한">전투 중 CC/메즈/이동 제한</a>
+<a class="nav-l3" href="#차단-침묵-시전-방해">차단/침묵/시전 방해</a>
+<a class="nav-l3" href="#생존-방어-피해-감소">생존/방어/피해 감소</a>
+<a class="nav-l3" href="#치유-회복">치유/회복</a>
+<a class="nav-l3" href="#마나-자원-회복">마나/자원 회복</a>
+<a class="nav-l3" href="#이동-돌진-도주">이동/돌진/도주</a>
+<a class="nav-l3" href="#어그로-도발-위협-제어">어그로/도발/위협 제어</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황">전투 유틸/특수 상황</a>
+<a class="nav-l2" href="#성기사-paladin">성기사 (Paladin)</a>
+<a class="nav-l3" href="#카테고리-요약-3">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비-2">전투 전 버프/준비</a>
+<a class="nav-l3" href="#태세-형상-오라-폼-전환-2">태세/형상/오라/폼 전환</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-2">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-2">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#전투-중-cc-메즈-이동-제한-2">전투 중 CC/메즈/이동 제한</a>
+<a class="nav-l3" href="#해제-정화">해제/정화</a>
+<a class="nav-l3" href="#생존-방어-피해-감소-2">생존/방어/피해 감소</a>
+<a class="nav-l3" href="#치유-회복-2">치유/회복</a>
+<a class="nav-l3" href="#어그로-도발-위협-제어-2">어그로/도발/위협 제어</a>
+<a class="nav-l3" href="#소환-펫-하수인">소환/펫/하수인</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-2">전투 유틸/특수 상황</a>
+<a class="nav-l2" href="#사냥꾼-hunter">사냥꾼 (Hunter)</a>
+<a class="nav-l3" href="#카테고리-요약-4">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비-3">전투 전 버프/준비</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-3">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-3">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#이동-돌진-도주-2">이동/돌진/도주</a>
+<a class="nav-l3" href="#어그로-도발-위협-제어-3">어그로/도발/위협 제어</a>
+<a class="nav-l3" href="#소환-펫-하수인-2">소환/펫/하수인</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-3">전투 유틸/특수 상황</a>
+<a class="nav-l3" href="#전투-사용-제외-후보">전투 사용 제외 후보</a>
+<a class="nav-l2" href="#도적-rogue">도적 (Rogue)</a>
+<a class="nav-l3" href="#카테고리-요약-5">카테고리 요약</a>
+<a class="nav-l3" href="#태세-형상-오라-폼-전환-3">태세/형상/오라/폼 전환</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-4">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-4">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#전투-중-cc-메즈-이동-제한-3">전투 중 CC/메즈/이동 제한</a>
+<a class="nav-l3" href="#차단-침묵-시전-방해-2">차단/침묵/시전 방해</a>
+<a class="nav-l3" href="#생존-방어-피해-감소-3">생존/방어/피해 감소</a>
+<a class="nav-l3" href="#이동-돌진-도주-3">이동/돌진/도주</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-4">전투 유틸/특수 상황</a>
+<a class="nav-l3" href="#전투-사용-제외-후보-2">전투 사용 제외 후보</a>
+<a class="nav-l2" href="#사제-priest">사제 (Priest)</a>
+<a class="nav-l3" href="#카테고리-요약-6">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비-4">전투 전 버프/준비</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-5">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-5">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#해제-정화-2">해제/정화</a>
+<a class="nav-l3" href="#생존-방어-피해-감소-4">생존/방어/피해 감소</a>
+<a class="nav-l3" href="#치유-회복-3">치유/회복</a>
+<a class="nav-l3" href="#부활">부활</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-5">전투 유틸/특수 상황</a>
+<a class="nav-l2" href="#죽음의-기사-death-knight">죽음의 기사 (Death Knight)</a>
+<a class="nav-l3" href="#카테고리-요약-7">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비-5">전투 전 버프/준비</a>
+<a class="nav-l3" href="#태세-형상-오라-폼-전환-4">태세/형상/오라/폼 전환</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-6">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-6">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#전투-중-cc-메즈-이동-제한-4">전투 중 CC/메즈/이동 제한</a>
+<a class="nav-l3" href="#차단-침묵-시전-방해-3">차단/침묵/시전 방해</a>
+<a class="nav-l3" href="#생존-방어-피해-감소-5">생존/방어/피해 감소</a>
+<a class="nav-l3" href="#부활-2">부활</a>
+<a class="nav-l3" href="#마나-자원-회복-2">마나/자원 회복</a>
+<a class="nav-l3" href="#어그로-도발-위협-제어-4">어그로/도발/위협 제어</a>
+<a class="nav-l3" href="#소환-펫-하수인-3">소환/펫/하수인</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-6">전투 유틸/특수 상황</a>
+<a class="nav-l2" href="#주술사-shaman">주술사 (Shaman)</a>
+<a class="nav-l3" href="#카테고리-요약-8">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비-6">전투 전 버프/준비</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-7">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-7">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#전투-중-cc-메즈-이동-제한-5">전투 중 CC/메즈/이동 제한</a>
+<a class="nav-l3" href="#차단-침묵-시전-방해-4">차단/침묵/시전 방해</a>
+<a class="nav-l3" href="#해제-정화-3">해제/정화</a>
+<a class="nav-l3" href="#치유-회복-4">치유/회복</a>
+<a class="nav-l3" href="#소환-펫-하수인-4">소환/펫/하수인</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-7">전투 유틸/특수 상황</a>
+<a class="nav-l3" href="#전투-사용-제외-후보-3">전투 사용 제외 후보</a>
+<a class="nav-l2" href="#마법사-mage">마법사 (Mage)</a>
+<a class="nav-l3" href="#카테고리-요약-9">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비-7">전투 전 버프/준비</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-8">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-8">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#전투-중-cc-메즈-이동-제한-6">전투 중 CC/메즈/이동 제한</a>
+<a class="nav-l3" href="#차단-침묵-시전-방해-5">차단/침묵/시전 방해</a>
+<a class="nav-l3" href="#해제-정화-4">해제/정화</a>
+<a class="nav-l3" href="#생존-방어-피해-감소-6">생존/방어/피해 감소</a>
+<a class="nav-l3" href="#치유-회복-5">치유/회복</a>
+<a class="nav-l3" href="#마나-자원-회복-3">마나/자원 회복</a>
+<a class="nav-l3" href="#이동-돌진-도주-4">이동/돌진/도주</a>
+<a class="nav-l3" href="#소환-펫-하수인-5">소환/펫/하수인</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-8">전투 유틸/특수 상황</a>
+<a class="nav-l3" href="#전투-사용-제외-후보-4">전투 사용 제외 후보</a>
+<a class="nav-l2" href="#흑마법사-warlock">흑마법사 (Warlock)</a>
+<a class="nav-l3" href="#카테고리-요약-10">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비-8">전투 전 버프/준비</a>
+<a class="nav-l3" href="#태세-형상-오라-폼-전환-5">태세/형상/오라/폼 전환</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-9">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-9">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#전투-중-cc-메즈-이동-제한-7">전투 중 CC/메즈/이동 제한</a>
+<a class="nav-l3" href="#생존-방어-피해-감소-7">생존/방어/피해 감소</a>
+<a class="nav-l3" href="#마나-자원-회복-4">마나/자원 회복</a>
+<a class="nav-l3" href="#이동-돌진-도주-5">이동/돌진/도주</a>
+<a class="nav-l3" href="#소환-펫-하수인-6">소환/펫/하수인</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-9">전투 유틸/특수 상황</a>
+<a class="nav-l3" href="#전투-사용-제외-후보-5">전투 사용 제외 후보</a>
+<a class="nav-l2" href="#드루이드-druid">드루이드 (Druid)</a>
+<a class="nav-l3" href="#카테고리-요약-11">카테고리 요약</a>
+<a class="nav-l3" href="#전투-전-버프-준비-9">전투 전 버프/준비</a>
+<a class="nav-l3" href="#태세-형상-오라-폼-전환-6">태세/형상/오라/폼 전환</a>
+<a class="nav-l3" href="#전투-중-공격기-단일-대상-10">전투 중 공격기 - 단일 대상</a>
+<a class="nav-l3" href="#전투-중-공격기-광역-다중-대상-10">전투 중 공격기 - 광역/다중 대상</a>
+<a class="nav-l3" href="#전투-중-cc-메즈-이동-제한-8">전투 중 CC/메즈/이동 제한</a>
+<a class="nav-l3" href="#해제-정화-5">해제/정화</a>
+<a class="nav-l3" href="#생존-방어-피해-감소-8">생존/방어/피해 감소</a>
+<a class="nav-l3" href="#치유-회복-6">치유/회복</a>
+<a class="nav-l3" href="#부활-3">부활</a>
+<a class="nav-l3" href="#마나-자원-회복-5">마나/자원 회복</a>
+<a class="nav-l3" href="#이동-돌진-도주-6">이동/돌진/도주</a>
+<a class="nav-l3" href="#어그로-도발-위협-제어-5">어그로/도발/위협 제어</a>
+<a class="nav-l3" href="#전투-유틸-특수-상황-10">전투 유틸/특수 상황</a>
+<a class="nav-l3" href="#전투-사용-제외-후보-6">전투 사용 제외 후보</a>
+</nav>
+<main>
+<h1 id="3-3-5-시련-전투용-직업-스펠-카테고리">3.3.5 시련 전투용 직업 스펠 카테고리</h1>
+<p>이 문서는 Wowhead WotLK 한국어 직업 능력 페이지를 기준으로 시련 전투 AI/전투 로직에서 쓰기 쉽도록 전투 목적별로 재분류한 목록입니다.</p>
+<h2 id="기준">기준</h2>
+<table><tbody>
+<tr><th>항목</th><th>내용</th></tr>
+<tr><td>기준 사이트</td><td><code>https://www.wowhead.com/wotlk/ko/spells/abilities/{class}</code></td></tr>
+<tr><td>직업 URL</td><td><code>warrior</code>, <code>paladin</code>, <code>hunter</code>, <code>rogue</code>, <code>priest</code>, <code>death-knight</code>, <code>shaman</code>, <code>mage</code>, <code>warlock</code>, <code>druid</code></td></tr>
+<tr><td>포함 범위</td><td>Wowhead WotLK <code>spells/abilities/{직업}</code> 페이지에 노출되는 직업 능력</td></tr>
+<tr><td>제외 범위</td><td>해당 Wowhead 직업 능력 페이지에 없는 특성 전용 스펠은 포함하지 않습니다. 예: 사제 <code>침묵(15487)</code></td></tr>
+<tr><td>랭크 처리</td><td>같은 직업/같은 스펠명은 최고 레벨/최고 랭크만 표시</td></tr>
+<tr><td>목적</td><td>시련 그림자/AI가 전투 상황에 따라 어떤 스펠을 사용할지 분류하기 위한 기획 자료</td></tr>
+</tbody></table>
+<h2 id="카테고리-요약">카테고리 요약</h2>
+<table><tbody>
+<tr><th>코드</th><th>카테고리</th><th>스펠 수</th><th>사용 시점</th></tr>
+<tr><td><code>PRECOMBAT_BUFF</code></td><td>전투 전 버프/준비</td><td>38</td><td>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</td></tr>
+<tr><td><code>STANCE_FORM_AURA</code></td><td>태세/형상/오라/폼 전환</td><td>25</td><td>직업 운용 상태를 바꾸는 태세, 형상, 오라, 존재감 계열입니다.</td></tr>
+<tr><td><code>ATTACK_SINGLE</code></td><td>전투 중 공격기 - 단일 대상</td><td>79</td><td>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</td></tr>
+<tr><td><code>ATTACK_AOE</code></td><td>전투 중 공격기 - 광역/다중 대상</td><td>24</td><td>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</td></tr>
+<tr><td><code>CC</code></td><td>전투 중 CC/메즈/이동 제한</td><td>22</td><td>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</td></tr>
+<tr><td><code>INTERRUPT</code></td><td>차단/침묵/시전 방해</td><td>6</td><td>주문 시전 중인 적을 끊거나 일정 시간 같은 계열 주문을 막는 기술입니다.</td></tr>
+<tr><td><code>DISPEL_CLEANSE</code></td><td>해제/정화</td><td>10</td><td>아군의 해로운 효과를 지우거나 적의 이로운 효과를 제거하는 기술입니다.</td></tr>
+<tr><td><code>DEFENSIVE</code></td><td>생존/방어/피해 감소</td><td>25</td><td>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</td></tr>
+<tr><td><code>HEAL</code></td><td>치유/회복</td><td>25</td><td>체력 회복, 보호막성 회복, 생명력 회복 계열입니다.</td></tr>
+<tr><td><code>RESURRECTION</code></td><td>부활</td><td>4</td><td>죽은 아군을 살리는 기술입니다. 전투 중 사용 가능 여부는 스펠별로 다릅니다.</td></tr>
+<tr><td><code>RESOURCE</code></td><td>마나/자원 회복</td><td>7</td><td>마나, 분노, 기력, 룬 마력, 생명력 전환 등 자원을 확보하는 기술입니다.</td></tr>
+<tr><td><code>MOBILITY</code></td><td>이동/돌진/도주</td><td>9</td><td>돌진, 점멸, 도약, 전력 질주 같은 위치 제어 기술입니다.</td></tr>
+<tr><td><code>TAUNT_THREAT</code></td><td>어그로/도발/위협 제어</td><td>12</td><td>대상에게 자신을 공격하게 하거나 위협 수준을 제어하는 기술입니다.</td></tr>
+<tr><td><code>PET_SUMMON</code></td><td>소환/펫/하수인</td><td>33</td><td>전투에 참여하는 펫, 악마, 정령, 토템, 구울 등을 소환하거나 제어합니다.</td></tr>
+<tr><td><code>UTILITY_COMBAT</code></td><td>전투 유틸/특수 상황</td><td>156</td><td>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</td></tr>
+<tr><td><code>EXCLUDE_NONCOMBAT</code></td><td>전투 사용 제외 후보</td><td>48</td><td>순간이동, 포탈, 전문기술성 소환, 추적 등 시련 전투 로직에 넣지 않는 편이 안전한 기술입니다.</td></tr>
+</tbody></table>
+<h2 id="시련-전투-적용-가이드">시련 전투 적용 가이드</h2>
+<table><tbody>
+<tr><th>우선순위</th><th>상황</th><th>권장 카테고리</th></tr>
+<tr><td>1</td><td>전투 시작 전 또는 재시작 직후</td><td><code>전투 전 버프/준비</code>, <code>태세/형상/오라/폼 전환</code>, <code>소환/펫/하수인</code></td></tr>
+<tr><td>2</td><td>적 캐스터가 주문 시전 중</td><td><code>차단/침묵/시전 방해</code></td></tr>
+<tr><td>3</td><td>체력이 위험함</td><td><code>생존/방어/피해 감소</code>, <code>치유/회복</code></td></tr>
+<tr><td>4</td><td>마나 또는 자원이 부족함</td><td><code>마나/자원 회복</code></td></tr>
+<tr><td>5</td><td>적을 묶거나 시간을 벌어야 함</td><td><code>전투 중 CC/메즈/이동 제한</code></td></tr>
+<tr><td>6</td><td>거리가 벌어짐</td><td><code>이동/돌진/도주</code></td></tr>
+<tr><td>7</td><td>탱커형 그림자가 대상 고정을 해야 함</td><td><code>어그로/도발/위협 제어</code></td></tr>
+<tr><td>8</td><td>일반 딜 사이클</td><td><code>전투 중 공격기 - 단일 대상</code>, <code>전투 중 공격기 - 광역/다중 대상</code></td></tr>
+<tr><td>9</td><td>사망 후 복구 로직</td><td><code>부활</code></td></tr>
+</tbody></table>
+<h2 id="직업별-전투-스펠-분류">직업별 전투 스펠 분류</h2>
+<h2 id="전사-warrior">전사 (Warrior)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/warrior">warrior</a></p>
+<h3 id="카테고리-요약-2">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>3</td></tr>
+<tr><td>태세/형상/오라/폼 전환</td><td>3</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>4</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>3</td></tr>
+<tr><td>전투 중 CC/메즈/이동 제한</td><td>2</td></tr>
+<tr><td>차단/침묵/시전 방해</td><td>2</td></tr>
+<tr><td>생존/방어/피해 감소</td><td>3</td></tr>
+<tr><td>치유/회복</td><td>1</td></tr>
+<tr><td>마나/자원 회복</td><td>2</td></tr>
+<tr><td>이동/돌진/도주</td><td>3</td></tr>
+<tr><td>어그로/도발/위협 제어</td><td>3</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>11</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47436">47436</a></td><td>전투의 외침 9 레벨</td><td>78</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47437">47437</a></td><td>사기의 외침 8 레벨</td><td>79</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47440">47440</a></td><td>지휘의 외침 3 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="태세-형상-오라-폼-전환">태세/형상/오라/폼 전환</h3>
+<p>직업 운용 상태를 바꾸는 태세, 형상, 오라, 존재감 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2457">2457</a></td><td>전투 태세</td><td>1</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=71">71</a></td><td>방어 태세</td><td>10</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2458">2458</a></td><td>광폭 태세</td><td>30</td><td>필요 태세/형상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=64382">64382</a></td><td>분쇄의 투척</td><td>71</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47465">47465</a></td><td>분쇄 10 레벨</td><td>76</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47450">47450</a></td><td>영웅의 일격 13 레벨</td><td>76</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47471">47471</a></td><td>마무리 일격 9 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1680">1680</a></td><td>소용돌이</td><td>36</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47520">47520</a></td><td>회전베기 8 레벨</td><td>77</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47502">47502</a></td><td>천둥벼락 9 레벨</td><td>78</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-cc-메즈-이동-제한">전투 중 CC/메즈/이동 제한</h3>
+<p>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=676">676</a></td><td>무장 해제</td><td>18</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5246">5246</a></td><td>위협의 외침</td><td>22</td><td>대상 제어/시간 벌기</td></tr>
+</tbody></table>
+<h3 id="차단-침묵-시전-방해">차단/침묵/시전 방해</h3>
+<p>주문 시전 중인 적을 끊거나 일정 시간 같은 계열 주문을 막는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=72">72</a></td><td>방패 가격</td><td>12</td><td>적 시전 중 우선 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6552">6552</a></td><td>자루 공격</td><td>38</td><td>적 시전 중 우선 사용</td></tr>
+</tbody></table>
+<h3 id="생존-방어-피해-감소">생존/방어/피해 감소</h3>
+<p>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2565">2565</a></td><td>방패 막기</td><td>16</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=871">871</a></td><td>방패의 벽</td><td>28</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=23920">23920</a></td><td>주문 반사</td><td>64</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+</tbody></table>
+<h3 id="치유-회복">치유/회복</h3>
+<p>체력 회복, 보호막성 회복, 생명력 회복 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=55694">55694</a></td><td>분노의 재생력</td><td>75</td><td>아군/자신 체력 회복</td></tr>
+</tbody></table>
+<h3 id="마나-자원-회복">마나/자원 회복</h3>
+<p>마나, 분노, 기력, 룬 마력, 생명력 전환 등 자원을 확보하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2687">2687</a></td><td>피의 분노</td><td>10</td><td>자원 부족 시 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=18499">18499</a></td><td>광전사의 격노</td><td>32</td><td>자원 부족 시 사용</td></tr>
+</tbody></table>
+<h3 id="이동-돌진-도주">이동/돌진/도주</h3>
+<p>돌진, 점멸, 도약, 전력 질주 같은 위치 제어 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=34428">34428</a></td><td>승리의 돌진</td><td>6</td><td>거리 조절/접근/이탈</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20252">20252</a></td><td>봉쇄</td><td>30</td><td>거리 조절/접근/이탈</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=11578">11578</a></td><td>돌진 3 레벨</td><td>46</td><td>거리 조절/접근/이탈</td></tr>
+</tbody></table>
+<h3 id="어그로-도발-위협-제어">어그로/도발/위협 제어</h3>
+<p>대상에게 자신을 공격하게 하거나 위협 수준을 제어하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=355">355</a></td><td>도발</td><td>10</td><td>대상 고정/위협 제어</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=694">694</a></td><td>도발의 일격</td><td>16</td><td>대상 고정/위협 제어</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1161">1161</a></td><td>도전의 외침</td><td>26</td><td>대상 고정/위협 제어</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1715">1715</a></td><td>무력화</td><td>8</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=7386">7386</a></td><td>방어구 가르기</td><td>10</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=7384">7384</a></td><td>제압</td><td>12</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20230">20230</a></td><td>보복</td><td>20</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=12678">12678</a></td><td>태세 숙련 지속효과</td><td>20</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1719">1719</a></td><td>무모한 희생</td><td>50</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3411">3411</a></td><td>가로막기</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47475">47475</a></td><td>격돌 8 레벨</td><td>79</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47488">47488</a></td><td>방패 밀쳐내기 8 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=57823">57823</a></td><td>복수 9 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=57755">57755</a></td><td>영웅의 투척</td><td>80</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h2 id="성기사-paladin">성기사 (Paladin)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/paladin">paladin</a></p>
+<h3 id="카테고리-요약-3">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>7</td></tr>
+<tr><td>태세/형상/오라/폼 전환</td><td>13</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>6</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>1</td></tr>
+<tr><td>전투 중 CC/메즈/이동 제한</td><td>1</td></tr>
+<tr><td>해제/정화</td><td>1</td></tr>
+<tr><td>생존/방어/피해 감소</td><td>6</td></tr>
+<tr><td>치유/회복</td><td>4</td></tr>
+<tr><td>어그로/도발/위협 제어</td><td>3</td></tr>
+<tr><td>소환/펫/하수인</td><td>2</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>13</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비-2">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20217">20217</a></td><td>왕의 축복</td><td>20</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=25899">25899</a></td><td>상급 성역의 축복</td><td>60</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=25898">25898</a></td><td>상급 왕의 축복</td><td>60</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48938">48938</a></td><td>상급 지혜의 축복 5 레벨</td><td>77</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48936">48936</a></td><td>지혜의 축복 9 레벨</td><td>77</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48934">48934</a></td><td>상급 힘의 축복 5 레벨</td><td>79</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48932">48932</a></td><td>힘의 축복 10 레벨</td><td>79</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="태세-형상-오라-폼-전환-2">태세/형상/오라/폼 전환</h3>
+<p>직업 운용 상태를 바꾸는 태세, 형상, 오라, 존재감 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=21084">21084</a></td><td>정의의 문장</td><td>1</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20164">20164</a></td><td>응징의 문장</td><td>22</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19746">19746</a></td><td>집중의 오라</td><td>22</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20165">20165</a></td><td>빛의 문장</td><td>30</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20166">20166</a></td><td>지혜의 문장</td><td>38</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=32223">32223</a></td><td>성전사의 오라</td><td>62</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=31801">31801</a></td><td>복수의 문장</td><td>64</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=348704">348704</a></td><td>타락의 문장</td><td>64</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48943">48943</a></td><td>암흑 저항의 오라 5 레벨</td><td>76</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=54043">54043</a></td><td>응보의 오라 7 레벨</td><td>76</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48945">48945</a></td><td>냉기 저항의 오라 5 레벨</td><td>77</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48947">48947</a></td><td>화염 저항의 오라 5 레벨</td><td>78</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48942">48942</a></td><td>기원의 오라 10 레벨</td><td>79</td><td>필요 태세/형상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-2">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20271">20271</a></td><td>빛의 심판</td><td>4</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53408">53408</a></td><td>지혜의 심판</td><td>12</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53407">53407</a></td><td>응징의 심판</td><td>28</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=356112">356112</a></td><td>타락의 심판 1 레벨</td><td>64</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48801">48801</a></td><td>퇴마술 9 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48806">48806</a></td><td>천벌의 망치 6 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-2">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48819">48819</a></td><td>신성화 8 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-cc-메즈-이동-제한-2">전투 중 CC/메즈/이동 제한</h3>
+<p>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=10308">10308</a></td><td>심판의 망치 4 레벨</td><td>54</td><td>대상 제어/시간 벌기</td></tr>
+</tbody></table>
+<h3 id="해제-정화">해제/정화</h3>
+<p>아군의 해로운 효과를 지우거나 적의 이로운 효과를 제거하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=4987">4987</a></td><td>정화</td><td>42</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+</tbody></table>
+<h3 id="생존-방어-피해-감소-2">생존/방어/피해 감소</h3>
+<p>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=498">498</a></td><td>신의 가호</td><td>6</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1044">1044</a></td><td>자유의 손길</td><td>18</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=642">642</a></td><td>천상의 보호막</td><td>34</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=10278">10278</a></td><td>보호의 손길 3 레벨</td><td>38</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6940">6940</a></td><td>희생의 손길</td><td>46</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53601">53601</a></td><td>성스러운 보호막 1 레벨</td><td>80</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+</tbody></table>
+<h3 id="치유-회복-2">치유/회복</h3>
+<p>체력 회복, 보호막성 회복, 생명력 회복 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=54968">54968</a></td><td>성스러운 빛의 문양</td><td>1</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48788">48788</a></td><td>신의 축복 5 레벨</td><td>78</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48785">48785</a></td><td>빛의 섬광 9 레벨</td><td>79</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48782">48782</a></td><td>성스러운 빛 13 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+</tbody></table>
+<h3 id="어그로-도발-위협-제어-2">어그로/도발/위협 제어</h3>
+<p>대상에게 자신을 공격하게 하거나 위협 수준을 제어하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=31789">31789</a></td><td>정의의 방어</td><td>14</td><td>대상 고정/위협 제어</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=62124">62124</a></td><td>심판의 손길</td><td>16</td><td>대상 고정/위협 제어</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=25780">25780</a></td><td>정의의 격노</td><td>16</td><td>대상 고정/위협 제어</td></tr>
+</tbody></table>
+<h3 id="소환-펫-하수인">소환/펫/하수인</h3>
+<p>전투에 참여하는 펫, 악마, 정령, 토템, 구울 등을 소환하거나 제어합니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=34769">34769</a></td><td>전투마 소환 소환</td><td>20</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=34767">34767</a></td><td>군마 소환 소환</td><td>40</td><td>전투 전 또는 펫 부재 시</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-2">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1152">1152</a></td><td>순화</td><td>8</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5502">5502</a></td><td>언데드 감지</td><td>20</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=13819">13819</a></td><td>전투마 소환</td><td>20</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=10326">10326</a></td><td>악령 퇴치</td><td>24</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1038">1038</a></td><td>구원의 손길</td><td>26</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19752">19752</a></td><td>성스러운 중재</td><td>30</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=23214">23214</a></td><td>군마 소환</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=356110">356110</a></td><td>피의 타락</td><td>64</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=31884">31884</a></td><td>응징의 격노</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=54428">54428</a></td><td>신성한 기도</td><td>71</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48817">48817</a></td><td>신의 격노 5 레벨</td><td>78</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48950">48950</a></td><td>구원 7 레벨</td><td>79</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61411">61411</a></td><td>정의의 방패 2 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h2 id="사냥꾼-hunter">사냥꾼 (Hunter)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/hunter">hunter</a></p>
+<h3 id="카테고리-요약-4">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>1</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>15</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>3</td></tr>
+<tr><td>이동/돌진/도주</td><td>1</td></tr>
+<tr><td>어그로/도발/위협 제어</td><td>1</td></tr>
+<tr><td>소환/펫/하수인</td><td>3</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>21</td></tr>
+<tr><td>전투 사용 제외 후보</td><td>13</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비-3">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53338">53338</a></td><td>사냥꾼의 징표 5 레벨</td><td>76</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-3">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=75">75</a></td><td>자동 사격</td><td>1</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5116">5116</a></td><td>충격포</td><td>8</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20736">20736</a></td><td>견제 사격 1 레벨</td><td>12</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2974">2974</a></td><td>날개 절단</td><td>12</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3043">3043</a></td><td>전갈 쐐기</td><td>22</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3034">3034</a></td><td>살무사 쐐기</td><td>36</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19801">19801</a></td><td>평정의 사격</td><td>60</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49052">49052</a></td><td>고정 사격 4 레벨</td><td>77</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48996">48996</a></td><td>랩터의 일격 11 레벨</td><td>77</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49056">49056</a></td><td>제물의 덫 8 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49001">49001</a></td><td>독사 쐐기 12 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49045">49045</a></td><td>신비한 사격 11 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61006">61006</a></td><td>마무리 사격 3 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53339">53339</a></td><td>살쾡이의 이빨 6 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=60192">60192</a></td><td>얼음의 화살 1 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-3">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49067">49067</a></td><td>폭발의 덫 6 레벨</td><td>77</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58434">58434</a></td><td>연발 사격 6 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49048">49048</a></td><td>일제 사격 8 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="이동-돌진-도주-2">이동/돌진/도주</h3>
+<p>돌진, 점멸, 도약, 전력 질주 같은 위치 제어 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=781">781</a></td><td>철수</td><td>20</td><td>거리 조절/접근/이탈</td></tr>
+</tbody></table>
+<h3 id="어그로-도발-위협-제어-3">어그로/도발/위협 제어</h3>
+<p>대상에게 자신을 공격하게 하거나 위협 수준을 제어하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=34477">34477</a></td><td>눈속임</td><td>70</td><td>대상 고정/위협 제어</td></tr>
+</tbody></table>
+<h3 id="소환-펫-하수인-2">소환/펫/하수인</h3>
+<p>전투에 참여하는 펫, 악마, 정령, 토템, 구울 등을 소환하거나 제어합니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=982">982</a></td><td>야수 되살리기</td><td>10</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=883">883</a></td><td>야수 부르기</td><td>10</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=62757">62757</a></td><td>맡긴 야수 부르기</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-3">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=13163">13163</a></td><td>원숭이의 상</td><td>4</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6197">6197</a></td><td>독수리의 눈</td><td>14</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5118">5118</a></td><td>치타의 상</td><td>16</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=34074">34074</a></td><td>독사의 상</td><td>20</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3045">3045</a></td><td>속사</td><td>26</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=13809">13809</a></td><td>냉기의 덫</td><td>28</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=13161">13161</a></td><td>야수의 상</td><td>30</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5384">5384</a></td><td>죽은척하기</td><td>30</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1543">1543</a></td><td>섬광</td><td>32</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=13159">13159</a></td><td>치타 무리의 상</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=14327">14327</a></td><td>야수 겁주기 3 레벨</td><td>46</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19263">19263</a></td><td>공격 저지</td><td>60</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=14311">14311</a></td><td>얼음의 덫 3 레벨</td><td>60</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=34026">34026</a></td><td>살상 명령</td><td>66</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=27044">27044</a></td><td>매의 상 8 레벨</td><td>68</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=34600">34600</a></td><td>뱀 덫</td><td>68</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53271">53271</a></td><td>주인의 부름</td><td>75</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49071">49071</a></td><td>야생의 상 4 레벨</td><td>76</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=425777">425777</a></td><td>덫 발사: 폭발 덫 1 레벨</td><td>77</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48990">48990</a></td><td>동물 치료 10 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61847">61847</a></td><td>용매의 상 2 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h3 id="전투-사용-제외-후보">전투 사용 제외 후보</h3>
+<p>순간이동, 포탈, 전문기술성 소환, 추적 등 시련 전투 로직에 넣지 않는 편이 안전한 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1494">1494</a></td><td>야수 추적</td><td>1</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6991">6991</a></td><td>먹이주기</td><td>10</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1515">1515</a></td><td>야수 길들이기</td><td>10</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2641">2641</a></td><td>야수 소환 해제</td><td>10</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19883">19883</a></td><td>인간형 추적</td><td>10</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1002">1002</a></td><td>야수의 눈</td><td>14</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19884">19884</a></td><td>언데드 추적</td><td>18</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1462">1462</a></td><td>야수 연구</td><td>24</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19885">19885</a></td><td>은신 추적</td><td>24</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19880">19880</a></td><td>정령 추적</td><td>26</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19878">19878</a></td><td>악마 추적</td><td>32</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19882">19882</a></td><td>거인 추적</td><td>40</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=19879">19879</a></td><td>용족 추적</td><td>50</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+</tbody></table>
+<h2 id="도적-rogue">도적 (Rogue)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/rogue">rogue</a></p>
+<h3 id="카테고리-요약-5">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>태세/형상/오라/폼 전환</td><td>1</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>4</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>1</td></tr>
+<tr><td>전투 중 CC/메즈/이동 제한</td><td>5</td></tr>
+<tr><td>차단/침묵/시전 방해</td><td>1</td></tr>
+<tr><td>생존/방어/피해 감소</td><td>3</td></tr>
+<tr><td>이동/돌진/도주</td><td>1</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>13</td></tr>
+<tr><td>전투 사용 제외 후보</td><td>3</td></tr>
+</tbody></table>
+<h3 id="태세-형상-오라-폼-전환-3">태세/형상/오라/폼 전환</h3>
+<p>직업 운용 상태를 바꾸는 태세, 형상, 오라, 존재감 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1784">1784</a></td><td>은신</td><td>1</td><td>필요 태세/형상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-4">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48672">48672</a></td><td>파열 9 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48657">48657</a></td><td>기습 12 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=57993">57993</a></td><td>독살 4 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48638">48638</a></td><td>사악한 일격 12 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-4">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=51723">51723</a></td><td>칼날 부채</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-cc-메즈-이동-제한-3">전투 중 CC/메즈/이동 제한</h3>
+<p>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1776">1776</a></td><td>후려치기</td><td>6</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1833">1833</a></td><td>비열한 습격</td><td>26</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2094">2094</a></td><td>실명</td><td>34</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8643">8643</a></td><td>급소 가격 2 레벨</td><td>50</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48676">48676</a></td><td>목조르기 10 레벨</td><td>80</td><td>대상 제어/시간 벌기</td></tr>
+</tbody></table>
+<h3 id="차단-침묵-시전-방해-2">차단/침묵/시전 방해</h3>
+<p>주문 시전 중인 적을 끊거나 일정 시간 같은 계열 주문을 막는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1766">1766</a></td><td>발차기</td><td>12</td><td>적 시전 중 우선 사용</td></tr>
+</tbody></table>
+<h3 id="생존-방어-피해-감소-3">생존/방어/피해 감소</h3>
+<p>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=26669">26669</a></td><td>회피 2 레벨</td><td>50</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=26889">26889</a></td><td>소멸 3 레벨</td><td>62</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=31224">31224</a></td><td>그림자 망토</td><td>66</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+</tbody></table>
+<h3 id="이동-돌진-도주-3">이동/돌진/도주</h3>
+<p>돌진, 점멸, 도약, 전력 질주 같은 위치 제어 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=11305">11305</a></td><td>전력 질주 3 레벨</td><td>58</td><td>거리 조절/접근/이탈</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-4">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8647">8647</a></td><td>약점 노출</td><td>14</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=51722">51722</a></td><td>장비 분해</td><td>20</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1725">1725</a></td><td>혼란</td><td>22</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2836">2836</a></td><td>함정 감지 지속효과</td><td>24</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1860">1860</a></td><td>낙법 지속효과</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6774">6774</a></td><td>난도질 2 레벨</td><td>42</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5938">5938</a></td><td>독칼</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=51724">51724</a></td><td>기절시키기 4 레벨</td><td>71</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=57934">57934</a></td><td>속임수 거래</td><td>75</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48674">48674</a></td><td>죽음의 투척 3 레벨</td><td>76</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48659">48659</a></td><td>교란 8 레벨</td><td>78</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48668">48668</a></td><td>절개 12 레벨</td><td>79</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48691">48691</a></td><td>매복 10 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h3 id="전투-사용-제외-후보-2">전투 사용 제외 후보</h3>
+<p>순간이동, 포탈, 전문기술성 소환, 추적 등 시련 전투 로직에 넣지 않는 편이 안전한 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1804">1804</a></td><td>자물쇠 따기</td><td>1</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=921">921</a></td><td>훔치기</td><td>4</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1842">1842</a></td><td>함정 해제</td><td>30</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+</tbody></table>
+<h2 id="사제-priest">사제 (Priest)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/priest">priest</a></p>
+<h3 id="카테고리-요약-6">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>8</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>7</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>1</td></tr>
+<tr><td>해제/정화</td><td>3</td></tr>
+<tr><td>생존/방어/피해 감소</td><td>2</td></tr>
+<tr><td>치유/회복</td><td>10</td></tr>
+<tr><td>부활</td><td>1</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>13</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비-4">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6346">6346</a></td><td>공포의 수호물</td><td>20</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=605">605</a></td><td>정신 지배</td><td>30</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48169">48169</a></td><td>어둠의 보호 5 레벨</td><td>76</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48168">48168</a></td><td>내면의 열정 9 레벨</td><td>77</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48161">48161</a></td><td>신의 권능: 인내 8 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48162">48162</a></td><td>인내의 기원 4 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48074">48074</a></td><td>정신력의 기원 3 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48073">48073</a></td><td>천상의 정신 6 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-5">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58381">58381</a></td><td>정신의 채찍 9 레벨</td><td>0</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48135">48135</a></td><td>신성한 불꽃 11 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48123">48123</a></td><td>성스러운 일격 12 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48127">48127</a></td><td>정신 분열 13 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48300">48300</a></td><td>파멸의 역병 9 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48125">48125</a></td><td>어둠의 권능: 고통 12 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53023">53023</a></td><td>정신 불태우기 2 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-5">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48078">48078</a></td><td>신성한 폭발 9 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="해제-정화-2">해제/정화</h3>
+<p>아군의 해로운 효과를 지우거나 적의 이로운 효과를 제거하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=528">528</a></td><td>질병 치료</td><td>14</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=552">552</a></td><td>질병 해제</td><td>32</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=988">988</a></td><td>마법 무효화 2 레벨</td><td>36</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+</tbody></table>
+<h3 id="생존-방어-피해-감소-4">생존/방어/피해 감소</h3>
+<p>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48170">48170</a></td><td>암흑 보호의 기원 3 레벨</td><td>77</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48066">48066</a></td><td>신의 권능: 보호막 14 레벨</td><td>80</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+</tbody></table>
+<h3 id="치유-회복-3">치유/회복</h3>
+<p>체력 회복, 보호막성 회복, 생명력 회복 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=63544">63544</a></td><td>소생 강화</td><td>1</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2053">2053</a></td><td>하급 치유 3 레벨</td><td>10</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=70772">70772</a></td><td>축복받은 치유</td><td>20</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6064">6064</a></td><td>치유 4 레벨</td><td>34</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48072">48072</a></td><td>치유의 기원 7 레벨</td><td>76</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48120">48120</a></td><td>결속의 치유 3 레벨</td><td>78</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48063">48063</a></td><td>상급 치유 9 레벨</td><td>78</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48071">48071</a></td><td>순간 치유 11 레벨</td><td>79</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48113">48113</a></td><td>회복의 기원 3 레벨</td><td>79</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48068">48068</a></td><td>소생 14 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+</tbody></table>
+<h3 id="부활">부활</h3>
+<p>죽은 아군을 살리는 기술입니다. 전투 중 사용 가능 여부는 스펠별로 다릅니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48171">48171</a></td><td>부활 7 레벨</td><td>78</td><td>사망 아군 복구 상황</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-5">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49868">49868</a></td><td>어둠의 형상</td><td>0</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=586">586</a></td><td>소실</td><td>8</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=453">453</a></td><td>평정</td><td>20</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8129">8129</a></td><td>마나 연소</td><td>24</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1706">1706</a></td><td>공중 부양</td><td>34</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=10909">10909</a></td><td>마음의 눈 2 레벨</td><td>44</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=10890">10890</a></td><td>영혼의 절규 4 레벨</td><td>56</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=10955">10955</a></td><td>언데드 속박 3 레벨</td><td>60</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=34433">34433</a></td><td>어둠의 마귀</td><td>66</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=32375">32375</a></td><td>대규모 무효화</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48158">48158</a></td><td>어둠의 권능: 죽음 4 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=64843">64843</a></td><td>천상의 찬가 1 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=64904">64904</a></td><td>희망의 찬가</td><td>80</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h2 id="죽음의-기사-death-knight">죽음의 기사 (Death Knight)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/death-knight">death-knight</a></p>
+<h3 id="카테고리-요약-7">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>1</td></tr>
+<tr><td>태세/형상/오라/폼 전환</td><td>2</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>8</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>2</td></tr>
+<tr><td>전투 중 CC/메즈/이동 제한</td><td>3</td></tr>
+<tr><td>차단/침묵/시전 방해</td><td>1</td></tr>
+<tr><td>생존/방어/피해 감소</td><td>3</td></tr>
+<tr><td>부활</td><td>1</td></tr>
+<tr><td>마나/자원 회복</td><td>2</td></tr>
+<tr><td>어그로/도발/위협 제어</td><td>1</td></tr>
+<tr><td>소환/펫/하수인</td><td>2</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>21</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비-5">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53344">53344</a></td><td>타락한 성전사의 룬</td><td>70</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="태세-형상-오라-폼-전환-4">태세/형상/오라/폼 전환</h3>
+<p>직업 운용 상태를 바꾸는 태세, 형상, 오라, 존재감 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48263">48263</a></td><td>냉기의 형상</td><td>57</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48265">48265</a></td><td>부정의 형상</td><td>70</td><td>필요 태세/형상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-6">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=59879">59879</a></td><td>피의 역병 지속효과</td><td>1</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53342">53342</a></td><td>주문분쇄자의 룬</td><td>57</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53323">53323</a></td><td>검분쇄자의 룬</td><td>63</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=56815">56815</a></td><td>룬의 일격</td><td>67</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49921">49921</a></td><td>역병의 일격 6 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=62904">62904</a></td><td>죽음의 고리 5 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49924">49924</a></td><td>죽음의 일격 5 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49930">49930</a></td><td>피의 일격 6 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-6">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49941">49941</a></td><td>피의 소용돌이 4 레벨</td><td>78</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49938">49938</a></td><td>죽음과 부패 4 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-cc-메즈-이동-제한-4">전투 중 CC/메즈/이동 제한</h3>
+<p>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49576">49576</a></td><td>죽음의 손아귀</td><td>55</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=45524">45524</a></td><td>얼음 결계</td><td>58</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47476">47476</a></td><td>질식시키기</td><td>59</td><td>대상 제어/시간 벌기</td></tr>
+</tbody></table>
+<h3 id="차단-침묵-시전-방해-3">차단/침묵/시전 방해</h3>
+<p>주문 시전 중인 적을 끊거나 일정 시간 같은 계열 주문을 막는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47528">47528</a></td><td>정신 얼리기</td><td>57</td><td>적 시전 중 우선 사용</td></tr>
+</tbody></table>
+<h3 id="생존-방어-피해-감소-5">생존/방어/피해 감소</h3>
+<p>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=70164">70164</a></td><td>네루비안 등껍질의 룬</td><td>40</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48792">48792</a></td><td>얼음같은 인내력</td><td>62</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48707">48707</a></td><td>대마법 보호막</td><td>68</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+</tbody></table>
+<h3 id="부활-2">부활</h3>
+<p>죽은 아군을 살리는 기술입니다. 전투 중 사용 가능 여부는 스펠별로 다릅니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61999">61999</a></td><td>아군 되살리기</td><td>72</td><td>사망 아군 복구 상황</td></tr>
+</tbody></table>
+<h3 id="마나-자원-회복-2">마나/자원 회복</h3>
+<p>마나, 분노, 기력, 룬 마력, 생명력 전환 등 자원을 확보하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=45529">45529</a></td><td>혈기 전환</td><td>64</td><td>자원 부족 시 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47568">47568</a></td><td>룬 무기 강화</td><td>75</td><td>자원 부족 시 사용</td></tr>
+</tbody></table>
+<h3 id="어그로-도발-위협-제어-4">어그로/도발/위협 제어</h3>
+<p>대상에게 자신을 공격하게 하거나 위협 수준을 제어하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=56222">56222</a></td><td>어둠의 명령</td><td>65</td><td>대상 고정/위협 제어</td></tr>
+</tbody></table>
+<h3 id="소환-펫-하수인-3">소환/펫/하수인</h3>
+<p>전투에 참여하는 펫, 악마, 정령, 토템, 구울 등을 소환하거나 제어합니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=46584">46584</a></td><td>시체 되살리기</td><td>56</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42650">42650</a></td><td>사자의 군대</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-6">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=59921">59921</a></td><td>서리 열병 지속효과</td><td>0</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=52284">52284</a></td><td>죽음의 요새의 결의 1 레벨</td><td>0</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=51986">51986</a></td><td>창백한 말 2 레벨</td><td>0</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53428">53428</a></td><td>룬벼리기</td><td>55</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49142">49142</a></td><td>얼어붙은 룬 무기</td><td>55</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49410">49410</a></td><td>재빠른 손놀림 지속효과</td><td>55</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53341">53341</a></td><td>잿더미 빙하의 룬</td><td>55</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48778">48778</a></td><td>죽음의 군마 소환</td><td>55</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=50977">50977</a></td><td>죽음의 문</td><td>55</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53343">53343</a></td><td>칼날얼음의 룬</td><td>55</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48266">48266</a></td><td>혈기의 형상</td><td>55</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=50842">50842</a></td><td>전염병</td><td>56</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=54447">54447</a></td><td>주문파괴자의 룬</td><td>57</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53331">53331</a></td><td>리치 파멸의 룬</td><td>60</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3714">3714</a></td><td>얼음길</td><td>61</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=54446">54446</a></td><td>검파괴자의 룬</td><td>63</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48743">48743</a></td><td>죽음의 서약</td><td>66</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=62158">62158</a></td><td>돌가죽 가고일의 룬</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=57623">57623</a></td><td>겨울의 뿔피리 2 레벨</td><td>75</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49909">49909</a></td><td>얼음 손길 5 레벨</td><td>78</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=51425">51425</a></td><td>절멸 4 레벨</td><td>79</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h2 id="주술사-shaman">주술사 (Shaman)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/shaman">shaman</a></p>
+<h3 id="카테고리-요약-8">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>7</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>3</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>2</td></tr>
+<tr><td>전투 중 CC/메즈/이동 제한</td><td>1</td></tr>
+<tr><td>차단/침묵/시전 방해</td><td>1</td></tr>
+<tr><td>해제/정화</td><td>3</td></tr>
+<tr><td>치유/회복</td><td>4</td></tr>
+<tr><td>소환/펫/하수인</td><td>19</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>10</td></tr>
+<tr><td>전투 사용 제외 후보</td><td>4</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비-6">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=10399">10399</a></td><td>대지의 무기 4 레벨</td><td>24</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=57960">57960</a></td><td>물의 보호막 9 레벨</td><td>76</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58796">58796</a></td><td>냉기의 무기 9 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=51994">51994</a></td><td>대지생명의 무기 6 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49281">49281</a></td><td>번개 보호막 11 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58790">58790</a></td><td>불꽃의 무기 10 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58804">58804</a></td><td>질풍의 무기 8 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-7">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49236">49236</a></td><td>냉기 충격 7 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49238">49238</a></td><td>번개 화살 14 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49233">49233</a></td><td>화염 충격 9 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-7">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61657">61657</a></td><td>불꽃 회오리 9 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49271">49271</a></td><td>연쇄 번개 8 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-cc-메즈-이동-제한-5">전투 중 CC/메즈/이동 제한</h3>
+<p>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=51514">51514</a></td><td>주술</td><td>80</td><td>대상 제어/시간 벌기</td></tr>
+</tbody></table>
+<h3 id="차단-침묵-시전-방해-4">차단/침묵/시전 방해</h3>
+<p>주문 시전 중인 적을 끊거나 일정 시간 같은 계열 주문을 막는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49231">49231</a></td><td>대지 충격 10 레벨</td><td>79</td><td>적 시전 중 우선 사용</td></tr>
+</tbody></table>
+<h3 id="해제-정화-3">해제/정화</h3>
+<p>아군의 해로운 효과를 지우거나 적의 이로운 효과를 제거하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=526">526</a></td><td>독소 해제</td><td>16</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8012">8012</a></td><td>정화 2 레벨</td><td>32</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8170">8170</a></td><td>정화 토템</td><td>38</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+</tbody></table>
+<h3 id="치유-회복-4">치유/회복</h3>
+<p>체력 회복, 보호막성 회복, 생명력 회복 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49276">49276</a></td><td>하급 치유의 물결 9 레벨</td><td>77</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=55459">55459</a></td><td>연쇄 치유 7 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49273">49273</a></td><td>치유의 물결 14 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58757">58757</a></td><td>치유의 토템 9 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+</tbody></table>
+<h3 id="소환-펫-하수인-4">소환/펫/하수인</h3>
+<p>전투에 참여하는 펫, 악마, 정령, 토템, 구울 등을 소환하거나 제어합니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2484">2484</a></td><td>속박의 토템</td><td>6</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2645">2645</a></td><td>늑대 정령</td><td>16</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8143">8143</a></td><td>진동의 토템</td><td>18</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8177">8177</a></td><td>마법흡수 토템</td><td>30</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8512">8512</a></td><td>질풍의 토템</td><td>32</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6495">6495</a></td><td>감시의 토템</td><td>34</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3738">3738</a></td><td>천벌의 토템</td><td>64</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2062">2062</a></td><td>대지의 정령 토템</td><td>66</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2894">2894</a></td><td>불의 정령 토템</td><td>68</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58753">58753</a></td><td>돌가죽 토템 10 레벨</td><td>78</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58582">58582</a></td><td>돌발톱 토템 10 레벨</td><td>78</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58734">58734</a></td><td>용암 토템 7 레벨</td><td>78</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58745">58745</a></td><td>냉기 저항 토템 6 레벨</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58643">58643</a></td><td>대지력 토템 8 레벨</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58774">58774</a></td><td>마나샘 토템 8 레벨</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58656">58656</a></td><td>불꽃의 토템 8 레벨</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58704">58704</a></td><td>불타는 토템 10 레벨</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58749">58749</a></td><td>자연 저항 토템 6 레벨</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58739">58739</a></td><td>화염 저항 토템 6 레벨</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-7">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=57994">57994</a></td><td>칼 바람</td><td>16</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=546">546</a></td><td>수면 걷기</td><td>28</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=66842">66842</a></td><td>원소의 부름</td><td>30</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20608">20608</a></td><td>윤회 지속효과</td><td>30</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=66843">66843</a></td><td>선조의 부름</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=66844">66844</a></td><td>영혼의 부름</td><td>50</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=32182">32182</a></td><td>영웅심</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2825">2825</a></td><td>피의 욕망</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49277">49277</a></td><td>고대의 영혼 7 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=60043">60043</a></td><td>용암 폭발 2 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h3 id="전투-사용-제외-후보-3">전투 사용 제외 후보</h3>
+<p>순간이동, 포탈, 전문기술성 소환, 추적 등 시련 전투 로직에 넣지 않는 편이 안전한 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=131">131</a></td><td>수중 호흡</td><td>22</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6196">6196</a></td><td>천리안</td><td>26</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=556">556</a></td><td>영혼의 귀환</td><td>30</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=36936">36936</a></td><td>토템의 귀환</td><td>30</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+</tbody></table>
+<h2 id="마법사-mage">마법사 (Mage)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/mage">mage</a></p>
+<h3 id="카테고리-요약-9">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>5</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>8</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>3</td></tr>
+<tr><td>전투 중 CC/메즈/이동 제한</td><td>2</td></tr>
+<tr><td>차단/침묵/시전 방해</td><td>1</td></tr>
+<tr><td>해제/정화</td><td>1</td></tr>
+<tr><td>생존/방어/피해 감소</td><td>5</td></tr>
+<tr><td>치유/회복</td><td>1</td></tr>
+<tr><td>마나/자원 회복</td><td>1</td></tr>
+<tr><td>이동/돌진/도주</td><td>1</td></tr>
+<tr><td>소환/펫/하수인</td><td>1</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>22</td></tr>
+<tr><td>전투 사용 제외 후보</td><td>16</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비-7">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43024">43024</a></td><td>마법사 갑옷 6 레벨</td><td>79</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43008">43008</a></td><td>얼음 갑옷 6 레벨</td><td>79</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43046">43046</a></td><td>타오르는 갑옷 3 레벨</td><td>79</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61024">61024</a></td><td>달라란의 지능 7 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42995">42995</a></td><td>신비한 지능 7 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-8">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42859">42859</a></td><td>불태우기 11 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42914">42914</a></td><td>얼음창 3 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42833">42833</a></td><td>화염구 16 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42846">42846</a></td><td>신비한 화살 13 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42842">42842</a></td><td>얼음 화살 16 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42897">42897</a></td><td>비전 작렬 4 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47610">47610</a></td><td>얼음불꽃 화살 2 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42873">42873</a></td><td>화염 작렬 11 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-8">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42926">42926</a></td><td>불기둥 9 레벨</td><td>79</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42940">42940</a></td><td>눈보라 9 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42921">42921</a></td><td>신비한 폭발 10 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-cc-메즈-이동-제한-6">전투 중 CC/메즈/이동 제한</h3>
+<p>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=12826">12826</a></td><td>변이 4 레벨</td><td>60</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42917">42917</a></td><td>얼음 회오리 6 레벨</td><td>75</td><td>대상 제어/시간 벌기</td></tr>
+</tbody></table>
+<h3 id="차단-침묵-시전-방해-5">차단/침묵/시전 방해</h3>
+<p>주문 시전 중인 적을 끊거나 일정 시간 같은 계열 주문을 막는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2139">2139</a></td><td>마법 차단</td><td>24</td><td>적 시전 중 우선 사용</td></tr>
+</tbody></table>
+<h3 id="해제-정화-4">해제/정화</h3>
+<p>아군의 해로운 효과를 지우거나 적의 이로운 효과를 제거하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=475">475</a></td><td>저주 해제</td><td>18</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+</tbody></table>
+<h3 id="생존-방어-피해-감소-6">생존/방어/피해 감소</h3>
+<p>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=7301">7301</a></td><td>냉기 갑옷 3 레벨</td><td>20</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=45438">45438</a></td><td>얼음 방패</td><td>30</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43010">43010</a></td><td>화염계 수호 7 레벨</td><td>78</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43012">43012</a></td><td>냉기계 수호 7 레벨</td><td>79</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43020">43020</a></td><td>마나 보호막 9 레벨</td><td>79</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+</tbody></table>
+<h3 id="치유-회복-5">치유/회복</h3>
+<p>체력 회복, 보호막성 회복, 생명력 회복 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42956">42956</a></td><td>원기 회복의 음식 창조 2 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+</tbody></table>
+<h3 id="마나-자원-회복-3">마나/자원 회복</h3>
+<p>마나, 분노, 기력, 룬 마력, 생명력 전환 등 자원을 확보하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=12051">12051</a></td><td>환기</td><td>20</td><td>자원 부족 시 사용</td></tr>
+</tbody></table>
+<h3 id="이동-돌진-도주-4">이동/돌진/도주</h3>
+<p>돌진, 점멸, 도약, 전력 질주 같은 위치 제어 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1953">1953</a></td><td>점멸</td><td>20</td><td>거리 조절/접근/이탈</td></tr>
+</tbody></table>
+<h3 id="소환-펫-하수인-5">소환/펫/하수인</h3>
+<p>전투에 참여하는 펫, 악마, 정령, 토템, 구울 등을 소환하거나 제어합니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=70909">70909</a></td><td>물의 정령 소환 (견본)</td><td>50</td><td>전투 전 또는 펫 부재 시</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-8">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49361">49361</a></td><td>차원의 문: 스토나드</td><td>35</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49360">49360</a></td><td>차원의 문: 테라모어</td><td>35</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=10059">10059</a></td><td>차원의 문: 스톰윈드</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=32267">32267</a></td><td>차원의 문: 실버문</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=11416">11416</a></td><td>차원의 문: 아이언포지</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=11418">11418</a></td><td>차원의 문: 언더시티</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=32266">32266</a></td><td>차원의 문: 엑소다르</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=11417">11417</a></td><td>차원의 문: 오그리마</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=11419">11419</a></td><td>차원의 문: 다르나서스</td><td>50</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=11420">11420</a></td><td>차원의 문: 썬더 블러프</td><td>50</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=35717">35717</a></td><td>차원의 문: 샤트라스</td><td>65</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=66">66</a></td><td>투명화</td><td>68</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=27090">27090</a></td><td>음료 창조 9 레벨</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=33717">33717</a></td><td>음식 창조 8 레벨</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53142">53142</a></td><td>차원의 문: 달라란</td><td>74</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43015">43015</a></td><td>마법 감쇠 7 레벨</td><td>76</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43017">43017</a></td><td>마법 증폭 7 레벨</td><td>77</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42931">42931</a></td><td>냉기 돌풍 8 레벨</td><td>79</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61316">61316</a></td><td>달라란의 총명함 3 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=43002">43002</a></td><td>신비한 총명함 3 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=55342">55342</a></td><td>환영 복제</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=413841">413841</a></td><td>점화</td><td>99</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h3 id="전투-사용-제외-후보-4">전투 사용 제외 후보</h3>
+<p>순간이동, 포탈, 전문기술성 소환, 추적 등 시련 전투 로직에 넣지 않는 편이 안전한 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=130">130</a></td><td>저속 낙하</td><td>12</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3561">3561</a></td><td>순간이동: 스톰윈드</td><td>20</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=32272">32272</a></td><td>순간이동: 실버문</td><td>20</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3562">3562</a></td><td>순간이동: 아이언포지</td><td>20</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3563">3563</a></td><td>순간이동: 언더시티</td><td>20</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=32271">32271</a></td><td>순간이동: 엑소다르</td><td>20</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3567">3567</a></td><td>순간이동: 오그리마</td><td>20</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3565">3565</a></td><td>순간이동: 다르나서스</td><td>30</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=3566">3566</a></td><td>순간이동: 썬더 블러프</td><td>30</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49358">49358</a></td><td>순간이동: 스토나드</td><td>35</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49359">49359</a></td><td>순간이동: 테라모어</td><td>35</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=35715">35715</a></td><td>순간이동: 샤트라스</td><td>60</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=30449">30449</a></td><td>마법 훔치기</td><td>70</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53140">53140</a></td><td>순간이동: 달라란</td><td>71</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=42985">42985</a></td><td>마나석 창조 6 레벨</td><td>77</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58659">58659</a></td><td>원기 회복의 의식 2 레벨</td><td>80</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+</tbody></table>
+<h2 id="흑마법사-warlock">흑마법사 (Warlock)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/warlock">warlock</a></p>
+<h3 id="카테고리-요약-10">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>3</td></tr>
+<tr><td>태세/형상/오라/폼 전환</td><td>1</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>14</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>4</td></tr>
+<tr><td>전투 중 CC/메즈/이동 제한</td><td>4</td></tr>
+<tr><td>생존/방어/피해 감소</td><td>1</td></tr>
+<tr><td>마나/자원 회복</td><td>1</td></tr>
+<tr><td>이동/돌진/도주</td><td>1</td></tr>
+<tr><td>소환/펫/하수인</td><td>6</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>11</td></tr>
+<tr><td>전투 사용 제외 후보</td><td>10</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비-8">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=696">696</a></td><td>악마의 피부 2 레벨</td><td>10</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47893">47893</a></td><td>마의 갑옷 4 레벨</td><td>79</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47889">47889</a></td><td>악마의 갑옷 8 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="태세-형상-오라-폼-전환-5">태세/형상/오라/폼 전환</h3>
+<p>직업 운용 상태를 바꾸는 태세, 형상, 오라, 존재감 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=50589">50589</a></td><td>제물의 오라 악마</td><td>60</td><td>필요 태세/형상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-9">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=75445">75445</a></td><td>악마의 제물 3 레벨</td><td>0</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5138">5138</a></td><td>마나 흡수</td><td>24</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=11719">11719</a></td><td>언어의 저주 2 레벨</td><td>50</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=50511">50511</a></td><td>무력화 저주 9 레벨</td><td>71</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47813">47813</a></td><td>부패 10 레벨</td><td>77</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47855">47855</a></td><td>영혼 흡수 6 레벨</td><td>77</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47857">47857</a></td><td>생명력 흡수 9 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47865">47865</a></td><td>원소의 저주 5 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47860">47860</a></td><td>죽음의 고리 6 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47864">47864</a></td><td>고통의 저주 9 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47815">47815</a></td><td>불타는 고통 10 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47809">47809</a></td><td>어둠의 화살 13 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47811">47811</a></td><td>제물 11 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47867">47867</a></td><td>파멸의 저주 3 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-9">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=50581">50581</a></td><td>어둠의 회전베기 악마</td><td>60</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47823">47823</a></td><td>지옥의 불길 5 레벨</td><td>78</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47820">47820</a></td><td>불의 비 7 레벨</td><td>79</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47836">47836</a></td><td>부패의 씨앗 3 레벨</td><td>80</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-cc-메즈-이동-제한-7">전투 중 CC/메즈/이동 제한</h3>
+<p>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=23161">23161</a></td><td>공포마 소환</td><td>40</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=18647">18647</a></td><td>추방 2 레벨</td><td>48</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=17928">17928</a></td><td>공포의 울부짖음 2 레벨</td><td>54</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6215">6215</a></td><td>공포 3 레벨</td><td>56</td><td>대상 제어/시간 벌기</td></tr>
+</tbody></table>
+<h3 id="생존-방어-피해-감소-7">생존/방어/피해 감소</h3>
+<p>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47891">47891</a></td><td>암흑계 수호 6 레벨</td><td>78</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+</tbody></table>
+<h3 id="마나-자원-회복-4">마나/자원 회복</h3>
+<p>마나, 분노, 기력, 룬 마력, 생명력 전환 등 자원을 확보하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=57946">57946</a></td><td>생명력 전환 8 레벨</td><td>80</td><td>자원 부족 시 사용</td></tr>
+</tbody></table>
+<h3 id="이동-돌진-도주-5">이동/돌진/도주</h3>
+<p>돌진, 점멸, 도약, 전력 질주 같은 위치 제어 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=54785">54785</a></td><td>악마의 돌진 악마</td><td>60</td><td>거리 조절/접근/이탈</td></tr>
+</tbody></table>
+<h3 id="소환-펫-하수인-6">소환/펫/하수인</h3>
+<p>전투에 참여하는 펫, 악마, 정령, 토템, 구울 등을 소환하거나 제어합니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=688">688</a></td><td>임프 소환 소환</td><td>1</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=697">697</a></td><td>보이드워커 소환 소환</td><td>10</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=712">712</a></td><td>서큐버스 소환 소환</td><td>20</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=713">713</a></td><td>인큐버스 소환 소환</td><td>20</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=691">691</a></td><td>지옥사냥개 소환 소환</td><td>30</td><td>전투 전 또는 펫 부재 시</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48018">48018</a></td><td>악마의 마법진: 소환</td><td>80</td><td>전투 전 또는 펫 부재 시</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-9">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=59671">59671</a></td><td>도전의 울부짖음 악마</td><td>1</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5697">5697</a></td><td>영원의 숨결</td><td>16</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5500">5500</a></td><td>악마 감지</td><td>24</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1122">1122</a></td><td>불지옥 소환</td><td>50</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=29858">29858</a></td><td>영혼 붕괴</td><td>66</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61191">61191</a></td><td>악마 예속 4 레벨</td><td>72</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47856">47856</a></td><td>생명력 집중 9 레벨</td><td>76</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47878">47878</a></td><td>생명석 창조 8 레벨</td><td>79</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47838">47838</a></td><td>소각 4 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=61290">61290</a></td><td>암흑불길 2 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47825">47825</a></td><td>영혼의 불꽃 6 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h3 id="전투-사용-제외-후보-5">전투 사용 제외 후보</h3>
+<p>순간이동, 포탈, 전문기술성 소환, 추적 등 시련 전투 로직에 넣지 않는 편이 안전한 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=698">698</a></td><td>소환 의식</td><td>20</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5784">5784</a></td><td>지옥마 소환 소환</td><td>20</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=126">126</a></td><td>킬로그의 눈 소환</td><td>22</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=132">132</a></td><td>투명체 감지</td><td>26</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=18540">18540</a></td><td>파멸의 의식</td><td>60</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47884">47884</a></td><td>영혼석 창조 7 레벨</td><td>76</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=47888">47888</a></td><td>주문석 창조 6 레벨</td><td>78</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48020">48020</a></td><td>악마의 마법진: 순간이동</td><td>80</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=58887">58887</a></td><td>영혼의 의식 2 레벨</td><td>80</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=60220">60220</a></td><td>화염석 창조 7 레벨</td><td>80</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+</tbody></table>
+<h2 id="드루이드-druid">드루이드 (Druid)</h2>
+<p>Wowhead 기준 URL: <a href="https://www.wowhead.com/wotlk/ko/spells/abilities/druid">druid</a></p>
+<h3 id="카테고리-요약-11">카테고리 요약</h3>
+<table><tbody>
+<tr><th>카테고리</th><th>스펠 수</th></tr>
+<tr><td>전투 전 버프/준비</td><td>3</td></tr>
+<tr><td>태세/형상/오라/폼 전환</td><td>5</td></tr>
+<tr><td>전투 중 공격기 - 단일 대상</td><td>10</td></tr>
+<tr><td>전투 중 공격기 - 광역/다중 대상</td><td>4</td></tr>
+<tr><td>전투 중 CC/메즈/이동 제한</td><td>4</td></tr>
+<tr><td>해제/정화</td><td>2</td></tr>
+<tr><td>생존/방어/피해 감소</td><td>2</td></tr>
+<tr><td>치유/회복</td><td>5</td></tr>
+<tr><td>부활</td><td>2</td></tr>
+<tr><td>마나/자원 회복</td><td>1</td></tr>
+<tr><td>이동/돌진/도주</td><td>2</td></tr>
+<tr><td>어그로/도발/위협 제어</td><td>4</td></tr>
+<tr><td>전투 유틸/특수 상황</td><td>21</td></tr>
+<tr><td>전투 사용 제외 후보</td><td>2</td></tr>
+</tbody></table>
+<h3 id="전투-전-버프-준비-9">전투 전 버프/준비</h3>
+<p>전투 시작 전에 미리 유지하면 좋은 강화 효과, 오라, 문장, 무기 강화, 보호막입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53307">53307</a></td><td>가시 8 레벨</td><td>74</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48470">48470</a></td><td>야생의 선물 4 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48469">48469</a></td><td>야생의 징표 9 레벨</td><td>80</td><td>전투 전 유지 확인</td></tr>
+</tbody></table>
+<h3 id="태세-형상-오라-폼-전환-6">태세/형상/오라/폼 전환</h3>
+<p>직업 운용 상태를 바꾸는 태세, 형상, 오라, 존재감 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5487">5487</a></td><td>곰 변신 변신</td><td>10</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=1066">1066</a></td><td>바다표범 변신 변신</td><td>16</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=768">768</a></td><td>표범 변신 변신</td><td>20</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=9634">9634</a></td><td>광포한 곰 변신 변신</td><td>40</td><td>필요 태세/형상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=33891">33891</a></td><td>생명의 나무 변신</td><td>50</td><td>필요 태세/형상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-단일-대상-10">전투 중 공격기 - 단일 대상</h3>
+<p>주 대상에게 사용하는 직접 피해, 도트, 마무리 일격, 주력 딜링 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=770">770</a></td><td>요정의 불꽃</td><td>18</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=16857">16857</a></td><td>요정의 불꽃 (야성)</td><td>18</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8983">8983</a></td><td>강타 3 레벨</td><td>46</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48574">48574</a></td><td>갈퀴 발톱 7 레벨</td><td>78</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48579">48579</a></td><td>찢어발기기 7 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48461">48461</a></td><td>천벌 12 레벨</td><td>79</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48463">48463</a></td><td>달빛 섬광 14 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49800">49800</a></td><td>도려내기 9 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48564">48564</a></td><td>짓이기기 (곰) 5 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48566">48566</a></td><td>짓이기기 (표범) 5 레벨</td><td>80</td><td>단일 대상 기본 전투 로테이션</td></tr>
+</tbody></table>
+<h3 id="전투-중-공격기-광역-다중-대상-10">전투 중 공격기 - 광역/다중 대상</h3>
+<p>여러 적을 동시에 공격하거나 지역 피해를 주는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=33943">33943</a></td><td>폭풍까마귀 변신 변신</td><td>60</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=40120">40120</a></td><td>빠른 폭풍까마귀 변신 변신</td><td>70</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=62078">62078</a></td><td>휘둘러치기 (표범) 1 레벨</td><td>71</td><td>다수 대상일 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48562">48562</a></td><td>휘둘러치기 (곰) 8 레벨</td><td>77</td><td>다수 대상일 때 사용</td></tr>
+</tbody></table>
+<h3 id="전투-중-cc-메즈-이동-제한-8">전투 중 CC/메즈/이동 제한</h3>
+<p>기절, 공포, 변이, 속박, 침묵성 군중제어, 이동 방해입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=18658">18658</a></td><td>겨울잠 3 레벨</td><td>58</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=33786">33786</a></td><td>회오리바람</td><td>70</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53308">53308</a></td><td>휘감는 뿌리 8 레벨</td><td>78</td><td>대상 제어/시간 벌기</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48480">48480</a></td><td>후려치기 10 레벨</td><td>79</td><td>대상 제어/시간 벌기</td></tr>
+</tbody></table>
+<h3 id="해제-정화-5">해제/정화</h3>
+<p>아군의 해로운 효과를 지우거나 적의 이로운 효과를 제거하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2782">2782</a></td><td>저주 해제</td><td>24</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=2893">2893</a></td><td>독 해제</td><td>26</td><td>해제 가능한 효과가 있을 때 사용</td></tr>
+</tbody></table>
+<h3 id="생존-방어-피해-감소-8">생존/방어/피해 감소</h3>
+<p>자신 또는 아군이 죽지 않도록 쓰는 방어기, 면역기, 피해 감소기입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=22842">22842</a></td><td>광포한 재생력</td><td>36</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=22812">22812</a></td><td>나무 껍질</td><td>44</td><td>체력 위험 또는 큰 피해 예측</td></tr>
+</tbody></table>
+<h3 id="치유-회복-6">치유/회복</h3>
+<p>체력 회복, 보호막성 회복, 생명력 회복 계열입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48443">48443</a></td><td>재생 12 레벨</td><td>77</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48378">48378</a></td><td>치유의 손길 15 레벨</td><td>79</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=50464">50464</a></td><td>육성 1 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48451">48451</a></td><td>피어나는 생명 3 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48441">48441</a></td><td>회복 15 레벨</td><td>80</td><td>아군/자신 체력 회복</td></tr>
+</tbody></table>
+<h3 id="부활-3">부활</h3>
+<p>죽은 아군을 살리는 기술입니다. 전투 중 사용 가능 여부는 스펠별로 다릅니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48477">48477</a></td><td>환생 7 레벨</td><td>79</td><td>사망 아군 복구 상황</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=50763">50763</a></td><td>되살리기 7 레벨</td><td>80</td><td>사망 아군 복구 상황</td></tr>
+</tbody></table>
+<h3 id="마나-자원-회복-5">마나/자원 회복</h3>
+<p>마나, 분노, 기력, 룬 마력, 생명력 전환 등 자원을 확보하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=29166">29166</a></td><td>정신 자극</td><td>40</td><td>자원 부족 시 사용</td></tr>
+</tbody></table>
+<h3 id="이동-돌진-도주-6">이동/돌진/도주</h3>
+<p>돌진, 점멸, 도약, 전력 질주 같은 위치 제어 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=16979">16979</a></td><td>야성의 돌진 (곰)</td><td>20</td><td>거리 조절/접근/이탈</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49376">49376</a></td><td>야성의 돌진 (표범)</td><td>20</td><td>거리 조절/접근/이탈</td></tr>
+</tbody></table>
+<h3 id="어그로-도발-위협-제어-5">어그로/도발/위협 제어</h3>
+<p>대상에게 자신을 공격하게 하거나 위협 수준을 제어하는 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=6795">6795</a></td><td>포효</td><td>10</td><td>대상 고정/위협 제어</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5209">5209</a></td><td>도전의 포효</td><td>28</td><td>대상 고정/위협 제어</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=52610">52610</a></td><td>야생의 포효 1 레벨</td><td>75</td><td>대상 고정/위협 제어</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48560">48560</a></td><td>위협의 포효 8 레벨</td><td>77</td><td>대상 고정/위협 제어</td></tr>
+</tbody></table>
+<h3 id="전투-유틸-특수-상황-10">전투 유틸/특수 상황</h3>
+<p>위 카테고리로 명확히 나누기 어렵지만 전투 판단에 쓸 수 있는 보조 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=16961">16961</a></td><td>야수의 분노 2 레벨</td><td>0</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5229">5229</a></td><td>분노</td><td>12</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=8946">8946</a></td><td>해독</td><td>14</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=783">783</a></td><td>치타 변신 변신</td><td>16</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5215">5215</a></td><td>숨기</td><td>20</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=20719">20719</a></td><td>살쾡이의 우아함 지속효과</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=62600">62600</a></td><td>야생의 방어 지속효과</td><td>40</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=33357">33357</a></td><td>질주 3 레벨</td><td>65</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=26995">26995</a></td><td>동물 달래기 4 레벨</td><td>70</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49802">49802</a></td><td>무력화 2 레벨</td><td>74</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48575">48575</a></td><td>웅크리기 6 레벨</td><td>76</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=49803">49803</a></td><td>암습 5 레벨</td><td>77</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48465">48465</a></td><td>별빛 섬광 10 레벨</td><td>78</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=53312">53312</a></td><td>자연의 손아귀 8 레벨</td><td>78</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48577">48577</a></td><td>흉포한 이빨 8 레벨</td><td>78</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=50213">50213</a></td><td>맹공격 6 레벨</td><td>79</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48570">48570</a></td><td>할퀴기 8 레벨</td><td>79</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48568">48568</a></td><td>가르기 3 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48572">48572</a></td><td>칼날 발톱 9 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48447">48447</a></td><td>평온 7 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=48467">48467</a></td><td>허리케인 5 레벨</td><td>80</td><td>조건부 전투 유틸</td></tr>
+</tbody></table>
+<h3 id="전투-사용-제외-후보-6">전투 사용 제외 후보</h3>
+<p>순간이동, 포탈, 전문기술성 소환, 추적 등 시련 전투 로직에 넣지 않는 편이 안전한 기술입니다.</p>
+<table><tbody>
+<tr><th>출처</th><th>주문 ID</th><th>스펠</th><th>요구 레벨</th><th>사용 메모</th></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=18960">18960</a></td><td>순간이동: 달의 숲</td><td>10</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+<tr><td>Wowhead</td><td><a href="https://www.wowhead.com/wotlk/ko/spell=5225">5225</a></td><td>인간형 추적</td><td>32</td><td>시련 전투 AI 사용 제외 권장</td></tr>
+</tbody></table>
+</main>
+</div>
+</body>
+</html>

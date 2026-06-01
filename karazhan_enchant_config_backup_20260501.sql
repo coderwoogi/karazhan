@@ -1,0 +1,63 @@
+-- MySQL dump 10.13  Distrib 8.4.7, for Win64 (x86_64)
+--
+-- Host: 127.0.0.1    Database: acore_world
+-- ------------------------------------------------------
+-- Server version	8.4.7
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!50503 SET NAMES utf8mb4 */;
+/*!40103 SET @OLD_TIME_ZONE=@@TIME_ZONE */;
+/*!40103 SET TIME_ZONE='+00:00' */;
+/*!40014 SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0 */;
+/*!40014 SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0 */;
+/*!40101 SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='NO_AUTO_VALUE_ON_ZERO' */;
+/*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
+
+--
+-- Table structure for table `karazhan_enchant_config`
+--
+
+DROP TABLE IF EXISTS `karazhan_enchant_config`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `karazhan_enchant_config` (
+  `enchant_level` tinyint unsigned NOT NULL COMMENT '강화 단계',
+  `enhance_type` tinyint unsigned NOT NULL DEFAULT '0' COMMENT '강화 타입 (1=밀리, 2=캐스터, 3=힐러, 4=탱커)',
+  `spell_id` int unsigned NOT NULL DEFAULT '0' COMMENT '적용할 인챈트 스펠 ID',
+  `random_property_id` int NOT NULL DEFAULT '0' COMMENT '랜덤 옵션 ID (양수=Property, 음수=Suffix)',
+  `success_rate` float NOT NULL DEFAULT '100' COMMENT '성공 확률 (%)',
+  `fail_rate` float NOT NULL DEFAULT '0' COMMENT '실패 확률 (%) - 단계 유지',
+  `gold_cost` int unsigned NOT NULL DEFAULT '0' COMMENT '골드 비용 (골드 단위)',
+  `material_1` int unsigned NOT NULL DEFAULT '0' COMMENT '재료 1 아이템 ID',
+  `material_1_count` int unsigned NOT NULL DEFAULT '0' COMMENT '재료 1 개수',
+  `material_2` int unsigned NOT NULL DEFAULT '0' COMMENT '재료 2 아이템 ID',
+  `material_2_count` int unsigned NOT NULL DEFAULT '0' COMMENT '재료 2 개수',
+  `material_3` int unsigned NOT NULL DEFAULT '0' COMMENT '재료 3 아이템 ID',
+  `material_3_count` int unsigned NOT NULL DEFAULT '0' COMMENT '재료 3 개수',
+  `comment` varchar(255) DEFAULT NULL COMMENT '비고',
+  PRIMARY KEY (`enchant_level`,`enhance_type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='카라잔 강화 단계별 설정';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `karazhan_enchant_config`
+--
+
+LOCK TABLES `karazhan_enchant_config` WRITE;
+/*!40000 ALTER TABLE `karazhan_enchant_config` DISABLE KEYS */;
+INSERT INTO `karazhan_enchant_config` VALUES (1,1,201201,0,100,0,5,33568,5,0,0,0,0,'밀리 +1, 힘 1 / 민첩 1 / 방관 0, 북풍가죽 x5, 5골드, 성공 100.00%'),(1,2,201202,0,100,0,5,33470,10,0,0,0,0,'캐스터 +1, 주문력 0 / 지능 1 / 가속 0, 서리매듭 옷감 x10, 5골드, 성공 100.00%'),(1,3,201203,0,100,0,5,33470,5,0,0,0,0,'힐러 +1, 지능 1 / 정신 1 / 가속 0, 서리매듭 옷감 x5, 5골드, 성공 100.00%'),(1,4,201204,0,100,0,5,36912,3,0,0,0,0,'탱커 +1, 힘 1 / 체력 1 / 방숙 1, 사로나이트 광석 x3, 5골드, 성공 100.00%'),(2,1,201205,0,100,0,10,33568,8,0,0,0,0,'밀리 +2, 힘 2 / 민첩 2 / 방관 1, 북풍가죽 x8, 10골드, 성공 100.00%'),(2,2,201206,0,100,0,10,33470,15,0,0,0,0,'캐스터 +2, 주문력 1 / 지능 2 / 가속 1, 서리매듭 옷감 x15, 10골드, 성공 100.00%'),(2,3,201207,0,100,0,10,33470,10,0,0,0,0,'힐러 +2, 지능 2 / 정신 2 / 가속 1, 서리매듭 옷감 x10, 10골드, 성공 100.00%'),(2,4,201208,0,100,0,10,36912,5,0,0,0,0,'탱커 +2, 힘 2 / 체력 2 / 방숙 1, 사로나이트 광석 x5, 10골드, 성공 100.00%'),(3,1,201209,0,95,5,15,33568,10,0,0,0,0,'밀리 +3, 힘 3 / 민첩 3 / 방관 2, 북풍가죽 x10, 15골드, 성공 95.00%'),(3,2,201210,0,95,5,15,33470,20,0,0,0,0,'캐스터 +3, 주문력 2 / 지능 3 / 가속 2, 서리매듭 옷감 x20, 15골드, 성공 95.00%'),(3,3,201211,0,95,5,15,33470,20,0,0,0,0,'힐러 +3, 지능 3 / 정신 3 / 가속 2, 서리매듭 옷감 x20, 15골드, 성공 95.00%'),(3,4,201212,0,95,5,15,36912,8,0,0,0,0,'탱커 +3, 힘 3 / 체력 3 / 방숙 1, 사로나이트 광석 x8, 15골드, 성공 95.00%'),(4,1,201213,0,95,5,20,35623,2,0,0,0,0,'밀리 +4, 힘 4 / 민첩 4 / 방관 3, 영원의 바람 x2, 20골드, 성공 95.00%'),(4,2,201214,0,95,5,20,36860,2,0,0,0,0,'캐스터 +4, 주문력 3 / 지능 4 / 가속 3, 영원의 불 x2, 20골드, 성공 95.00%'),(4,3,201215,0,95,5,20,35625,1,0,0,0,0,'힐러 +4, 지능 4 / 정신 4 / 가속 3, 영원의 생명 x1, 20골드, 성공 95.00%'),(4,4,201216,0,95,5,20,35624,1,0,0,0,0,'탱커 +4, 힘 4 / 체력 4 / 방숙 2, 영원의 대지 x1, 20골드, 성공 95.00%'),(5,1,201217,0,90,10,30,35623,4,0,0,0,0,'밀리 +5, 힘 5 / 민첩 5 / 방관 4, 영원의 바람 x4, 30골드, 성공 90.00%'),(5,2,201218,0,90,10,30,36860,4,0,0,0,0,'캐스터 +5, 주문력 4 / 지능 5 / 가속 4, 영원의 불 x4, 30골드, 성공 90.00%'),(5,3,201219,0,90,10,30,35625,3,0,0,0,0,'힐러 +5, 지능 6 / 정신 6 / 가속 5, 영원의 생명 x3, 30골드, 성공 90.00%'),(5,4,201220,0,90,10,30,35624,3,0,0,0,0,'탱커 +5, 힘 5 / 체력 5 / 방숙 2, 영원의 대지 x3, 30골드, 성공 90.00%'),(6,1,201221,0,85,15,50,35623,6,0,0,0,0,'밀리 +6, 힘 6 / 민첩 6 / 방관 5, 영원의 바람 x6, 50골드, 성공 85.00%'),(6,2,201222,0,85,15,50,36860,6,0,0,0,0,'캐스터 +6, 주문력 5 / 지능 6 / 가속 5, 영원의 불 x6, 50골드, 성공 85.00%'),(6,3,201223,0,85,15,50,35625,5,0,0,0,0,'힐러 +6, 지능 7 / 정신 7 / 가속 6, 영원의 생명 x5, 50골드, 성공 85.00%'),(6,4,201224,0,85,15,50,35624,5,0,0,0,0,'탱커 +6, 힘 7 / 체력 7 / 방숙 2, 영원의 대지 x5, 50골드, 성공 85.00%'),(7,1,201225,0,80,20,80,35623,10,0,0,0,0,'밀리 +7, 힘 7 / 민첩 7 / 방관 6, 영원의 바람 x10, 80골드, 성공 80.00%'),(7,2,201226,0,80,20,80,36860,10,0,0,0,0,'캐스터 +7, 주문력 6 / 지능 8 / 가속 6, 영원의 불 x10, 80골드, 성공 80.00%'),(7,3,201227,0,80,20,80,35625,7,0,0,0,0,'힐러 +7, 지능 9 / 정신 9 / 가속 7, 영원의 생명 x7, 80골드, 성공 80.00%'),(7,4,201228,0,80,20,80,35624,7,0,0,0,0,'탱커 +7, 힘 8 / 체력 8 / 방숙 2, 영원의 대지 x7, 80골드, 성공 80.00%'),(8,1,201229,0,75,25,120,43102,1,0,0,0,0,'밀리 +8, 힘 8 / 민첩 8 / 방관 7, 얼어붙은 보주 x1, 120골드, 성공 75.00%'),(8,2,201230,0,75,25,120,43102,1,0,0,0,0,'캐스터 +8, 주문력 7 / 지능 10 / 가속 7, 얼어붙은 보주 x1, 120골드, 성공 75.00%'),(8,3,201231,0,75,25,100,43102,1,0,0,0,0,'힐러 +8, 지능 10 / 정신 10 / 가속 8, 얼어붙은 보주 x1, 100골드, 성공 75.00%'),(8,4,201232,0,75,25,100,43102,1,0,0,0,0,'탱커 +8, 힘 9 / 체력 9 / 방숙 3, 얼어붙은 보주 x1, 100골드, 성공 75.00%'),(9,1,201233,0,70,30,180,43102,2,0,0,0,0,'밀리 +9, 힘 9 / 민첩 9 / 방관 8, 얼어붙은 보주 x2, 180골드, 성공 70.00%'),(9,2,201234,0,70,30,180,43102,2,0,0,0,0,'캐스터 +9, 주문력 8 / 지능 11 / 가속 8, 얼어붙은 보주 x2, 180골드, 성공 70.00%'),(9,3,201235,0,70,30,150,43102,2,0,0,0,0,'힐러 +9, 지능 12 / 정신 12 / 가속 9, 얼어붙은 보주 x2, 150골드, 성공 70.00%'),(9,4,201236,0,70,30,150,43102,2,0,0,0,0,'탱커 +9, 힘 11 / 체력 11 / 방숙 4, 얼어붙은 보주 x2, 150골드, 성공 70.00%'),(10,1,201237,0,65,35,250,43102,3,0,0,0,0,'밀리 +10, 힘 11 / 민첩 11 / 방관 8, 얼어붙은 보주 x3, 250골드, 성공 65.00%'),(10,2,201238,0,65,35,250,43102,3,0,0,0,0,'캐스터 +10, 주문력 8 / 지능 12 / 가속 8, 얼어붙은 보주 x3, 250골드, 성공 65.00%'),(10,3,201239,0,65,35,200,43102,3,0,0,0,0,'힐러 +10, 지능 15 / 정신 15 / 가속 12, 얼어붙은 보주 x3, 200골드, 성공 65.00%'),(10,4,201240,0,65,35,200,43102,3,0,0,0,0,'탱커 +10, 힘 12 / 체력 12 / 방숙 4, 얼어붙은 보주 x3, 200골드, 성공 65.00%');
+/*!40000 ALTER TABLE `karazhan_enchant_config` ENABLE KEYS */;
+UNLOCK TABLES;
+/*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
+/*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
+/*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
+/*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+/*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
+
+-- Dump completed on 2026-05-01  9:33:36

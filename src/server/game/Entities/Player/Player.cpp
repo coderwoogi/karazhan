@@ -10626,10 +10626,12 @@ inline bool Player::_StoreOrEquipNewItem(uint32 vendorslot, uint32 item, uint8 c
     Item* it = bStore ? StoreNewItem(vDest, item, true) : EquipNewItem(uiDest, item, true);
     if (it)
     {
-        uint32 new_count = pVendor->UpdateVendorItemCurrentCount(crItem, pProto->BuyCount * count);
+        uint32 new_count = pVendor
+            ? pVendor->UpdateVendorItemCurrentCount(crItem, pProto->BuyCount * count)
+            : 0xFFFFFFFF;
 
         WorldPacket data(SMSG_BUY_ITEM, (8 + 4 + 4 + 4));
-        data << pVendor->GetGUID();
+        data << (pVendor ? pVendor->GetGUID() : GetGUID());
         data << uint32(vendorslot + 1);                   // numbered from 1 at client
         data << int32(crItem->maxcount > 0 ? new_count : 0xFFFFFFFF);
         data << uint32(count);
@@ -10692,23 +10694,37 @@ bool Player::BuyItemFromVendorSlot(ObjectGuid vendorguid, uint32 vendorslot, uin
         return false;
     }
 
-    Creature* creature = GetNPCIfCanInteractWith(vendorguid, UNIT_NPC_FLAG_VENDOR);
-    if (!creature)
+    bool const virtualVendor =
+        vendorguid == GetGUID() && GetSession()->GetCurrentVendor();
+    Creature* creature = virtualVendor
+        ? nullptr
+        : GetNPCIfCanInteractWith(vendorguid, UNIT_NPC_FLAG_VENDOR);
+    if (!creature && !virtualVendor)
     {
         LOG_DEBUG("network", "WORLD: BuyItemFromVendor - Unit ({}) not found or you can't interact with him.", vendorguid.ToString());
         SendBuyError(BUY_ERR_DISTANCE_TOO_FAR, nullptr, item, 0);
         return false;
     }
 
-    ConditionList conditions = sConditionMgr->GetConditionsForNpcVendorEvent(creature->GetEntry(), item);
-    if (!sConditionMgr->IsObjectMeetToConditions(this, creature, conditions))
+    uint32 const vendorEntry = GetSession()->GetCurrentVendor();
+    uint32 const conditionVendorEntry = virtualVendor
+        ? vendorEntry
+        : creature->GetEntry();
+    ConditionList conditions =
+        sConditionMgr->GetConditionsForNpcVendorEvent(conditionVendorEntry, item);
+    bool conditionsMet = virtualVendor
+        ? sConditionMgr->IsObjectMeetToConditions(this, conditions)
+        : sConditionMgr->IsObjectMeetToConditions(this, creature, conditions);
+    if (!conditionsMet)
     {
         //LOG_DEBUG("condition", "BuyItemFromVendor: conditions not met for creature entry {} item {}", creature->GetEntry(), item);
         SendBuyError(BUY_ERR_CANT_FIND_ITEM, creature, item, 0);
         return false;
     }
 
-    VendorItemData const* vItems = GetSession()->GetCurrentVendor() ? sObjectMgr->GetNpcVendorItemList(GetSession()->GetCurrentVendor()) : creature->GetVendorItems();
+    VendorItemData const* vItems = vendorEntry
+        ? sObjectMgr->GetNpcVendorItemList(vendorEntry)
+        : creature->GetVendorItems();
     if (!vItems || vItems->Empty())
     {
         SendBuyError(BUY_ERR_CANT_FIND_ITEM, creature, item, 0);
@@ -10732,6 +10748,12 @@ bool Player::BuyItemFromVendorSlot(ObjectGuid vendorguid, uint32 vendorslot, uin
     // check current item amount if it limited
     if (crItem->maxcount != 0)
     {
+        if (virtualVendor)
+        {
+            SendBuyError(BUY_ERR_ITEM_ALREADY_SOLD, nullptr, item, 0);
+            return false;
+        }
+
         if (creature->GetVendorItemCurrentCount(crItem) < pProto->BuyCount * count)
         {
             SendBuyError(BUY_ERR_ITEM_ALREADY_SOLD, creature, item, 0);
@@ -10799,7 +10821,8 @@ bool Player::BuyItemFromVendorSlot(ObjectGuid vendorguid, uint32 vendorslot, uin
         price = pProto->BuyPrice * count; //it should not exceed MAX_MONEY_AMOUNT
 
         // reputation discount
-        price = uint32(std::floor(price * GetReputationPriceDiscount(creature)));
+        float discountMod = virtualVendor ? 1.0f : GetReputationPriceDiscount(creature);
+        price = uint32(std::floor(price * discountMod));
 
         if (!HasEnoughMoney(price))
         {
