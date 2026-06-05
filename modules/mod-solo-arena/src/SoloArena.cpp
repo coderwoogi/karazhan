@@ -2263,7 +2263,7 @@ namespace
         bool StartChallenge(Player* player, uint8 stageId);
         bool UseExtraEntryTicket(Player* player);
         bool PurchaseDailyTicket(Player* player, uint32 productItemEntry);
-        bool ReturnPlayer(Player* player);
+        bool ReturnPlayer(Player* player, bool eraseSession = true);
         bool TryHandleObjectiveFlagUse(Player* player, GameObject* go);
         bool ShowObjectiveScore(ChatHandler* handler, Player* target);
         bool SetObjectiveScore(ChatHandler* handler, Player* target,
@@ -2284,6 +2284,8 @@ namespace
             ObjectGuid const& creatureGuid) const;
         void UnregisterShadow(ObjectGuid const& creatureGuid);
         bool IsManagedShadow(Creature const* creature) const;
+        bool IsShadowCombatContextValid(Creature const* shadow,
+            ShadowProfile const& profile) const;
         bool IsManagedArenaInstance(uint32 instanceId) const;
         bool IsManagedObjectiveInstance(uint32 instanceId) const;
         uint32 RefreshActiveSessionShadows();
@@ -2413,6 +2415,8 @@ namespace
         std::unordered_map<uint8, StageConfig> _stages;
         std::unordered_multimap<uint8, StageMechanicConfig> _mechanics;
         std::unordered_map<uint64, ArenaSession> _sessions;
+        bool _updatingSessions = false;
+        std::vector<uint64> _deferredSessionErase;
         std::unordered_map<uint64, ShadowProfile> _shadowProfiles;
         std::unordered_map<uint64, uint64> _deserterImmuneUntil;
         std::unordered_set<uint32> _managedArenaInstances;
@@ -3457,12 +3461,13 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     return true;
 }
 
-bool SoloArenaMgr::ReturnPlayer(Player* player)
+bool SoloArenaMgr::ReturnPlayer(Player* player, bool eraseSession)
 {
     if (!player)
         return false;
 
-    auto itr = _sessions.find(player->GetGUID().GetCounter());
+    uint64 playerKey = player->GetGUID().GetCounter();
+    auto itr = _sessions.find(playerKey);
     if (itr == _sessions.end())
         return false;
 
@@ -3489,7 +3494,13 @@ bool SoloArenaMgr::ReturnPlayer(Player* player)
     }
     if (session.Scenario == TrialScenario::Objective)
         player->RemoveAura(26013);
-    _sessions.erase(itr);
+    if (eraseSession)
+    {
+        if (_updatingSessions)
+            _deferredSessionErase.push_back(playerKey);
+        else
+            _sessions.erase(playerKey);
+    }
     return true;
 }
 
@@ -3727,6 +3738,7 @@ void SoloArenaMgr::Update(uint32 diff)
     UpdateDeserterImmunity();
 
     std::vector<uint64> toErase;
+    _updatingSessions = true;
 
     for (auto& [playerKey, session] : _sessions)
     {
@@ -3844,12 +3856,12 @@ void SoloArenaMgr::Update(uint32 diff)
 
                     if (bg->GetStatus() == STATUS_IN_PROGRESS)
                     {
+                        session.State = SessionState::Active;
                         if (Creature* bot = ObjectAccessor::GetCreature(
                                 *player, session.BotGuid))
                             StartShadowCombat(player, bot);
 
                         SyncShadowPet(player, session, true);
-                        session.State = SessionState::Active;
                         session.CombatStartedAt = std::time(nullptr);
                         session.CombatEndsAt = session.CombatStartedAt +
                             (DEFAULT_COMBAT_LIMIT_MS / 1000);
@@ -3949,6 +3961,11 @@ void SoloArenaMgr::Update(uint32 diff)
         }
     }
 
+    _updatingSessions = false;
+    toErase.insert(toErase.end(), _deferredSessionErase.begin(),
+        _deferredSessionErase.end());
+    _deferredSessionErase.clear();
+
     for (uint64 key : toErase)
         _sessions.erase(key);
 }
@@ -3967,7 +3984,11 @@ void SoloArenaMgr::OnPlayerMapChanged(Player* player)
             player->GetMapId() != session->ArenaMapId)
         {
             _managedArenaInstances.erase(session->ArenaInstanceId);
-            _sessions.erase(player->GetGUID().GetCounter());
+            uint64 playerKey = player->GetGUID().GetCounter();
+            if (_updatingSessions)
+                _deferredSessionErase.push_back(playerKey);
+            else
+                _sessions.erase(playerKey);
             return;
         }
     }
@@ -4808,6 +4829,47 @@ bool SoloArenaMgr::IsManagedShadow(Creature const* creature) const
         _shadowProfiles.end();
 }
 
+bool SoloArenaMgr::IsShadowCombatContextValid(Creature const* shadow,
+    ShadowProfile const& profile) const
+{
+    if (!shadow || profile.PlayerGuid.IsEmpty())
+        return false;
+
+    auto sessionItr = _sessions.find(profile.PlayerGuid.GetCounter());
+    if (sessionItr == _sessions.end())
+        return false;
+
+    ArenaSession const& session = sessionItr->second;
+    if (session.State != SessionState::Active)
+        return false;
+
+    if (!session.BotGuid.IsEmpty() && session.BotGuid != shadow->GetGUID())
+        return false;
+
+    Player* player = ObjectAccessor::FindConnectedPlayer(profile.PlayerGuid);
+    if (!player || !player->IsInWorld() || !player->IsAlive())
+        return false;
+
+    if (!shadow->IsInWorld())
+        return false;
+
+    Map const* playerMap = player->GetMap();
+    Map const* shadowMap = shadow->GetMap();
+    if (!playerMap || !shadowMap || playerMap != shadowMap)
+        return false;
+
+    if (session.ArenaMapId != 0 && player->GetMapId() != session.ArenaMapId)
+        return false;
+
+    if (session.ArenaInstanceId != 0 &&
+        player->GetInstanceId() != session.ArenaInstanceId)
+    {
+        return false;
+    }
+
+    return true;
+}
+
 bool SoloArenaMgr::IsManagedArenaInstance(uint32 instanceId) const
 {
     return _managedArenaInstances.find(instanceId) !=
@@ -5157,7 +5219,7 @@ void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
     SendTrialTimePayload(player, session, true);
 
     ArenaSession resultSession = session;
-    if (ReturnPlayer(player))
+    if (ReturnPlayer(player, false))
     {
         SendResultPayload(player, resultSession);
         return;
@@ -7667,8 +7729,11 @@ namespace
         void JustEngagedWith(Unit* /*who*/) override
         {
             InitializeProfile();
-            if (!_initialized)
+            if (!_initialized || !CanContinueCombat())
+            {
+                StopShadowCombat();
                 return;
+            }
 
             ApplyOpeningSpells();
 
@@ -7760,6 +7825,11 @@ namespace
         void EnterEvadeMode(EvadeReason why = EVADE_REASON_OTHER) override
         {
             InitializeProfile();
+            if (!_initialized || !CanContinueCombat())
+            {
+                StopShadowCombat();
+                return;
+            }
 
             if (SoloArenaMgr::Instance().IsObjectiveRaceActive(
                     _profile.PlayerGuid))
@@ -7810,6 +7880,12 @@ namespace
             InitializeProfile();
             if (!_initialized)
                 return;
+
+            if (!CanContinueCombat())
+            {
+                StopShadowCombat();
+                return;
+            }
 
             if (_movementLockMs > diff)
                 _movementLockMs -= diff;
@@ -8013,11 +8089,18 @@ namespace
 
         void ApplyOpeningSpells()
         {
-            if (_opening.BuffSpell)
+            if (_opening.BuffSpell &&
+                IsCreatureSafeOpeningSpell(_opening.BuffSpell))
+            {
                 me->CastSpell(me, _opening.BuffSpell, true);
+            }
 
-            if (_opening.StanceSpell && !me->HasAura(_opening.StanceSpell))
+            if (_opening.StanceSpell &&
+                IsCreatureSafeOpeningSpell(_opening.StanceSpell) &&
+                !me->HasAura(_opening.StanceSpell))
+            {
                 me->CastSpell(me, _opening.StanceSpell, true);
+            }
         }
 
         void ExecuteSpell(uint32 spellId, SpellSchoolMask schoolMask,
@@ -8196,6 +8279,12 @@ namespace
             if (!profile)
                 return nullptr;
 
+            if (!SoloArenaMgr::Instance().IsShadowCombatContextValid(
+                    me, *profile))
+            {
+                return nullptr;
+            }
+
             Player* player = ObjectAccessor::FindConnectedPlayer(
                 profile->PlayerGuid);
             if (!player || !player->IsAlive())
@@ -8257,6 +8346,12 @@ namespace
                 SoloArenaMgr::Instance().GetShadowProfile(me->GetGUID());
             if (!profile)
                 return false;
+
+            if (!SoloArenaMgr::Instance().IsShadowCombatContextValid(
+                    me, *profile))
+            {
+                return false;
+            }
 
             Player* player = ObjectAccessor::FindConnectedPlayer(
                 profile->PlayerGuid);
@@ -8328,6 +8423,55 @@ namespace
                 return 4.5f;
 
             return std::max(18.0f, range - 2.0f);
+        }
+
+        bool CanContinueCombat() const
+        {
+            return SoloArenaMgr::Instance().IsShadowCombatContextValid(
+                me, _profile);
+        }
+
+        void StopShadowCombat()
+        {
+            events.Reset();
+            me->SetReactState(REACT_PASSIVE);
+            me->AttackStop();
+            me->ClearInCombat();
+            me->GetMotionMaster()->Clear();
+            me->StopMoving();
+        }
+
+        static bool IsCreatureSafeOpeningSpell(uint32 spellId)
+        {
+            SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellId);
+            if (!spellInfo)
+                return false;
+
+            for (SpellEffectInfo const& effect : spellInfo->Effects)
+            {
+                switch (effect.ApplyAuraName)
+                {
+                    case SPELL_AURA_MOD_SHAPESHIFT:
+                    case SPELL_AURA_MOD_POSSESS:
+                    case SPELL_AURA_MOD_POSSESS_PET:
+                        return false;
+                    default:
+                        break;
+                }
+
+                switch (effect.Effect)
+                {
+                    case SPELL_EFFECT_ENCHANT_ITEM:
+                    case SPELL_EFFECT_ENCHANT_ITEM_TEMPORARY:
+                    case SPELL_EFFECT_ENCHANT_HELD_ITEM:
+                    case SPELL_EFFECT_ENCHANT_ITEM_PRISMATIC:
+                        return false;
+                    default:
+                        break;
+                }
+            }
+
+            return true;
         }
 
         ShadowProfile _profile;
