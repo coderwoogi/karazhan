@@ -469,11 +469,11 @@ bool ItemKarazhanMgr::CheckAndConsumeMaterials(Player* player, KarazhanEnchantCo
     if (config->material3 > 0 && config->material3Count > 0)
         player->DestroyItemCount(config->material3, config->material3Count, true);
 
-    LOG_INFO("module", "Karazhan: Player {} consumed materials - Gold: {}, Mat1: {}x{}, Mat2: {}x{}, Mat3: {}x{}",
-             player->GetName(), config->goldCost,
-             config->material1, config->material1Count,
-             config->material2, config->material2Count,
-             config->material3, config->material3Count);
+    // LOG_INFO("module", "Karazhan: Player {} consumed materials - Gold: {}, Mat1: {}x{}, Mat2: {}x{}, Mat3: {}x{}",
+    //          player->GetName(), config->goldCost,
+    //          config->material1, config->material1Count,
+    //          config->material2, config->material2Count,
+    //          config->material3, config->material3Count);
 
     return true;
 }
@@ -771,8 +771,8 @@ void ItemKarazhanMgr::RepairPlayerEnhancedItems(Player* player)
     if (repairedCount > 0)
     {
         player->UpdateAllStats();
-        LOG_INFO("module", "Karazhan: Repaired {} enhanced item random properties for player {}",
-            repairedCount, player->GetGUID().GetCounter());
+        // LOG_INFO("module", "Karazhan: Repaired {} enhanced item random properties for player {}",
+        //     repairedCount, player->GetGUID().GetCounter());
     }
 }
 
@@ -890,9 +890,9 @@ void ItemKarazhanMgr::RequestEnhancement(Player* player, Item* item,
     uint8 targetLevel = currentLevel + 1;
     uint8 currentType = GetItemEnhanceType(item);
 
-    LOG_INFO("module", "Karazhan: RequestEnhancement - Player: {}, Item: {}, GUID: {}, Bag: {}, Slot: {}, Level: {} -> {}, Type: {}",
-             player->GetName(), itemEntry, oldItemGuid, bag, slot, currentLevel,
-             targetLevel, GetEnhanceTypeName(enhanceType));
+    // LOG_INFO("module", "Karazhan: RequestEnhancement - Player: {}, Item: {}, GUID: {}, Bag: {}, Slot: {}, Level: {} -> {}, Type: {}",
+    //          player->GetName(), itemEntry, oldItemGuid, bag, slot, currentLevel,
+    //          targetLevel, GetEnhanceTypeName(enhanceType));
 
     if (enhanceType != ENHANCE_TYPE_MELEE &&
         enhanceType != ENHANCE_TYPE_CASTER &&
@@ -956,8 +956,8 @@ void ItemKarazhanMgr::RequestEnhancement(Player* player, Item* item,
     else
         result = EnhanceResult::DESTROYED;
 
-    LOG_INFO("module", "Karazhan: Enhancement result calculated - Random: {:.2f}, Success: {:.2f}, Fail: {:.2f}, Result: {}",
-             randomValue, config->successRate, config->failRate, static_cast<int>(result));
+    // LOG_INFO("module", "Karazhan: Enhancement result calculated - Random: {:.2f}, Success: {:.2f}, Fail: {:.2f}, Result: {}",
+    //          randomValue, config->successRate, config->failRate, static_cast<int>(result));
 
     // Backup current item state
     ItemStateBackup backup = BackupItemState(item);
@@ -979,7 +979,7 @@ void ItemKarazhanMgr::RequestEnhancement(Player* player, Item* item,
 
     _pendingQueue.push(pending);
 
-    LOG_INFO("module", "Karazhan: Enhancement queued - Queue size: {}", _pendingQueue.size());
+    // LOG_INFO("module", "Karazhan: Enhancement queued - Queue size: {}", _pendingQueue.size());
 }
 
 void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pending)
@@ -1012,7 +1012,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
     // ========================================
     if (pending.result == EnhanceResult::SUCCESS)
     {
-        LOG_INFO("module", "Karazhan: ===== ENHANCEMENT START =====");
+        // LOG_INFO("module", "Karazhan: ===== ENHANCEMENT START =====");
 
         bool wasEquipped = oldItem->IsEquipped();
         uint8 originalSlot = oldItem->GetSlot();
@@ -1022,7 +1022,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         // ========================================
         if (wasEquipped)
         {
-            LOG_INFO("module", "Karazhan: Unequipping item...");
+            // LOG_INFO("module", "Karazhan: Unequipping item...");
 
             uint32 hpBefore = player->GetHealth();
             uint32 maxHpBefore = player->GetMaxHealth();
@@ -1063,7 +1063,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
                 }
             }
 
-            LOG_INFO("module", "Karazhan: Unequipped successfully");
+            // LOG_INFO("module", "Karazhan: Unequipped successfully");
         }
 
         // ========================================
@@ -1093,13 +1093,13 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
             enchants[i].charges = oldItem->GetEnchantmentCharges(static_cast<EnchantmentSlot>(i));
         }
 
-        LOG_INFO("module", "Karazhan: Backup complete");
+        // LOG_INFO("module", "Karazhan: Backup complete");
 
         // ========================================
         // STEP 5: ??젣
         // ========================================
         player->DestroyItem(currentBag, currentSlot, true);
-        LOG_INFO("module", "Karazhan: Old item destroyed - GUID:{}", pending.oldItemGuid);
+        // LOG_INFO("module", "Karazhan: Old item destroyed - GUID:{}", pending.oldItemGuid);
 
         // ========================================
         // STEP 6: ?끸쁾???щ컮瑜?StoreNewItem ?몄텧 ?끸쁾??
@@ -1133,8 +1133,8 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         }
 
         uint32 newGuid = newItem->GetGUID().GetCounter();
-        LOG_INFO("module", "Karazhan: New item created - GUID:{}, RandomProp:{}",
-                 newGuid, randomPropId);
+        // LOG_INFO("module", "Karazhan: New item created - GUID:{}, RandomProp:{}",
+        //          newGuid, randomPropId);
 
         if (randomPropId < 0 && pending.backup.randomSuffix != 0)
             newItem->SetUInt32Value(ITEM_FIELD_PROPERTY_SEED,
@@ -1174,8 +1174,8 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
 
         // Enhancement stats are applied by ItemRandomProperties. Slot 5 is
         // reserved for the item's socket bonus and is updated when gems change.
-        LOG_INFO("module", "Karazhan: Enhancement random property {} applied for type {}",
-            randomPropId, GetEnhanceTypeName(pending.enhanceType));
+        // LOG_INFO("module", "Karazhan: Enhancement random property {} applied for type {}",
+        //     randomPropId, GetEnhanceTypeName(pending.enhanceType));
 
         newItem->SetState(ITEM_CHANGED, player);
 
@@ -1186,7 +1186,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         SetItemEnhanceLevel(newGuid, player->GetGUID().GetCounter(), 
                            itemEntry, pending.targetLevel);
 
-        LOG_INFO("module", "Karazhan: Enhancement data updated");
+        // LOG_INFO("module", "Karazhan: Enhancement data updated");
 
         // ========================================
         // STEP 10: ?ㅽ꺈 ?ш퀎??
@@ -1212,7 +1212,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
                 ? "강화 성공, 강화된 아이템이 가방으로 이동했습니다."
                 : "강화 성공");
 
-        LOG_INFO("module", "Karazhan: ===== ENHANCEMENT SUCCESS =====");
+        // LOG_INFO("module", "Karazhan: ===== ENHANCEMENT SUCCESS =====");
     }
     // ========================================
     // FAIL
@@ -1236,7 +1236,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
             GetEnhanceTypeName(pending.enhanceType),
             "강화 실패, 현재 단계가 유지되었습니다.");
 
-        LOG_INFO("module", "Karazhan: Enhancement FAIL");
+        // LOG_INFO("module", "Karazhan: Enhancement FAIL");
     }
     // ========================================
     // DESTROYED
@@ -1255,7 +1255,7 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
             GetEnhanceTypeName(pending.enhanceType),
             "강화 실패로 아이템이 파괴되었습니다.");
 
-        LOG_WARN("module", "Karazhan: Enhancement DESTROYED");
+        // LOG_WARN("module", "Karazhan: Enhancement DESTROYED");
     }
 }
 

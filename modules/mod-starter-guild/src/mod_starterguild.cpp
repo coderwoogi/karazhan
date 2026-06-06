@@ -5,9 +5,9 @@
 
 void StarterGuild::OnPlayerLogin(Player* player)
 {
-    if (sConfigMgr->GetOption<bool>("StarterGuild.Enable", true))
-        if (sConfigMgr->GetOption<bool>("StarterGuild.Announce", true))
-            ChatHandler(player->GetSession()).SendSysMessage("This server is running the |cff4CFF00StarterGuild |rmodule.");
+    // if (sConfigMgr->GetOption<bool>("StarterGuild.Enable", true))
+    //     if (sConfigMgr->GetOption<bool>("StarterGuild.Announce", true))
+    //         ChatHandler(player->GetSession()).SendSysMessage("This server is running the |cff4CFF00StarterGuild |rmodule.");
 }
 
 void StarterGuild::OnPlayerLevelChanged(Player* player, uint8 previousLevel)

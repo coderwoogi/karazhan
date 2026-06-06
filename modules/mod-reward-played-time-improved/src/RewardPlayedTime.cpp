@@ -37,7 +37,7 @@ public:
         {
             modRptiItems.push_back(std::stoul(token));
         }
-        LOG_INFO("module", "[RewardPlayedTime]: Loaded " + std::to_string(modRptiItems.size()) + " rewards.");
+        // LOG_INFO("module", "[RewardPlayedTime]: Loaded " + std::to_string(modRptiItems.size()) + " rewards.");
     }
 };
 
@@ -55,10 +55,10 @@ public:
         {
             return;
         }
-        if (modRptiAnnounce)
-        {
-            ChatHandler(player->GetSession()).PSendSysMessage("RPT Start");
-        }
+        // if (modRptiAnnounce)
+        // {
+        //     ChatHandler(player->GetSession()).PSendSysMessage("RPT Start");
+        // }
 
         modRptiTimers[player->GetGUID()] = 0;
     }
