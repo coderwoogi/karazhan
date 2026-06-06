@@ -954,6 +954,9 @@ bool Unit::IsImmunedToSpell(SpellInfo const* spellInfo, uint32 effectMask, Unit 
             for (auto const& [immunitySchoolMask, immunityAuraId] : schoolList)
             {
                 SpellInfo const* immuneSpellInfo = sSpellMgr->GetSpellInfo(immunityAuraId);
+                if (immunityAuraId == spellInfo->Id)
+                    continue;
+
                 if ((immunitySchoolMask & schoolMask) != schoolMask)
                     continue;
 
@@ -8381,8 +8384,10 @@ void Unit::EnergizeBySpell(Unit* victim, uint32 spellID, uint32 damage, Powers p
 {
     victim->ModifyPower(powerType, damage, false);
 
-    if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellID))
-        victim->GetThreatMgr().ForwardThreatForAssistingMe(this, float(damage) / 2.0f, spellInfo, true);
+    // Happiness is internal hunter pet state, not combat assistance — energizing it must not generate threat
+    if (powerType != POWER_HAPPINESS)
+        if (SpellInfo const* spellInfo = sSpellMgr->GetSpellInfo(spellID))
+            victim->GetThreatMgr().ForwardThreatForAssistingMe(this, float(damage) / 2.0f, spellInfo, true);
 
     SendEnergizeSpellLog(victim, spellID, damage, powerType);
 }
@@ -10085,6 +10090,9 @@ bool Unit::IsImmunedToSpell(SpellInfo const* spellInfo, Spell const* spell)
             SpellImmuneContainer const& schoolList = m_spellImmune[IMMUNITY_SCHOOL];
             for (auto itr = schoolList.begin(); itr != schoolList.end(); ++itr)
             {
+                if (itr->second == spellInfo->Id)
+                    continue;
+
                 SpellInfo const* immuneSpellInfo = sSpellMgr->GetSpellInfo(itr->second);
                 if (!(itr->first & spellSchoolMask))
                     continue;
@@ -10616,6 +10624,8 @@ void Unit::Dismount()
             if (charm->IsCreature() && !charm->HasUnitState(UNIT_STATE_STUNNED))
                 charm->RemoveUnitFlag(UNIT_FLAG_STUNNED);
     }
+
+    UpdateSpeed(MOVE_RUN, true);
 }
 
 void Unit::SetImmuneToPC(bool apply, bool keepCombat)
@@ -15311,29 +15321,9 @@ void Unit::SetPhaseMask(uint32 newPhaseMask, bool update)
 
         if (!sScriptMgr->CanSetPhaseMask(this, newPhaseMask, update))
             return;
-
-        // Phase-related threat updates are done AFTER the phase change below
     }
 
     WorldObject::SetPhaseMask(newPhaseMask, false);
-
-    // Now update threat online states with the new phase mask applied
-    if (IsCreature() || (IsPlayer() && !ToPlayer()->IsGameMaster() && !ToPlayer()->GetSession()->PlayerLogout()))
-    {
-        // Update online state for units that have me on their threat list
-        for (auto const& pair : GetThreatMgr().GetThreatenedByMeList())
-        {
-            if (ThreatReference* ref = pair.second)
-                ref->UpdateOffline();
-        }
-
-        // Update online state for units on my threat list
-        if (!IsPlayer())
-        {
-            for (ThreatReference* ref : GetThreatMgr().GetModifiableThreatList())
-                ref->UpdateOffline();
-        }
-    }
 
     if (!IsInWorld())
     {
