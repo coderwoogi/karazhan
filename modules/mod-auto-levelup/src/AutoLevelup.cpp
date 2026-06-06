@@ -3,6 +3,7 @@
 #include "Player.h"
 #include "PlayerScript.h"
 #include "ScriptMgr.h"
+#include "SharedDefines.h"
 #include "StringFormat.h"
 
 namespace
@@ -58,11 +59,12 @@ namespace
         uint32 _otherCharacterLevel = 1;
     };
 
-    uint32 GetCurrentCharacterCount(uint32 accountId)
+    uint32 GetCurrentNonDeathKnightCharacterCount(uint32 accountId)
     {
         std::string query = Acore::StringFormat(
-            "SELECT COUNT(*) FROM characters WHERE account = {}",
-            accountId);
+            "SELECT COUNT(*) FROM characters WHERE account = {} AND class <> {}",
+            accountId,
+            CLASS_DEATH_KNIGHT);
 
         QueryResult result = CharacterDatabase.Query(query);
         if (!result)
@@ -108,8 +110,11 @@ public:
         if (!config.IsEnabled())
             return;
 
+        if (player->IsClass(CLASS_DEATH_KNIGHT))
+            return;
+
         uint32 accountId = player->GetSession()->GetAccountId();
-        uint32 characterCount = GetCurrentCharacterCount(accountId);
+        uint32 characterCount = GetCurrentNonDeathKnightCharacterCount(accountId);
 
         uint8 targetLevel = characterCount == 1
             ? config.GetFirstCharacterLevel()
