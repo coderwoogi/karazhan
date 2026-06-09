@@ -2530,6 +2530,15 @@ namespace
         player->GetSession()->SendPacket(&data);
     }
 
+    void SendTrialAlert(Player* player, std::string const& message)
+    {
+        if (!player || !player->GetSession() || message.empty())
+            return;
+
+        SendAddonPayload(player, TRIAL_UI_PREFIX,
+            "ALERT\t" + SanitizeAddonField(message, 180));
+    }
+
     std::string FormatRewardMoney(uint64 copper)
     {
         uint64 gold = copper / 10000;
@@ -3221,6 +3230,25 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
     if (player->IsInCombat())
     {
         SendSystem(player, "전투 중에는 시련을 시작할 수 없습니다.");
+        return false;
+    }
+
+    if (player->InBattleground() || player->InArena() ||
+        player->GetBattleground())
+    {
+        std::string const message =
+            "전장 또는 투기장 진행 중에는 시련을 시작할 수 없습니다.";
+        SendSystem(player, message);
+        SendTrialAlert(player, message);
+        return false;
+    }
+
+    if (player->InBattlegroundQueue())
+    {
+        std::string const message =
+            "전장 또는 투기장 대기열에 등록된 상태에서는 시련을 시작할 수 없습니다.";
+        SendSystem(player, message);
+        SendTrialAlert(player, message);
         return false;
     }
 
@@ -8639,7 +8667,10 @@ namespace
         SoloArenaPlayerScript() :
             PlayerScript("SoloArenaPlayerScript",
                 { PLAYERHOOK_ON_MAP_CHANGED,
-                  PLAYERHOOK_ON_PLAYER_KILLED_BY_CREATURE })
+                  PLAYERHOOK_ON_PLAYER_KILLED_BY_CREATURE,
+                  PLAYERHOOK_CAN_JOIN_IN_BATTLEGROUND_QUEUE,
+                  PLAYERHOOK_CAN_JOIN_IN_ARENA_QUEUE,
+                  PLAYERHOOK_CAN_BATTLEFIELD_PORT })
         {
         }
 
@@ -8695,6 +8726,78 @@ namespace
                 return true;
 
             return !HandleTrialAddonCommand(player, msg);
+        }
+
+        bool OnPlayerCanJoinInBattlegroundQueue(
+            Player* player,
+            ObjectGuid /*BattlemasterGuid*/,
+            BattlegroundTypeId /*BGTypeID*/,
+            uint8 /*joinAsGroup*/,
+            GroupJoinBattlegroundResult& err) override
+        {
+            if (!player ||
+                !SoloArenaMgr::Instance().HasSession(player->GetGUID()))
+                return true;
+
+            err = ERR_BATTLEGROUND_NOT_IN_BATTLEGROUND;
+            if (player->GetSession())
+            {
+                std::string const message =
+                    "시련 진행 중에는 전장 대기열에 등록할 수 없습니다.";
+                ChatHandler(player->GetSession()).PSendSysMessage(
+                    "{}", message);
+                SendTrialAlert(player, message);
+            }
+
+            return false;
+        }
+
+        bool OnPlayerCanJoinInArenaQueue(
+            Player* player,
+            ObjectGuid /*BattlemasterGuid*/,
+            uint8 /*arenaslot*/,
+            BattlegroundTypeId /*BGTypeID*/,
+            uint8 /*joinAsGroup*/,
+            uint8 /*IsRated*/,
+            GroupJoinBattlegroundResult& err) override
+        {
+            if (!player ||
+                !SoloArenaMgr::Instance().HasSession(player->GetGUID()))
+                return true;
+
+            err = ERR_BATTLEGROUND_NOT_IN_BATTLEGROUND;
+            if (player->GetSession())
+            {
+                std::string const message =
+                    "시련 진행 중에는 투기장 대기열에 등록할 수 없습니다.";
+                ChatHandler(player->GetSession()).PSendSysMessage(
+                    "{}", message);
+                SendTrialAlert(player, message);
+            }
+
+            return false;
+        }
+
+        bool OnPlayerCanBattleFieldPort(
+            Player* player,
+            uint8 /*arenaType*/,
+            BattlegroundTypeId /*BGTypeID*/,
+            uint8 /*action*/) override
+        {
+            if (!player ||
+                !SoloArenaMgr::Instance().HasSession(player->GetGUID()))
+                return true;
+
+            if (player->GetSession())
+            {
+                std::string const message =
+                    "시련 진행 중에는 전장 또는 투기장에 입장할 수 없습니다.";
+                ChatHandler(player->GetSession()).PSendSysMessage(
+                    "{}", message);
+                SendTrialAlert(player, message);
+            }
+
+            return false;
         }
     };
 
