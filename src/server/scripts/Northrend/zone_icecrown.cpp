@@ -1533,6 +1533,7 @@ public:
         void Reset() override
         {
             me->SetControlled(true, UNIT_STATE_STUNNED);
+            me->SetFullHealth();
             isVulnerable = false;
 
             // Cast Defend spells to max stack size
@@ -1560,12 +1561,16 @@ public:
 
         void DamageTaken(Unit*, uint32& damage, DamageEffectType, SpellSchoolMask) override
         {
-            damage = 0;
+            if (damage >= me->GetHealth())
+                damage = me->GetHealth() > 1 ? me->GetHealth() - 1 : 0;
+
             events.RescheduleEvent(EVENT_DUMMY_RESET, 10s);
         }
 
         void SpellHit(Unit* caster, SpellInfo const* spell) override
         {
+            events.RescheduleEvent(EVENT_DUMMY_RESET, 10s);
+
             switch (me->GetEntry())
             {
                 case NPC_CHARGE_TARGET:
@@ -1621,11 +1626,9 @@ public:
                     events.ScheduleEvent(EVENT_DUMMY_RECAST_DEFEND, 5s);
                     break;
                 case EVENT_DUMMY_RESET:
-                    if (UpdateVictim())
-                    {
-                        EnterEvadeMode(EVADE_REASON_OTHER);
-                        events.ScheduleEvent(EVENT_DUMMY_RESET, 10s);
-                    }
+                    me->AttackStop();
+                    me->CombatStop(true);
+                    Reset();
                     break;
             }
 
