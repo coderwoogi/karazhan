@@ -22,9 +22,47 @@
 #include "Map.h"
 #include "WorldSession.h"
 #include "StringFormat.h"
+#include "GridTerrainData.h"
 
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <random>
 #include <sstream>
+
+namespace
+{
+bool TryParseTaggedUint(std::string const& text, std::string const& tag, uint32& value)
+{
+    std::size_t start = text.find(tag);
+    if (start == std::string::npos)
+        return false;
+
+    start += tag.length();
+    std::size_t end = start;
+    while (end < text.length() && std::isdigit(static_cast<unsigned char>(text[end])))
+        ++end;
+
+    if (end == start)
+        return false;
+
+    value = static_cast<uint32>(std::stoul(text.substr(start, end - start)));
+    return true;
+}
+
+bool IsIndirectAutoSpawnPoint(std::string const& comment)
+{
+    if (comment.rfind("[AUTO-Y10]", 0) != 0)
+        return false;
+
+    uint32 areaId = 0;
+    uint32 sourceAreaId = 0;
+    if (!TryParseTaggedUint(comment, "area=", areaId) || !TryParseTaggedUint(comment, "sourceArea=", sourceAreaId))
+        return false;
+
+    return areaId != sourceAreaId;
+}
+}
 
 BlackMarketSystem* BlackMarketSystem::instance()
 {
@@ -35,7 +73,8 @@ BlackMarketSystem* BlackMarketSystem::instance()
 BlackMarketSystem::BlackMarketSystem()
     : _enabled(false), _isActive(false), _spawnCycle(30), _itemCount(5),
       _announceGlobal(false), _announceZone(true), _npcEntry(999999),
-      _currentSessionId(0), _currentSpawnPointId(0)
+      _currentSessionId(0), _currentSpawnPointId(0), _currentSpawnMapId(0),
+      _currentSpawnX(0.0f), _currentSpawnY(0.0f), _currentSpawnZ(0.0f), _currentSpawnO(0.0f)
 {
     _dialogues.push_back("시간은 금이고, 기회는 짧지...");
     _dialogues.push_back("오늘은 당신에게 운이 따를지도 모르겠군.");
@@ -87,6 +126,8 @@ void BlackMarketSystem::LoadSpawnPoints()
     if (!result)
         return;
     
+    uint32 skippedIndirectAutoPoints = 0;
+
     do
     {
         Field* fields = result->Fetch();
@@ -100,11 +141,19 @@ void BlackMarketSystem::LoadSpawnPoints()
         point.z = fields[5].Get<float>();
         point.o = fields[6].Get<float>();
         point.comment = fields[7].Get<std::string>();
+
+        if (IsIndirectAutoSpawnPoint(point.comment))
+        {
+            ++skippedIndirectAutoPoints;
+            continue;
+        }
         
         _spawnPoints.push_back(point);
         
     } while (result->NextRow());
-    
+
+    LOG_INFO("module", "BlackMarket loaded {} spawn points (skipped indirect AUTO-Y10 points: {})",
+        _spawnPoints.size(), skippedIndirectAutoPoints);
 }
 
 void BlackMarketSystem::LoadItemPool()
@@ -154,6 +203,38 @@ void BlackMarketSystem::LoadCurrentState()
     _currentSpawnPointId = fields[1].Get<uint32>();
     uint32 spawnTime = fields[2].Get<uint32>();
     uint64 creatureGuid = fields[4].Get<uint64>();
+
+    if (_currentSpawnPointId != 0)
+    {
+        auto spawnPointItr = std::find_if(_spawnPoints.begin(), _spawnPoints.end(),
+            [this](BlackMarketSpawnPoint const& spawnPoint)
+            {
+                return spawnPoint.id == _currentSpawnPointId;
+            });
+
+        if (spawnPointItr == _spawnPoints.end())
+        {
+            LOG_WARN("module", "BlackMarket state references removed spawn point {}. Resetting stale state.",
+                _currentSpawnPointId);
+
+            _isActive = false;
+            _currentSpawnPointId = 0;
+            _currentMerchantGUID.Clear();
+            _currentSessionId = 0;
+            _currentSpawnMapId = 0;
+            _currentSpawnX = 0.0f;
+            _currentSpawnY = 0.0f;
+            _currentSpawnZ = 0.0f;
+            _currentSpawnO = 0.0f;
+            _currentItems.clear();
+
+            WorldDatabase.Execute(
+                "UPDATE blackmarket_state "
+                "SET is_active = 0, creature_guid = 0, spawn_point_id = 0, spawn_time = 0, despawn_time = 0 "
+                "WHERE id = 1");
+            return;
+        }
+    }
     
     if (_isActive)
     {
@@ -210,6 +291,31 @@ void BlackMarketSystem::Update(uint32 diff)
 
 void BlackMarketSystem::SpawnMerchant()
 {
+    uint32 const previousSpawnPointId = _currentSpawnPointId;
+    float previousX = 0.0f;
+    float previousY = 0.0f;
+    float previousZ = 0.0f;
+    uint16 previousMap = 0;
+    bool hasPreviousPoint = false;
+
+    if (previousSpawnPointId)
+    {
+        auto previousItr = std::find_if(_spawnPoints.begin(), _spawnPoints.end(),
+            [previousSpawnPointId](BlackMarketSpawnPoint const& spawnPoint)
+            {
+                return spawnPoint.id == previousSpawnPointId;
+            });
+
+        if (previousItr != _spawnPoints.end())
+        {
+            previousMap = previousItr->map;
+            previousX = previousItr->x;
+            previousY = previousItr->y;
+            previousZ = previousItr->z;
+            hasPreviousPoint = true;
+        }
+    }
+
     if (_isActive)
     {
         LOG_WARN("module", "BlackMarket already active. Duplicate spawn prevented.");
@@ -217,16 +323,33 @@ void BlackMarketSystem::SpawnMerchant()
     }
 
     QueryResult stateCheck = WorldDatabase.Query(
-        "SELECT is_active FROM blackmarket_state WHERE id = 1");
+        "SELECT is_active, creature_guid, spawn_point_id FROM blackmarket_state WHERE id = 1");
     
     if (stateCheck)
     {
         Field* fields = stateCheck->Fetch();
         if (fields[0].Get<uint8>() != 0)
         {
-            LOG_ERROR("module", "BlackMarket recorded as active in DB. Stopping spawn.");
-            _isActive = true;
-            return;
+            uint64 staleCreatureGuid = fields[1].Get<uint64>();
+            uint32 staleSpawnPointId = fields[2].Get<uint32>();
+
+            if (!_isActive && _currentMerchantGUID.IsEmpty())
+            {
+                LOG_WARN("module",
+                    "BlackMarket DB state was stale before spawn (GUID: {}, SpawnPoint: {}). Resetting and continuing.",
+                    staleCreatureGuid, staleSpawnPointId);
+
+                WorldDatabase.Execute(
+                    "UPDATE blackmarket_state "
+                    "SET is_active = 0, creature_guid = 0, spawn_point_id = 0, spawn_time = 0, despawn_time = 0 "
+                    "WHERE id = 1");
+            }
+            else
+            {
+                LOG_ERROR("module", "BlackMarket recorded as active in DB. Stopping spawn.");
+                _isActive = true;
+                return;
+            }
         }
     }
 
@@ -242,51 +365,98 @@ void BlackMarketSystem::SpawnMerchant()
         DespawnMerchant();
     }
 
-    uint32 randIndex = urand(0, _spawnPoints.size() - 1);
-    BlackMarketSpawnPoint const& point = _spawnPoints[randIndex];
-    _currentSpawnPointId = point.id;
-    
-    Map* map = sMapMgr->CreateBaseMap(point.map);
-    if (!map)
+    std::vector<uint32> candidateIndices;
+    candidateIndices.reserve(_spawnPoints.size());
+
+    for (uint32 i = 0; i < _spawnPoints.size(); ++i)
     {
-        LOG_ERROR("module", "BlackMarket map creation failed {}", point.map);
+        BlackMarketSpawnPoint const& candidate = _spawnPoints[i];
+
+        if (_spawnPoints.size() > 1 && candidate.id == previousSpawnPointId)
+            continue;
+
+        if (hasPreviousPoint &&
+            candidate.map == previousMap &&
+            std::fabs(candidate.x - previousX) < 0.01f &&
+            std::fabs(candidate.y - previousY) < 0.01f &&
+            std::fabs(candidate.z - previousZ) < 0.01f)
+        {
+            continue;
+        }
+
+        candidateIndices.push_back(i);
+    }
+
+    if (candidateIndices.empty())
+    {
+        LOG_ERROR("module", "BlackMarket spawn failed - No valid candidate spawn points");
         return;
     }
-    
-    Creature* merchant = new Creature();
-    if (!merchant->Create(map->GenerateLowGuid<HighGuid::Unit>(), map, 1, _npcEntry, 0,
-        point.x, point.y, point.z, point.o))
+
+    std::mt19937 randomEngine(std::random_device{}());
+    std::shuffle(candidateIndices.begin(), candidateIndices.end(), randomEngine);
+
+    for (uint32 randIndex : candidateIndices)
     {
-        delete merchant;
-        LOG_ERROR("module", "BlackMarket NPC creation failed");
+        BlackMarketSpawnPoint const& point = _spawnPoints[randIndex];
+        Map* map = sMapMgr->CreateBaseMap(point.map);
+        if (!map)
+        {
+            LOG_ERROR("module", "BlackMarket map creation failed {}", point.map);
+            continue;
+        }
+
+        float spawnX = point.x;
+        float spawnY = point.y;
+        float spawnZ = point.z;
+        if (!ResolveSpawnPosition(map, point, spawnX, spawnY, spawnZ))
+        {
+            LOG_WARN("module", "BlackMarket skipped invalid spawn point {} ({})", point.id, point.comment);
+            continue;
+        }
+
+        Creature* merchant = new Creature();
+        if (!merchant->Create(map->GenerateLowGuid<HighGuid::Unit>(), map, 1, _npcEntry, 0,
+            spawnX, spawnY, spawnZ, point.o))
+        {
+            delete merchant;
+            LOG_ERROR("module", "BlackMarket NPC creation failed");
+            continue;
+        }
+
+        merchant->SetHomePosition(spawnX, spawnY, spawnZ, point.o);
+        merchant->SetReactState(REACT_PASSIVE);
+        merchant->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
+        merchant->SetUnitFlag(UNIT_FLAG_IMMUNE_TO_PC);
+        merchant->SetUnitFlag(UNIT_FLAG_IMMUNE_TO_NPC);
+
+        if (!map->AddToMap(merchant))
+        {
+            delete merchant;
+            LOG_ERROR("module", "BlackMarket failed to add to map");
+            continue;
+        }
+
+        _currentSpawnPointId = point.id;
+        _currentSpawnMapId = point.map;
+        _currentSpawnX = spawnX;
+        _currentSpawnY = spawnY;
+        _currentSpawnZ = spawnZ;
+        _currentSpawnO = point.o;
+        _currentMerchantGUID = merchant->GetGUID();
+        _isActive = true;
+        _currentSessionId = uint32(GameTime::GetGameTime().count());
+
+        ShuffleItems();
+        _events.ScheduleEvent(EVENT_BLACKMARKET_ANNOUNCE, Seconds(2));
+        SaveState();
+
+        LOG_INFO("module", "BlackMarket merchant spawned (GUID: {}, Pos: {:.2f}/{:.2f}/{:.2f}, Map: {}, SpawnPoint: {}, Items: {})",
+            _currentMerchantGUID.GetCounter(), spawnX, spawnY, spawnZ, point.map, point.id, _currentItems.size());
         return;
     }
-    
-    merchant->SetHomePosition(point.x, point.y, point.z, point.o);
-    merchant->SetReactState(REACT_PASSIVE);
-    merchant->SetUnitFlag(UNIT_FLAG_NON_ATTACKABLE);
-    merchant->SetUnitFlag(UNIT_FLAG_IMMUNE_TO_PC);
-    merchant->SetUnitFlag(UNIT_FLAG_IMMUNE_TO_NPC);
-    
-    if (!map->AddToMap(merchant))
-    {
-        delete merchant;
-        LOG_ERROR("module", "BlackMarket failed to add to map");
-        return;
-    }
-    
-    _currentMerchantGUID = merchant->GetGUID();
-    _isActive = true;
-    _currentSessionId = uint32(GameTime::GetGameTime().count());
-    
-    ShuffleItems();
-    
-    _events.ScheduleEvent(EVENT_BLACKMARKET_ANNOUNCE, Seconds(2));
-    
-    SaveState();
-    
-    LOG_INFO("module", "BlackMarket merchant spawned (GUID: {}, Pos: {:.2f}/{:.2f}/{:.2f}, Map: {}, Items: {})",
-        _currentMerchantGUID.GetCounter(), point.x, point.y, point.z, point.map, _currentItems.size());
+
+    LOG_ERROR("module", "BlackMarket spawn failed - No valid spawn position found");
 }
 
 void BlackMarketSystem::DespawnMerchant()
@@ -328,8 +498,18 @@ void BlackMarketSystem::DespawnMerchant()
     _currentMerchantGUID.Clear();
     _isActive = false;
     _currentItems.clear();
+    _currentSpawnPointId = 0;
+    _currentSessionId = 0;
+    _currentSpawnMapId = 0;
+    _currentSpawnX = 0.0f;
+    _currentSpawnY = 0.0f;
+    _currentSpawnZ = 0.0f;
+    _currentSpawnO = 0.0f;
     
-    WorldDatabase.Execute("UPDATE blackmarket_state SET is_active = 0, creature_guid = 0 WHERE id = 1");
+    WorldDatabase.Execute(
+        "UPDATE blackmarket_state "
+        "SET is_active = 0, creature_guid = 0, spawn_point_id = 0, spawn_time = 0, despawn_time = 0 "
+        "WHERE id = 1");
     WorldDatabase.Execute("DELETE FROM blackmarket_vendor_items");
     
     LOG_INFO("module", "BlackMarket merchant despawn complete");
@@ -668,6 +848,114 @@ std::string BlackMarketSystem::GetLocalizedItemName(uint32 itemEntry, LocaleCons
     }
 
     return itemTemplate->Name1;
+}
+
+bool BlackMarketSystem::GetCurrentSpawnPoint(BlackMarketSpawnPoint& point) const
+{
+    if (!_isActive || !_currentSpawnPointId)
+        return false;
+
+    auto itr = std::find_if(_spawnPoints.begin(), _spawnPoints.end(),
+        [this](BlackMarketSpawnPoint const& spawnPoint)
+        {
+            return spawnPoint.id == _currentSpawnPointId;
+        });
+
+    if (itr == _spawnPoints.end())
+        return false;
+
+    point = *itr;
+    return true;
+}
+
+bool BlackMarketSystem::GetCurrentSpawnLocation(uint16& mapId, float& x, float& y, float& z, float& o) const
+{
+    if (!_isActive || !_currentSpawnPointId)
+        return false;
+
+    mapId = _currentSpawnMapId;
+    x = _currentSpawnX;
+    y = _currentSpawnY;
+    z = _currentSpawnZ;
+    o = _currentSpawnO;
+    return true;
+}
+
+bool BlackMarketSystem::ResolveSpawnPosition(Map* map, BlackMarketSpawnPoint const& point, float& outX, float& outY, float& outZ) const
+{
+    static std::array<float, 10> const radii = { 0.0f, 2.0f, 4.0f, 6.0f, 8.0f, 10.0f, 15.0f, 20.0f, 30.0f, 40.0f };
+    static std::array<std::pair<float, float>, 8> const directions =
+    {{
+        { 1.0f, 0.0f }, { -1.0f, 0.0f }, { 0.0f, 1.0f }, { 0.0f, -1.0f },
+        { 0.7071f, 0.7071f }, { 0.7071f, -0.7071f }, { -0.7071f, 0.7071f }, { -0.7071f, -0.7071f }
+    }};
+
+    auto isAcceptablePoint = [map, &point](float x, float y, float candidateZ, float& resolvedZ) -> bool
+    {
+        if (!sMapMgr->IsValidMapCoord(point.map, x, y, candidateZ))
+            return false;
+
+        Acore::NormalizeMapCoord(x);
+        Acore::NormalizeMapCoord(y);
+
+        float groundFromWater = INVALID_HEIGHT;
+        float waterOrGroundZ = map->GetWaterOrGroundLevel(uint32(1), x, y, candidateZ + 2.0f, &groundFromWater, false, 2.0f);
+        float surfaceZ = map->GetHeight(uint32(1), x, y, MAX_HEIGHT, true, 200.0f);
+        float fallbackZ = map->GetHeight(uint32(1), x, y, candidateZ + 2.0f, true, 200.0f);
+
+        float groundZ = INVALID_HEIGHT;
+        if (groundFromWater > INVALID_HEIGHT)
+            groundZ = groundFromWater;
+        else if (waterOrGroundZ > INVALID_HEIGHT)
+            groundZ = waterOrGroundZ;
+        else if (surfaceZ > INVALID_HEIGHT)
+            groundZ = surfaceZ;
+        else if (fallbackZ > INVALID_HEIGHT)
+            groundZ = fallbackZ;
+
+        if (groundZ <= INVALID_HEIGHT)
+            return false;
+
+        // The source coordinates come from nearby creatures. Large Z jumps usually mean cave/underworld mismatches.
+        if (std::fabs(groundZ - candidateZ) > 12.0f)
+            return false;
+
+        resolvedZ = groundZ + 0.1f;
+        return true;
+    };
+
+    for (float radius : radii)
+    {
+        if (radius == 0.0f)
+        {
+            float resolvedZ = point.z;
+            if (isAcceptablePoint(point.x, point.y, point.z, resolvedZ))
+            {
+                outX = point.x;
+                outY = point.y;
+                outZ = resolvedZ;
+                return true;
+            }
+
+            continue;
+        }
+
+        for (auto const& direction : directions)
+        {
+            float candidateX = point.x + (direction.first * radius);
+            float candidateY = point.y + (direction.second * radius);
+            float resolvedZ = point.z;
+            if (!isAcceptablePoint(candidateX, candidateY, point.z, resolvedZ))
+                continue;
+
+            outX = candidateX;
+            outY = candidateY;
+            outZ = resolvedZ;
+            return true;
+        }
+    }
+
+    return false;
 }
 
 bool BlackMarketSystem::SendCurrentLocationMail(Player* player)

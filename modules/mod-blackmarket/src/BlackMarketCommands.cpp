@@ -220,39 +220,31 @@ public:
             return true;
         }
 
-        ObjectGuid merchantGuid = sBlackMarket->GetCurrentMerchantGUID();
-        if (merchantGuid.IsEmpty())
+        Player* player = handler->GetSession()->GetPlayer();
+        if (!player)
         {
-            handler->SendErrorMessage("현재 암상인 GUID를 찾을 수 없습니다.");
+            handler->SendErrorMessage("플레이어를 찾을 수 없습니다.");
             return false;
         }
 
-        Player* player = handler->GetSession()->GetPlayer();
-        Creature* merchant = ObjectAccessor::GetCreature(*player, merchantGuid);
+        uint16 mapId = 0;
+        float x = 0.0f;
+        float y = 0.0f;
+        float z = 0.0f;
+        float o = 0.0f;
+        if (!sBlackMarket->GetCurrentSpawnLocation(mapId, x, y, z, o))
+        {
+            handler->SendErrorMessage("현재 암상인 위치 정보를 찾을 수 없습니다.");
+            return false;
+        }
 
-        if (merchant)
+        if (!sMapMgr->IsValidMapCoord(mapId, x, y, z))
         {
-            // ?곸씤??濡쒕뱶???곹깭?쇰㈃ ?대떦 ?꾩튂濡?諛붾줈 ?대룞
-            player->TeleportTo(merchant->GetMapId(), merchant->GetPositionX(), merchant->GetPositionY(), merchant->GetPositionZ(), merchant->GetOrientation());
+            handler->SendErrorMessage("암상인 좌표가 올바르지 않습니다.");
+            return false;
         }
-        else
-        {
-            // ?곸씤??硫由??덉뼱??濡쒕뱶?섏? ?딆? 寃쎌슦, ??λ맂 ?ㅽ룿 ?ъ씤??ID濡??꾩튂 李얘린
-            // (BlackMarketSystem??GetPosition 愿???⑥닔媛 ?놁쑝誘濡?吏곸젒 DB?먯꽌 議고쉶?섍굅??援ъ“泥??묎렐 ?꾩슂)
-            // ?꾩옱 援ъ“??吏곸젒 ?붾젅?ы듃???대젮?곕?濡? Map/Zone ?뺣낫?쇰룄 異쒕젰
-             handler->SendSysMessage("|cFFFFFF00암상인이 현재 월드에 로드되어 있지 않습니다.|r");
-             // 媛쒖꽑: BlackMarketSystem???꾩옱 ?꾩튂 ?뺣낫瑜?諛섑솚?섎뒗 ?⑥닔瑜?異붽??섍굅?? 
-             // SpawnPoint ?뺣낫瑜??쒗쉶?댁꽌 李얜뒗 濡쒖쭅??異붽??????덉쓬.
-             // ?ш린?쒕뒗 媛꾨떒???곸씤??濡쒕뱶??寃쎌슦?먮쭔 ?대룞 吏??
-             // ?먮뒗 BlackMarketSystem::GetCurrentSpawnPoint() 媛숈? ?⑥닔媛 ?덈떎硫??ъ슜 媛??
-        }
-        
-        // *媛쒖꽑??援ы쁽*: 紐⑤뱺 寃쎌슦???대룞 媛?ν븯?꾨줉 寃??濡쒖쭅 異붽?
-        // private 硫ㅻ쾭 ?묎렐???대젮?곕?濡? BlackMarketSystem???몄쓽 ?⑥닔 異붽?媛 ?댁긽?곸씠??
-        // ?꾩옱??System ?섏젙 ?놁씠 媛?ν븳 踰붿쐞 ?댁뿉??援ы쁽.
-        // ?섏?留??ъ슜??寃쏀뿕???꾪빐 System??GetCurrentSpawnPoint()瑜?異붽??섎뒗 寃껋씠 醫뗭쓬.
-        // ?쇰떒? ?곸씤 濡쒕뱶 ?щ?? 愿怨꾩뾾???대룞?????덈룄濡?System ?섏젙???ы븿?섏뿬 吏꾪뻾.
-        
+
+        player->TeleportTo(mapId, x, y, z, o);
         return true;
     }
 };

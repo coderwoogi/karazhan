@@ -11,6 +11,7 @@
 
 class Player;
 class Creature;
+class Map;
 
 struct BlackMarketSpawnPoint
 {
@@ -70,6 +71,8 @@ public:
     ObjectGuid GetCurrentMerchantGUID() const { return _currentMerchantGUID; }
     uint32 GetCurrentSessionId() const { return _currentSessionId; }
     uint32 GetNpcEntry() const { return _npcEntry; }
+    bool GetCurrentSpawnPoint(BlackMarketSpawnPoint& point) const;
+    bool GetCurrentSpawnLocation(uint16& mapId, float& x, float& y, float& z, float& o) const;
     
     // Vendor 지원 함수
     void SendVendorInventory(Player* player, Creature* creature);
@@ -93,6 +96,7 @@ private:
     void ShuffleItems();
     void SaveState();
     void AnnounceSpawn();
+    bool ResolveSpawnPosition(Map* map, BlackMarketSpawnPoint const& point, float& outX, float& outY, float& outZ) const;
     
     bool CanPurchaseItem(Player* player, uint32 itemEntry);
     bool PurchaseItem(Player* player, uint32 itemEntry);
@@ -110,6 +114,11 @@ private:
     ObjectGuid _currentMerchantGUID;
     uint32 _currentSessionId;
     uint32 _currentSpawnPointId;
+    uint16 _currentSpawnMapId;
+    float _currentSpawnX;
+    float _currentSpawnY;
+    float _currentSpawnZ;
+    float _currentSpawnO;
     
     std::vector<BlackMarketSpawnPoint> _spawnPoints;
     std::vector<BlackMarketItem> _itemPool;
