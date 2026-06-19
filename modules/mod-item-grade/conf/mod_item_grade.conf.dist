@@ -1,0 +1,76 @@
+[worldserver]
+
+########################################
+# mod-item-grade 설정
+########################################
+#
+# 아이템 등급(Grade) 스탯 스케일링 모듈.
+# 드랍 아이템마다 등급(S/A/B/C/D)이 부여되어 기본 스탯이 배수로 가감된다.
+# 등급은 아이템 GUID 로부터 결정론적으로 산출된다(별도 저장 없음).
+#
+
+#
+#    ItemGrade.Enable
+#        설명: 모듈 활성화 여부
+#        기본값: 1
+#        값: 0(끔) / 1(켬)
+#
+
+ItemGrade.Enable = 1
+
+#
+#    ItemGrade.AnnounceLoot
+#        설명: 비-B 등급 아이템 획득 시 채팅 알림 표시
+#        기본값: 1
+#        값: 0(끔) / 1(켬)
+#
+
+ItemGrade.AnnounceLoot = 1
+
+#
+#    ItemGrade.AddonPush
+#        설명: 클라이언트 애드온(ItemGrade.lua)으로 등급 정보를 전송할지 여부.
+#              애드온 툴팁 표시를 사용하지 않으면 0 으로 둔다.
+#        기본값: 1
+#        값: 0(끔) / 1(켬)
+#
+
+ItemGrade.AddonPush = 1
+
+#
+#    ItemGrade.SyncIntervalMs
+#        설명: 애드온 등급 표시 동기화 주기(ms). 가방 내 아이템을 드래그로
+#              재배치한 경우, 이 주기 내에 슬롯 매핑이 자동 보정된다.
+#              값을 낮추면 더 즉각적이나 부하가 늘고, 높이면 그 반대.
+#        기본값: 1000
+#
+
+ItemGrade.SyncIntervalMs = 1000
+
+#
+#    ItemGrade.Chance.*
+#        설명: 각 등급의 드랍 확률 (basis points, 5개 합계 = 10000 권장).
+#              합계가 10000이 아니어도 합계 기준으로 정규화된다.
+#        [현재 테스트값] 모든 등급 균등(각 20%) — 모든 등급이 자주 나오게.
+#        운영 권장 예시: D=5000(50%), C=3000(30%), B=1300(13%), A=600(6%), S=100(1%)
+#
+
+ItemGrade.Chance.S = 2000
+ItemGrade.Chance.A = 2000
+ItemGrade.Chance.B = 2000
+ItemGrade.Chance.C = 2000
+ItemGrade.Chance.D = 2000
+
+#
+#    ItemGrade.Mult.*
+#        설명: 각 등급의 기본 스탯 배수. D 가 기본(±0%)이며 한 단계 오를 때마다 +2%.
+#        기본값: D=1.00(±0%), C=1.02(+2%), B=1.04(+4%), A=1.06(+6%), S=1.08(+8%)
+#        주의: 값을 변경하면, 변경 전 장착해 둔 아이템은 재접속 전까지
+#              능력치가 일시적으로 어긋날 수 있다(장착/해제 비대칭).
+#
+
+ItemGrade.Mult.S = 1.08
+ItemGrade.Mult.A = 1.06
+ItemGrade.Mult.B = 1.04
+ItemGrade.Mult.C = 1.02
+ItemGrade.Mult.D = 1.00

@@ -17,6 +17,13 @@
 #include "DatabaseEnv.h"
 #include "StringFormat.h"
 
+// mod-item-grade 연동: 강화로 아이템이 재생성될 때(새 GUID) 등급을 옮긴다.
+// 정의는 mod-item-grade(ItemGrade.cpp)에 있으며 링크 시점에 연결된다.
+namespace ItemGradeBridge
+{
+    void OnItemRecreated(ObjectGuid::LowType oldGuidLow, ObjectGuid::LowType newGuidLow);
+}
+
 namespace
 {
     constexpr uint8 ENHANCE_TYPE_NONE = 0;
@@ -1183,8 +1190,11 @@ void ItemKarazhanMgr::ProcessPendingEnhancement(PendingEnhancement const& pendin
         // STEP 9: Update database
         // ========================================
         DeleteItemEnhance(pending.oldItemGuid);
-        SetItemEnhanceLevel(newGuid, player->GetGUID().GetCounter(), 
+        SetItemEnhanceLevel(newGuid, player->GetGUID().GetCounter(),
                            itemEntry, pending.targetLevel);
+
+        // mod-item-grade: 강화로 새로 생성된 아이템에 기존 등급을 그대로 이전
+        ItemGradeBridge::OnItemRecreated(pending.oldItemGuid, newGuid);
 
         // LOG_INFO("module", "Karazhan: Enhancement data updated");
 
