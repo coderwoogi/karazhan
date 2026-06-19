@@ -81,6 +81,54 @@ namespace
         player->SetUInt32Value(PLAYER_XP, 0);
         player->SaveToDB(false, false);
     }
+
+    // 첫 캐릭터에게 부여할 스펠 (Hira Snowdawn / TrainerId 36 의 승마·한랭비행과 동일)
+    constexpr uint32 FIRST_CHARACTER_SPELLS[] =
+    {
+        33388, // Apprentice Riding (견습 승마)
+        33391, // Journeyman Riding (숙련 승마)
+        34090, // Expert Riding (전문가 승마, 비행 150%)
+        34091, // Artisan Riding (장인 승마, 비행 280%)
+        54197  // Cold Weather Flying (한랭 비행)
+    };
+
+    // 부족한 스펠만 학습(이미 가진 건 건너뜀). 하나라도 배우면 true.
+    bool LearnFirstCharacterSpells(Player* player)
+    {
+        bool learnedAny = false;
+        for (uint32 spellId : FIRST_CHARACTER_SPELLS)
+        {
+            if (!player->HasSpell(spellId))
+            {
+                player->learnSpell(spellId);
+                learnedAny = true;
+            }
+        }
+
+        if (learnedAny)
+            player->SaveToDB(false, false);
+
+        return learnedAny;
+    }
+
+    // 이 캐릭터가 계정에서 가장 먼저 생성된 비-죽음의기사 캐릭터인가
+    // (가장 낮은 guid = 가장 먼저 생성됨 → mod-auto-levelup 의 "첫 캐릭터" 정의와 일치)
+    bool IsFirstNonDeathKnightCharacter(Player* player)
+    {
+        uint32 accountId = player->GetSession()->GetAccountId();
+        std::string query = Acore::StringFormat(
+            "SELECT MIN(guid) FROM characters "
+            "WHERE account = {} AND class <> {}",
+            accountId,
+            CLASS_DEATH_KNIGHT);
+
+        QueryResult result = CharacterDatabase.Query(query);
+        if (!result)
+            return false;
+
+        uint32 firstGuid = result->Fetch()[0].Get<uint32>();
+        return firstGuid != 0 && firstGuid == player->GetGUID().GetCounter();
+    }
 }
 
 class AutoLevelupWorldScript : public WorldScript
@@ -100,7 +148,8 @@ class AutoLevelupPlayerScript : public PlayerScript
 {
 public:
     AutoLevelupPlayerScript() :
-        PlayerScript("AutoLevelupPlayerScript", { PLAYERHOOK_ON_CREATE })
+        PlayerScript("AutoLevelupPlayerScript",
+            { PLAYERHOOK_ON_CREATE, PLAYERHOOK_ON_LOGIN })
     {
     }
 
@@ -116,11 +165,45 @@ public:
         uint32 accountId = player->GetSession()->GetAccountId();
         uint32 characterCount = GetCurrentNonDeathKnightCharacterCount(accountId);
 
-        uint8 targetLevel = characterCount == 1
+        bool isFirstCharacter = characterCount == 1;
+        uint8 targetLevel = isFirstCharacter
             ? config.GetFirstCharacterLevel()
             : config.GetOtherCharacterLevel();
 
         ApplyStartLevel(player, targetLevel);
+
+        // 첫 캐릭터에게만 승마/한랭비행 스펠 부여 (2번째 캐릭터부터는 미부여)
+        if (isFirstCharacter)
+            LearnFirstCharacterSpells(player);
+    }
+
+    // 이미 생성된 첫 캐릭터가 스펠을 갖고 있지 않으면 로그인 시 자동 학습
+    void OnPlayerLogin(Player* player) override
+    {
+        AutoLevelupConfig const& config = AutoLevelupConfig::Instance();
+        if (!config.IsEnabled())
+            return;
+
+        if (player->IsClass(CLASS_DEATH_KNIGHT))
+            return;
+
+        // 이미 5개 모두 보유하면 DB 조회 없이 종료
+        bool missingAny = false;
+        for (uint32 spellId : FIRST_CHARACTER_SPELLS)
+        {
+            if (!player->HasSpell(spellId))
+            {
+                missingAny = true;
+                break;
+            }
+        }
+
+        if (!missingAny)
+            return;
+
+        // 부족한 경우, 이 캐릭터가 계정의 첫 비-DK 캐릭터일 때만 학습
+        if (IsFirstNonDeathKnightCharacter(player))
+            LearnFirstCharacterSpells(player);
     }
 };
 
