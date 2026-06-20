@@ -1230,6 +1230,21 @@ local function GetRemainingEntries()
     - (Trial.state.dailyEntriesUsed or 0))
 end
 
+-- 입장 조건 표시: 무료 횟수가 남으면 "무료 입장 N회 남음", 소진되면 "시련 입장권 x1"
+local function ApplyRequirementDisplay()
+  local remaining = GetRemainingEntries()
+  if remaining > 0 then
+    Trial.requirementIconBg.itemEntry = nil
+    Trial.requirementIcon:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready")
+    Trial.requirementText:SetText(string.format("무료 입장 %d회 남음", remaining))
+  else
+    Trial.requirementIconBg.itemEntry = TRIAL_TICKET_ITEM
+    Trial.requirementIcon:SetTexture(GetItemIcon(TRIAL_TICKET_ITEM)
+      or "Interface\\Icons\\INV_Misc_QuestionMark")
+    Trial.requirementText:SetText(GetRequirementText())
+  end
+end
+
 local function GetDefaultItemName(itemEntry)
   if itemEntry == TRIAL_TICKET_ITEM then
     return "시련 입장권"
@@ -1447,9 +1462,7 @@ local function RefreshSelection()
     Trial.stageTitle:SetText("선택 가능한 시련이 없습니다")
     Trial.stageMeta:SetText("이전 단계를 먼저 클리어해야 다음 단계가 열립니다.")
     Trial.stageDesc:SetText("")
-    Trial.requirementIcon:SetTexture(GetItemIcon(TRIAL_TICKET_ITEM)
-      or "Interface\\Icons\\INV_Misc_QuestionMark")
-    Trial.requirementText:SetText(GetRequirementText())
+    ApplyRequirementDisplay()
     Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
     Trial.rewardButton:Disable()
     Trial.start:Disable()
@@ -1461,9 +1474,7 @@ local function RefreshSelection()
   Trial.stageTitle:SetText(stage.name)
   Trial.stageMeta:SetText(GetBestRankText(stage))
   Trial.stageDesc:SetText(GetStageDescription(stage))
-  Trial.requirementIcon:SetTexture(GetItemIcon(TRIAL_TICKET_ITEM)
-    or "Interface\\Icons\\INV_Misc_QuestionMark")
-  Trial.requirementText:SetText(GetRequirementText())
+  ApplyRequirementDisplay()
 
   Trial.rewardHint:SetText("보상확인 버튼을 눌러 랭크별 보상 목록을 확인하세요.")
   Trial.rewardButton:Enable()
