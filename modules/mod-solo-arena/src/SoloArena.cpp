@@ -3258,17 +3258,16 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         return false;
     }
 
-    if (GetTodayEntryCount(player) >= GetCurrentDailyEntryLimit(player))
-    {
-        SendSystem(player,
-            "오늘의 시련 입장 가능 횟수를 모두 사용했습니다.");
-        return false;
-    }
+    // 무료 입장 한도 = 기본 TRIAL_DAILY_LIMIT(+ 암표 보너스). 한도 내에서는 무료,
+    // 초과분부터 시련 입장권이 필요하다(입장권이 있으면 입장 횟수 제한 없음).
+    uint32 const todayEntries = GetTodayEntryCount(player);
+    bool const needTicket =
+        todayEntries >= GetCurrentDailyEntryLimit(player);
 
-    if (!player->HasItemCount(TRIAL_TICKET_ITEM, 1, false))
+    if (needTicket && !player->HasItemCount(TRIAL_TICKET_ITEM, 1, false))
     {
         SendSystem(player,
-            "시련 입장권이 필요합니다.");
+            "무료 입장 횟수를 모두 사용했습니다. 시련 입장권이 필요합니다.");
         return false;
     }
 
@@ -3474,12 +3473,16 @@ bool SoloArenaMgr::StartChallenge(Player* player, uint8 stageId)
         }
     }
 
-    player->DestroyItemCount(TRIAL_TICKET_ITEM, 1, true, false);
+    // 무료 한도 초과 입장일 때만 입장권 차감(한도 내 입장은 무료)
+    if (needTicket)
+    {
+        player->DestroyItemCount(TRIAL_TICKET_ITEM, 1, true, false);
+        LogEvent(player, _sessions[player->GetGUID().GetCounter()],
+            "TICKET_CONSUMED", Acore::StringFormat(
+                "item={} remaining={}", TRIAL_TICKET_ITEM,
+                player->GetItemCount(TRIAL_TICKET_ITEM, false)));
+    }
     RecordDailyEntryUse(accountId);
-    LogEvent(player, _sessions[player->GetGUID().GetCounter()],
-        "TICKET_CONSUMED", Acore::StringFormat(
-            "item={} remaining={}", TRIAL_TICKET_ITEM,
-            player->GetItemCount(TRIAL_TICKET_ITEM, false)));
 
     SendSystem(player, Acore::StringFormat(
         "{} 시작. {}로 이동합니다.", stage->Name,
