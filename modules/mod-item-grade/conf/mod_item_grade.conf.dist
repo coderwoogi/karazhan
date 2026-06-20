@@ -48,6 +48,16 @@ ItemGrade.AddonPush = 1
 ItemGrade.SyncIntervalMs = 1000
 
 #
+#    ItemGrade.ForceResyncIntervalMs
+#        설명: 등급 정보를 주기적으로 "강제" 재전송하는 간격(ms). 로딩 화면 등에서
+#              유실된 푸시를 자동 복구한다(한 번 놓쳐도 이 간격 내 다시 채워짐).
+#              0이면 비활성. 낮출수록 빨리 복구되나 트래픽 증가.
+#        기본값: 10000
+#
+
+ItemGrade.ForceResyncIntervalMs = 10000
+
+#
 #    ItemGrade.Chance.*
 #        설명: 각 등급의 드랍 확률 (basis points, 5개 합계 = 10000 권장).
 #              합계가 10000이 아니어도 합계 기준으로 정규화된다.

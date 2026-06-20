@@ -59,6 +59,8 @@ namespace
         bool   announceLoot = true;
         bool   addonPush     = true;
         uint32 syncIntervalMs = 1000;
+        // 주기적 강제 재전송 간격(ms). 유실된 등급 푸시를 자동 복구. 0이면 비활성.
+        uint32 forceResyncMs = 10000;
         // 인덱스 순서: D, C, B, A, S
         // [테스트용] 모든 등급 균등(각 20%). 운영 시 원하는 확률로 조정.
         uint32 chance[GRADE_MAX] = { 2000, 2000, 2000, 2000, 2000 };
@@ -70,6 +72,7 @@ namespace
             announceLoot = sConfigMgr->GetOption<bool>("ItemGrade.AnnounceLoot", true);
             addonPush    = sConfigMgr->GetOption<bool>("ItemGrade.AddonPush", true);
             syncIntervalMs = sConfigMgr->GetOption<uint32>("ItemGrade.SyncIntervalMs", 1000);
+            forceResyncMs = sConfigMgr->GetOption<uint32>("ItemGrade.ForceResyncIntervalMs", 10000);
 
             // [테스트용] 기본값 균등(각 20%). 운영 시 conf 또는 여기서 조정.
             chance[GRADE_D] = sConfigMgr->GetOption<uint32>("ItemGrade.Chance.D", 2000);
@@ -113,6 +116,8 @@ namespace
     std::unordered_map<ObjectGuid::LowType, uint32> g_updAccum;
     // 로그인 후 1회 강제 재전송용 카운트다운(ms). 클라 준비 전 푸시 누락 보정.
     std::unordered_map<ObjectGuid::LowType, uint32> g_loginRepush;
+    // 주기적 강제 재전송 누적 타이머(자가 치유: 유실된 푸시 복구).
+    std::unordered_map<ObjectGuid::LowType, uint32> g_forceAccum;
 
     uint8 RollGrade()
     {
@@ -516,6 +521,7 @@ public:
         g_lastSig.erase(guidLow);
         g_updAccum.erase(guidLow);
         g_loginRepush.erase(guidLow);
+        g_forceAccum.erase(guidLow);
     }
 
     void OnPlayerEquip(Player* player, Item* /*it*/, uint8 /*bag*/, uint8 /*slot*/, bool /*update*/) override
@@ -567,6 +573,20 @@ public:
             }
             else
                 rp->second -= p_time;
+        }
+
+        // 주기적 강제 재전송(자가 치유): 유실/누락된 푸시를 일정 간격으로 복구.
+        // (시그니처가 같아도 강제로 다시 보내므로 "한 번 놓치면 영영 안 옴" 문제 해소)
+        if (sCfg.forceResyncMs > 0)
+        {
+            uint32& facc = g_forceAccum[guidLow];
+            facc += p_time;
+            if (facc >= sCfg.forceResyncMs)
+            {
+                facc = 0;
+                RefreshIfChanged(player, true);
+                return;
+            }
         }
 
         uint32& acc = g_updAccum[guidLow];
