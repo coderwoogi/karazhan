@@ -1,0 +1,25 @@
+[worldserver]
+
+#
+#  mod-web-chat 설정
+#
+
+#    WebChat.Enable
+#        설명: 웹 채팅 브리지 사용 여부
+#        기본값: 1
+WebChat.Enable = 1
+
+#    WebChat.PollIntervalMs
+#        설명: 송신 큐(web_outgoing_chat) 폴링 주기(ms)
+#        기본값: 3000
+WebChat.PollIntervalMs = 3000
+
+#    WebChat.MaxPerTick
+#        설명: 1회 폴링에서 처리할 최대 메시지 수
+#        기본값: 20
+WebChat.MaxPerTick = 20
+
+#    WebChat.WorldChannel
+#        설명: 'world' 타입 메시지를 주입할 글로벌 채널 이름
+#        기본값: "World"
+WebChat.WorldChannel = "World"
