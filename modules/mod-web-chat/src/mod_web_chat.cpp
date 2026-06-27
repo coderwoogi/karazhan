@@ -172,6 +172,7 @@ public:
         _timer = 0;
 
         ProcessOutgoing();
+        ProcessGoldOps();
     }
 
 private:
@@ -208,6 +209,72 @@ private:
                 << "', error='" << e << "', sent_at=NOW() WHERE id=" << id;
             CharacterDatabase.Execute(upd.str().c_str());
         } while (res->NextRow());
+    }
+
+    // ── 골드 변경 큐(web_gold_ops) 처리 ──────────────────────────────
+    // 접속 중 캐릭터는 살아있는 Player 객체에 즉시 반영(서버 저장 덮어쓰기 문제 회피),
+    // 오프라인은 characters.money 를 직접 갱신. mode: set|add|sub, 단위: copper.
+    void ProcessGoldOps()
+    {
+        QueryResult res = CharacterDatabase.Query(
+            "SELECT id, char_guid, mode, amount_copper FROM web_gold_ops WHERE status='pending' ORDER BY id ASC LIMIT 20");
+        if (!res)
+            return;
+
+        do
+        {
+            Field* f       = res->Fetch();
+            uint64 id      = f[0].Get<uint64>();
+            uint32 cguid   = f[1].Get<uint32>();
+            std::string md = f[2].Get<std::string>();
+            uint64 amt     = f[3].Get<uint64>();
+
+            uint64 result = 0;
+            std::string err;
+            bool ok = ApplyGoldOp(cguid, md, amt, result, err);
+
+            CharacterDatabase.EscapeString(err);
+            std::ostringstream upd;
+            upd << "UPDATE web_gold_ops SET status='" << (ok ? "done" : "failed")
+                << "', error='" << err << "', result_money=" << result
+                << ", processed_at=NOW() WHERE id=" << id;
+            CharacterDatabase.Execute(upd.str().c_str());
+        } while (res->NextRow());
+    }
+
+    bool ApplyGoldOp(uint32 lowGuid, std::string const& mode, uint64 amtCopper, uint64& resultMoney, std::string& err)
+    {
+        auto computeNew = [&](uint64 cur) -> uint64
+        {
+            uint64 nv;
+            if (mode == "set")      nv = amtCopper;
+            else if (mode == "sub") nv = (cur > amtCopper) ? (cur - amtCopper) : 0;
+            else                    nv = cur + amtCopper; // add
+            if (nv > uint64(MAX_MONEY_AMOUNT))
+                nv = uint64(MAX_MONEY_AMOUNT);
+            return nv;
+        };
+
+        if (Player* p = ObjectAccessor::FindPlayerByLowGUID(lowGuid))
+        {
+            uint64 nv = computeNew(p->GetMoney());
+            p->SetMoney(uint32(nv));
+            resultMoney = nv;
+            return true;
+        }
+
+        // 오프라인 → DB 직접 갱신
+        std::ostringstream sel;
+        sel << "SELECT money FROM characters WHERE guid=" << lowGuid;
+        QueryResult r = CharacterDatabase.Query(sel.str().c_str());
+        if (!r) { err = "character not found"; return false; }
+        uint64 cur = r->Fetch()[0].Get<uint32>();
+        uint64 nv = computeNew(cur);
+        std::ostringstream upd;
+        upd << "UPDATE characters SET money=" << uint32(nv) << " WHERE guid=" << lowGuid;
+        CharacterDatabase.Execute(upd.str().c_str());
+        resultMoney = nv;
+        return true;
     }
 
     // 발신자(대표 캐릭터) GUID 조회 — 패킷의 발신자 식별용(오프라인이어도 이름은 패킷에 포함)
