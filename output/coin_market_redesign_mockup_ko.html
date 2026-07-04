@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Karazhan 코인시장 리디자인 시안</title>
+  <style>
+    :root {
+      --bg: #05070d;
+      --panel: rgba(12, 15, 24, 0.82);
+      --panel-strong: rgba(20, 17, 13, 0.94);
+      --line: rgba(201, 172, 113, 0.22);
+      --gold: #d8b15e;
+      --gold-soft: #aa8f58;
+      --text: #f5ead4;
+      --muted: #a99d89;
+      --red: #8b2d23;
+      --green: #2f7d58;
+      --blue: #405c84;
+      --shadow: 0 22px 70px rgba(0, 0, 0, 0.48);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 16% 8%, rgba(216, 177, 94, 0.16), transparent 28%),
+        radial-gradient(circle at 85% 18%, rgba(139, 45, 35, 0.18), transparent 32%),
+        linear-gradient(180deg, rgba(4, 6, 12, 0.74), rgba(4, 6, 12, 0.96)),
+        url("E:/xampp/htdocs/karazhan/img/pub.png") center / cover fixed,
+        var(--bg);
+    }
+
+    .page {
+      width: min(1380px, calc(100vw - 48px));
+      margin: 0 auto;
+      padding: 32px 0 46px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .brand-mark {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, #e0bd6a, #806231);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.14) inset, 0 12px 30px rgba(0,0,0,0.36);
+      color: #15100a;
+      font-size: 24px;
+      font-weight: 900;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 30px;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .wallet {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 12px 16px;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: rgba(9, 11, 18, 0.7);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.24);
+    }
+
+    .wallet strong {
+      color: var(--gold);
+      font-size: 18px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(216, 177, 94, 0.28);
+      border-radius: 28px;
+      background:
+        linear-gradient(135deg, rgba(34, 25, 13, 0.94), rgba(7, 10, 18, 0.92)),
+        radial-gradient(circle at 82% 24%, rgba(216, 177, 94, 0.18), transparent 34%);
+      box-shadow: var(--shadow);
+      padding: 28px;
+      margin-bottom: 18px;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 46px 46px;
+      opacity: 0.3;
+      pointer-events: none;
+      mask-image: linear-gradient(90deg, transparent, #000 16%, #000 72%, transparent);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.3fr) minmax(340px, 0.7fr);
+      gap: 24px;
+      align-items: center;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 12px;
+      border: 1px solid rgba(216, 177, 94, 0.34);
+      border-radius: 999px;
+      color: var(--gold);
+      background: rgba(216, 177, 94, 0.08);
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .hero h2 {
+      margin: 18px 0 10px;
+      font-size: clamp(34px, 4vw, 58px);
+      line-height: 1.02;
+      letter-spacing: -0.04em;
+    }
+
+    .hero p {
+      max-width: 680px;
+      margin: 0;
+      color: #cabfae;
+      line-height: 1.75;
+      font-size: 16px;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 14px;
+      height: 46px;
+      padding: 0 18px;
+      font-weight: 900;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: transform 0.16s ease, filter 0.16s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
+    .btn-primary { background: linear-gradient(145deg, #e1bd69, #9f7c39); color: #171109; }
+    .btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--line); }
+
+    .rate-card {
+      border-radius: 22px;
+      border: 1px solid rgba(216, 177, 94, 0.26);
+      background: rgba(4, 6, 12, 0.54);
+      padding: 18px;
+      backdrop-filter: blur(10px);
+    }
+
+    .rate-title {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.06em;
+    }
+
+    .rate-value {
+      margin-top: 8px;
+      font-size: 38px;
+      font-weight: 900;
+      color: var(--gold);
+    }
+
+    .rate-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .mini-stat {
+      border-radius: 16px;
+      padding: 12px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .mini-stat span {
+      color: var(--muted);
+      font-size: 12px;
+      display: block;
+    }
+
+    .mini-stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 18px;
+    }
+
+    .content {
+      display: grid;
+      grid-template-columns: 320px minmax(0, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      border-radius: 24px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      box-shadow: 0 18px 44px rgba(0,0,0,0.24);
+      backdrop-filter: blur(10px);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 20px;
+      padding: 20px;
+    }
+
+    .side-section + .side-section {
+      margin-top: 18px;
+      padding-top: 18px;
+      border-top: 1px solid rgba(216, 177, 94, 0.14);
+    }
+
+    .side-title {
+      margin: 0 0 10px;
+      color: var(--gold);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .field {
+      width: 100%;
+      height: 44px;
+      padding: 0 13px;
+      border-radius: 13px;
+      border: 1px solid rgba(216, 177, 94, 0.22);
+      background: rgba(4, 6, 12, 0.76);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .quick-filters {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      min-height: 38px;
+      border: 1px solid rgba(216, 177, 94, 0.18);
+      border-radius: 999px;
+      background: rgba(255,255,255,0.04);
+      color: #d8cdbc;
+      text-align: left;
+      padding: 0 13px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .chip.active {
+      color: #171109;
+      background: var(--gold);
+      font-weight: 900;
+    }
+
+    .guide {
+      color: #c7bba7;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    .market {
+      padding: 18px;
+    }
+
+    .market-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .market-head h3 {
+      margin: 0;
+      font-size: 23px;
+    }
+
+    .market-head p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .listing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 14px;
+    }
+
+    .listing {
+      position: relative;
+      overflow: hidden;
+      min-height: 250px;
+      border-radius: 22px;
+      border: 1px solid rgba(216, 177, 94, 0.18);
+      background:
+        linear-gradient(180deg, rgba(24, 26, 34, 0.94), rgba(8, 10, 17, 0.96)),
+        radial-gradient(circle at 80% 0%, rgba(216, 177, 94, 0.18), transparent 36%);
+      padding: 18px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .listing.featured {
+      border-color: rgba(216, 177, 94, 0.48);
+      box-shadow: 0 0 0 1px rgba(216, 177, 94, 0.18), 0 22px 44px rgba(0,0,0,0.26);
+    }
+
+    .listing-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(216, 177, 94, 0.1);
+      border: 1px solid rgba(216, 177, 94, 0.22);
+      color: var(--gold);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .time {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .gold-amount {
+      margin: 22px 0 8px;
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: -0.04em;
+    }
+
+    .gold-amount span {
+      color: var(--gold);
+    }
+
+    .price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(216, 177, 94, 0.14);
+    }
+
+    .seller {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #d9cfbe;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(145deg, #33445f, #1b2334);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #d9e6ff;
+      font-weight: 900;
+    }
+
+    .seller small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+    }
+
+    .price {
+      text-align: right;
+    }
+
+    .price strong {
+      display: block;
+      color: var(--gold);
+      font-size: 20px;
+    }
+
+    .price small {
+      color: var(--muted);
+    }
+
+    .listing .btn {
+      width: 100%;
+      margin-top: 18px;
+    }
+
+    .pagination {
+      margin-top: 18px;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .page-btn {
+      min-width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      border: 1px solid rgba(216, 177, 94, 0.22);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      font-weight: 900;
+      font-family: inherit;
+    }
+
+    .page-btn.active {
+      background: var(--gold);
+      color: #171109;
+    }
+
+    .modal-preview {
+      margin-top: 18px;
+      border-radius: 24px;
+      border: 1px solid rgba(216, 177, 94, 0.22);
+      background: rgba(7, 9, 15, 0.72);
+      padding: 18px;
+    }
+
+    .modal-preview h3 {
+      margin: 0 0 14px;
+      color: var(--gold);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .summary-box {
+      margin-top: 12px;
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(216, 177, 94, 0.08);
+      border: 1px solid rgba(216, 177, 94, 0.2);
+      color: #d8cdbc;
+    }
+
+    @media (max-width: 1040px) {
+      .hero-content,
+      .content {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .page {
+        width: min(100vw - 24px, 1380px);
+        padding-top: 18px;
+      }
+
+      .topbar,
+      .market-head,
+      .price-row {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">K</div>
+        <div>
+          <h1>선술집 코인시장</h1>
+          <div class="subtitle">유저 간 골드 거래를 더 명확하고 안전하게 보여주는 리디자인 시안</div>
+        </div>
+      </div>
+      <div class="wallet">
+        <span>보유 포인트</span>
+        <strong>128,400 P</strong>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-content">
+        <div>
+          <span class="eyebrow">Coin Exchange</span>
+          <h2>골드 거래를 상품 카드처럼 빠르게 비교합니다.</h2>
+          <p>기존 테이블은 날짜, 판매자, 가격이 같은 비중으로 보여 핵심 거래 판단이 느립니다. 새 시안은 골드 수량과 포인트 가격을 가장 크게 두고, 비율/판매자/서버 정보를 보조 정보로 정리합니다.</p>
+          <div class="hero-actions">
+            <button class="btn btn-primary">+ 판매 등록</button>
+            <button class="btn btn-ghost">새로고침</button>
+            <button class="btn btn-ghost">내 판매글 보기</button>
+          </div>
+        </div>
+        <aside class="rate-card">
+          <div class="rate-title">오늘의 평균 거래 비율</div>
+          <div class="rate-value">2.08 G / 1P</div>
+          <div class="rate-grid">
+            <div class="mini-stat"><span>등록 매물</span><strong>26건</strong></div>
+            <div class="mini-stat"><span>최저가</span><strong>2.42 G/P</strong></div>
+            <div class="mini-stat"><span>내 판매중</span><strong>2건</strong></div>
+            <div class="mini-stat"><span>최근 거래</span><strong>3분 전</strong></div>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="content">
+      <aside class="panel sidebar">
+        <div class="side-section">
+          <h3 class="side-title">거래 검색</h3>
+          <input class="field" placeholder="판매자 / 서버 / 금액 검색">
+          <div class="quick-filters">
+            <button class="chip active">전체 매물</button>
+            <button class="chip">가성비 좋은 순</button>
+            <button class="chip">소액 거래</button>
+            <button class="chip">대량 골드</button>
+            <button class="chip">내 판매글</button>
+          </div>
+        </div>
+        <div class="side-section">
+          <h3 class="side-title">코인시장 안내</h3>
+          <div class="guide">판매 등록 시 골드는 즉시 보관됩니다. 구매가 완료되면 구매 캐릭터 우편으로 골드가 지급되고, 판매자는 포인트를 받습니다.</div>
+        </div>
+        <div class="side-section">
+          <h3 class="side-title">정렬 기준</h3>
+          <select class="field">
+            <option>최신 등록순</option>
+            <option>비율 높은 순</option>
+            <option>가격 낮은 순</option>
+            <option>골드 많은 순</option>
+          </select>
+        </div>
+      </aside>
+
+      <section class="panel market">
+        <div class="market-head">
+          <div>
+            <h3>판매중인 골드</h3>
+            <p>가격 버튼을 누르면 구매 캐릭터 선택 후 즉시 구매 확인으로 이동합니다.</p>
+          </div>
+          <button class="btn btn-primary">판매 등록</button>
+        </div>
+
+        <div class="listing-grid">
+          <article class="listing featured">
+            <div class="listing-top">
+              <span class="badge">추천 매물</span>
+              <span class="time">방금 전</span>
+            </div>
+            <div class="gold-amount"><span>50,000</span> 골드</div>
+            <div class="seller">
+              <div class="avatar">H</div>
+              <div>Hellscream <small>호드 · Lv.80 · Karazhan</small></div>
+            </div>
+            <div class="price-row">
+              <div class="price"><strong>22,000 P</strong><small>2.27 G / 1P</small></div>
+              <button class="btn btn-primary">구매하기</button>
+            </div>
+          </article>
+
+          <article class="listing">
+            <div class="listing-top">
+              <span class="badge">대량</span>
+              <span class="time">12분 전</span>
+            </div>
+            <div class="gold-amount"><span>120,000</span> 골드</div>
+            <div class="seller">
+              <div class="avatar">A</div>
+              <div>Arcanist <small>얼라이언스 · Lv.80 · Karazhan</small></div>
+            </div>
+            <div class="price-row">
+              <div class="price"><strong>58,000 P</strong><small>2.06 G / 1P</small></div>
+              <button class="btn btn-primary">구매하기</button>
+            </div>
+          </article>
+
+          <article class="listing">
+            <div class="listing-top">
+              <span class="badge">소액</span>
+              <span class="time">24분 전</span>
+            </div>
+            <div class="gold-amount"><span>8,000</span> 골드</div>
+            <div class="seller">
+              <div class="avatar">M</div>
+              <div>Moonwell <small>얼라이언스 · Lv.73 · Karazhan</small></div>
+            </div>
+            <div class="price-row">
+              <div class="price"><strong>4,200 P</strong><small>1.90 G / 1P</small></div>
+              <button class="btn btn-primary">구매하기</button>
+            </div>
+          </article>
+        </div>
+
+        <div class="pagination">
+          <button class="page-btn">‹</button>
+          <button class="page-btn active">1</button>
+          <button class="page-btn">2</button>
+          <button class="page-btn">3</button>
+          <button class="page-btn">›</button>
+        </div>
+
+        <div class="modal-preview">
+          <h3>판매 등록 모달 시안</h3>
+          <div class="form-grid">
+            <select class="field"><option>판매 캐릭터 선택</option></select>
+            <input class="field" value="보유 184,300 골드" readonly>
+            <input class="field" placeholder="판매 골드 예: 10000">
+            <input class="field" placeholder="판매 포인트 예: 5000">
+          </div>
+          <div class="summary-box">입력 즉시 예상 비율을 표시합니다. 예: 10,000 골드 / 5,000P = 2.00 G / 1P</div>
+        </div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>

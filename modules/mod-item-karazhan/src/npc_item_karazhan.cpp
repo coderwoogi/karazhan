@@ -17,6 +17,7 @@
 #include <unordered_map>
 #include <vector>
 #include "StringFormat.h"
+#include <string>
 
 namespace
 {
@@ -29,6 +30,28 @@ namespace
     uint32 constexpr FORGE_NPC_ENTRY = 190014;
     char const* FORGE_UI_PREFIX = "KARAZHAN_FORGE_UI";
     char const* FORGE_CMD_PREFIX = "KARAZHAN_FORGE_CMD";
+
+    // 애드온/채팅 숫자 입력을 안전하게 파싱한다. 기존 std::stoul 직접 호출은
+    // 구버전/변조 애드온이 비숫자·초과값을 보내면 미처리 예외로 월드서버가
+    // 종료됐다. 전부 숫자 + uint8 범위일 때만 true 반환.
+    inline bool TryParseForgeSlot(std::string const& s, uint8& out)
+    {
+        if (s.empty())
+            return false;
+        try
+        {
+            size_t pos = 0;
+            unsigned long v = std::stoul(s, &pos);
+            if (pos != s.size() || v > 0xFF)
+                return false;
+            out = static_cast<uint8>(v);
+            return true;
+        }
+        catch (std::exception const&)
+        {
+            return false;
+        }
+    }
 }
 
 enum GossipActions
@@ -365,13 +388,24 @@ static bool HandleForgeAddonCommand(Player* player, std::string const& msg)
 
     if (command == "SLOT" && parts.size() >= 2)
     {
-        SendForgeTypePage(player, uint8(std::stoul(parts[1])));
+        uint8 slot;
+        if (!TryParseForgeSlot(parts[1], slot))
+        {
+            SendForgePayload(player, "ERROR\t잘못된 요청입니다.");
+            return true;
+        }
+        SendForgeTypePage(player, slot);
         return true;
     }
 
     if (command == "TYPE" && parts.size() >= 3)
     {
-        uint8 slot = uint8(std::stoul(parts[1]));
+        uint8 slot;
+        if (!TryParseForgeSlot(parts[1], slot))
+        {
+            SendForgePayload(player, "ERROR\t잘못된 요청입니다.");
+            return true;
+        }
         uint8 enhanceType = ParseForgeTypeToken(parts[2]);
         if (enhanceType == ENHANCE_TYPE_NONE)
         {
@@ -385,7 +419,12 @@ static bool HandleForgeAddonCommand(Player* player, std::string const& msg)
 
     if (command == "DO" && parts.size() >= 3)
     {
-        uint8 slot = uint8(std::stoul(parts[1]));
+        uint8 slot;
+        if (!TryParseForgeSlot(parts[1], slot))
+        {
+            SendForgePayload(player, "ERROR\t잘못된 요청입니다.");
+            return true;
+        }
         uint8 enhanceType = ParseForgeTypeToken(parts[2]);
         if (enhanceType == ENHANCE_TYPE_NONE)
         {

@@ -1,0 +1,15 @@
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\bin\Debug\net9.0-windows\KarazhanAddonStudio.exe
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\bin\Debug\net9.0-windows\KarazhanAddonStudio.deps.json
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\bin\Debug\net9.0-windows\KarazhanAddonStudio.runtimeconfig.json
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\bin\Debug\net9.0-windows\KarazhanAddonStudio.dll
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\bin\Debug\net9.0-windows\KarazhanAddonStudio.pdb
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\KarazhanAddonStudio.GeneratedMSBuildEditorConfig.editorconfig
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\KarazhanAddonStudio.AssemblyInfoInputs.cache
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\KarazhanAddonStudio.AssemblyInfo.cs
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\KarazhanAddonStudio.csproj.CoreCompileInputs.cache
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\KarazhanAddonStudio.sourcelink.json
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\KarazhanAddonStudio.dll
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\refint\KarazhanAddonStudio.dll
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\KarazhanAddonStudio.pdb
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\KarazhanAddonStudio.genruntimeconfig.cache
+E:\server\azerothcore-wotlk\tools\KarazhanAddonStudio\obj\Debug\net9.0-windows\ref\KarazhanAddonStudio.dll

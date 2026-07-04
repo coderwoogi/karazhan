@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Karazhan 코인시장 시각 디자인 시안</title>
+  <style>
+    :root {
+      --shop-table-text: #dfd3bf;
+      --shop-table-muted: #a99c88;
+      --shop-table-border: rgba(211, 177, 103, 0.24);
+      --shop-table-head: rgba(18, 13, 9, 0.92);
+      --shop-table-row-odd: rgba(47, 37, 25, 0.58);
+      --shop-table-row-even: rgba(13, 17, 28, 0.72);
+      --shop-gold: #d7b25d;
+      --shop-gold-strong: #f0cf77;
+      --shop-bronze: #9d693a;
+      --shop-red: #6d251f;
+      --shop-blue: #263950;
+      --shop-bg: #05070f;
+      --shop-side-gap: 12px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--shop-table-text);
+      font-family: "Noto Serif KR", "Malgun Gothic", serif;
+      background:
+        radial-gradient(circle at 15% 10%, rgba(215, 178, 93, 0.16), transparent 26%),
+        radial-gradient(circle at 86% 18%, rgba(109, 37, 31, 0.22), transparent 30%),
+        linear-gradient(180deg, rgba(4, 6, 14, 0.72), rgba(4, 6, 14, 0.94)),
+        url("E:/xampp/htdocs/karazhan/img/pub.png") center / cover fixed,
+        var(--shop-bg);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(0deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.48;
+    }
+
+    .shop-page-wrap {
+      width: 70vw;
+      max-width: 70vw;
+      margin: 0 auto;
+      padding: 1.25rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    .shop-page-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+
+    .shop-page-user {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--shop-table-text);
+      font-weight: 800;
+    }
+
+    .shop-page-points {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #1b1207;
+      background: linear-gradient(145deg, #efd078, #a87934);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset, 0 10px 24px rgba(0,0,0,0.28);
+      font-weight: 900;
+    }
+
+    .card {
+      border-radius: 20px;
+      border: 1px solid rgba(211, 177, 103, 0.24);
+      background:
+        linear-gradient(180deg, rgba(11, 13, 22, 0.84), rgba(6, 8, 16, 0.9)),
+        radial-gradient(circle at top right, rgba(215, 178, 93, 0.08), transparent 34%);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.36);
+      overflow: hidden;
+      backdrop-filter: blur(8px);
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin: 12px var(--shop-side-gap) 0;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid rgba(211, 177, 103, 0.22);
+      background: linear-gradient(180deg, rgba(34, 25, 16, 0.84), rgba(12, 13, 20, 0.82));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+
+    .card-header h2 {
+      margin: 0;
+      color: #f3e4c8;
+      font-size: 1.35rem;
+      letter-spacing: -0.01em;
+    }
+
+    .log-sub-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin: 1.5rem var(--shop-side-gap) 1rem;
+      padding: 0.25rem;
+      width: fit-content;
+      border-radius: 12px;
+      border: 1px solid rgba(211, 177, 103, 0.16);
+      background: rgba(13, 17, 28, 0.72);
+    }
+
+    .log-sub-tab-btn {
+      padding: 0.55rem 1.05rem;
+      border: 0;
+      border-radius: 9px;
+      background: transparent;
+      color: var(--shop-table-muted);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .log-sub-tab-btn.active {
+      color: #1a1208;
+      background: linear-gradient(145deg, #e1bf70, #9c7334);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.26);
+    }
+
+    .card-body {
+      padding: 1.5rem;
+    }
+
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 16px;
+      margin-bottom: 0.75rem;
+      border-radius: 14px;
+      border: 1px solid rgba(211, 177, 103, 0.2);
+      background:
+        linear-gradient(180deg, rgba(18, 21, 34, 0.78), rgba(8, 11, 20, 0.78)),
+        radial-gradient(circle at 12% 0%, rgba(215, 178, 93, 0.08), transparent 28%);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+
+    .filter-group {
+      flex: 1;
+    }
+
+    .filter-group label {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--shop-gold-strong);
+      font-size: 0.9rem;
+      font-weight: 900;
+    }
+
+    .filter-group div {
+      color: var(--shop-table-muted);
+      font-size: 0.85rem;
+      line-height: 1.55;
+    }
+
+    .btn,
+    .refresh-btn {
+      min-height: 40px;
+      padding: 0 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(123, 87, 35, 0.72);
+      background: linear-gradient(145deg, #d9ba6e, #9b7132);
+      color: #120d07;
+      font-weight: 900;
+      cursor: pointer;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.1) inset, 0 10px 24px rgba(0,0,0,0.24);
+    }
+
+    .refresh-btn {
+      background: linear-gradient(145deg, #c5b08b, #8d7d63);
+    }
+
+    .btn:hover,
+    .refresh-btn:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+    }
+
+    .scroll-table {
+      margin-bottom: 1rem;
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0 10px;
+      background: transparent;
+    }
+
+    thead th {
+      padding: 13px 12px;
+      text-align: left;
+      color: #e8d6b4;
+      background: var(--shop-table-head);
+      border-top: 1px solid var(--shop-table-border);
+      border-bottom: 1px solid var(--shop-table-border);
+      font-size: 0.84rem;
+      letter-spacing: 0.04em;
+    }
+
+    thead th:first-child {
+      border-left: 1px solid var(--shop-table-border);
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+    }
+
+    thead th:last-child {
+      border-right: 1px solid var(--shop-table-border);
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    tbody tr {
+      height: 58px;
+      outline: 1px solid rgba(211, 177, 103, 0.16);
+      border-radius: 12px;
+      transition: outline-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+    }
+
+    tbody tr:nth-child(odd) td {
+      background: var(--shop-table-row-odd);
+    }
+
+    tbody tr:nth-child(even) td {
+      background: var(--shop-table-row-even);
+    }
+
+    tbody tr:hover {
+      outline-color: rgba(240, 207, 119, 0.58);
+      box-shadow: 0 0 0 1px rgba(240, 207, 119, 0.2), 0 14px 28px rgba(0,0,0,0.2);
+      transform: translateY(-1px);
+    }
+
+    tbody td {
+      padding: 11px 12px;
+      color: var(--shop-table-text);
+      border-top: 1px solid transparent;
+      border-bottom: 1px solid transparent;
+      vertical-align: middle;
+    }
+
+    tbody td:first-child {
+      border-left: 1px solid var(--shop-table-border);
+      border-top-left-radius: 12px;
+      border-bottom-left-radius: 12px;
+      font-weight: 900;
+      color: var(--shop-gold);
+    }
+
+    tbody td:last-child {
+      border-right: 1px solid var(--shop-table-border);
+      border-top-right-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    .gold-text {
+      color: var(--shop-gold-strong);
+      font-weight: 900;
+    }
+
+    .seller-cell {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .faction {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 900;
+      color: #fff;
+    }
+
+    .horde { background: var(--red); }
+    .alliance { background: var(--blue); }
+
+    .level-pill,
+    .realm-pill,
+    .ratio-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 999px;
+      border: 1px solid rgba(211, 177, 103, 0.24);
+      background: rgba(4, 6, 12, 0.42);
+      color: #d9c9ad;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .level-pill {
+      min-width: 44px;
+      height: 24px;
+      padding: 0 8px;
+    }
+
+    .realm-pill {
+      min-height: 28px;
+      padding: 4px 12px;
+      border-radius: 10px;
+    }
+
+    .ratio-pill {
+      min-width: 70px;
+      height: 30px;
+      color: #171009;
+      background: linear-gradient(145deg, #e7c775, #a67a38);
+      border-color: rgba(255,255,255,0.12);
+    }
+
+    .shop-table-action-btn,
+    .shop-table-cancel-btn {
+      min-width: 120px;
+      height: 40px;
+      border: 0;
+      border-radius: 10px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .shop-table-action-btn {
+      color: #120d07;
+      background: linear-gradient(145deg, #e4c575, #9f7434);
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset, 0 8px 18px rgba(0,0,0,0.22);
+    }
+
+    .shop-table-cancel-btn {
+      color: #f2e5cc;
+      background: rgba(109, 37, 31, 0.82);
+      border: 1px solid rgba(225, 117, 94, 0.26);
+    }
+
+    .pagination-stable {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 1rem;
+    }
+
+    .page-btn {
+      min-width: 40px;
+      height: 40px;
+      border-radius: 11px;
+      border: 1px solid rgba(211, 177, 103, 0.22);
+      background: rgba(12, 15, 24, 0.82);
+      color: var(--shop-table-text);
+      font-weight: 900;
+    }
+
+    .page-btn.active {
+      color: #120d07;
+      background: linear-gradient(145deg, #e4c575, #9f7434);
+    }
+
+    .modal-overlay-preview {
+      margin-top: 22px;
+      padding: 16px;
+      border-radius: 16px;
+      border: 1px dashed rgba(211, 177, 103, 0.34);
+      background: rgba(5, 7, 15, 0.52);
+    }
+
+    .modal-content-premium {
+      width: min(620px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(211, 177, 103, 0.28);
+      background: linear-gradient(180deg, rgba(22, 19, 16, 0.96), rgba(8, 10, 18, 0.98));
+      box-shadow: 0 22px 60px rgba(0,0,0,0.4);
+      overflow: hidden;
+    }
+
+    .modal-header-premium,
+    .modal-footer-premium {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(211, 177, 103, 0.18);
+    }
+
+    .modal-footer-premium {
+      justify-content: flex-end;
+      border-top: 1px solid rgba(211, 177, 103, 0.18);
+      border-bottom: 0;
+    }
+
+    .modal-header-premium h3 {
+      margin: 0;
+      color: var(--shop-gold-strong);
+    }
+
+    .modal-body-premium {
+      padding: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    input,
+    select,
+    .input-premium {
+      width: 100%;
+      min-height: 42px;
+      border-radius: 12px;
+      border: 1px solid rgba(211, 177, 103, 0.24);
+      background: rgba(4, 6, 12, 0.7);
+      color: var(--shop-table-text);
+      padding: 0 12px;
+    }
+
+    @media (max-width: 1280px) {
+      .shop-page-wrap {
+        width: 90vw;
+        max-width: 90vw;
+      }
+    }
+
+    @media (max-width: 760px) {
+      .shop-page-wrap {
+        width: 100%;
+        max-width: 100%;
+        padding: 0.75rem;
+      }
+
+      .shop-page-top,
+      .filter-bar {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      table {
+        min-width: 920px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shop-page-wrap">
+    <div class="shop-page-top">
+      <div class="shop-page-user">
+        <span>🏪</span>
+        <span>Karazhan님의 선술집</span>
+        <span class="shop-page-points">128,400 P</span>
+      </div>
+      <button type="button" class="refresh-btn">← 홈으로</button>
+    </div>
+
+    <div class="card flex-card">
+      <div class="card-header">
+        <h2>🏪 선술집</h2>
+        <button class="refresh-btn">새로고침</button>
+      </div>
+
+      <div class="log-sub-tabs">
+        <button class="log-sub-tab-btn">상품목록</button>
+        <button class="log-sub-tab-btn active">코인시장</button>
+      </div>
+
+      <div id="shop-sub-coin" class="log-sub-content">
+        <div class="card-body">
+          <div class="filter-bar">
+            <div class="filter-group">
+              <label>코인시장 안내</label>
+              <div>유저가 보유한 골드를 판매하고, 다른 유저가 웹포인트로 구매할 수 있습니다. 판매 등록 시 골드는 즉시 보관 처리됩니다.</div>
+            </div>
+          </div>
+
+          <div class="filter-bar" style="margin-bottom:1rem;">
+            <div class="filter-group">
+              <label>코인시장</label>
+              <div>골드 판매는 모달에서 등록합니다. 기존 버튼 위치와 레이아웃은 유지하고 시각 표현만 강화한 시안입니다.</div>
+            </div>
+            <button class="btn btn-primary coin-market-btn">＋ 판매 등록</button>
+            <button class="refresh-btn">↻ 새로고침</button>
+          </div>
+
+          <div class="scroll-table premium-table">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:80px;">번호</th>
+                  <th style="width:170px;">날짜</th>
+                  <th style="width:140px;">골드</th>
+                  <th>판매자</th>
+                  <th style="width:170px;">서버</th>
+                  <th style="width:140px;">비율</th>
+                  <th style="width:190px; text-align:center;">가격</th>
+                </tr>
+              </thead>
+              <tbody id="shop-coin-market-body">
+                <tr>
+                  <td>26</td>
+                  <td>방금 전</td>
+                  <td><span class="gold-text">50,000 G</span></td>
+                  <td>
+                    <div class="seller-cell">
+                      <span class="faction horde">H</span>
+                      <span class="level-pill">80 Lv</span>
+                      <strong>Hellscream</strong>
+                    </div>
+                  </td>
+                  <td><span class="realm-pill">Karazhan</span></td>
+                  <td><span class="ratio-pill">2.27</span></td>
+                  <td style="text-align:center;"><button class="shop-table-action-btn">22,000 P</button></td>
+                </tr>
+                <tr>
+                  <td>25</td>
+                  <td>12분 전</td>
+                  <td><span class="gold-text">120,000 G</span></td>
+                  <td>
+                    <div class="seller-cell">
+                      <span class="faction alliance">A</span>
+                      <span class="level-pill">80 Lv</span>
+                      <strong>Arcanist</strong>
+                    </div>
+                  </td>
+                  <td><span class="realm-pill">Karazhan</span></td>
+                  <td><span class="ratio-pill">2.06</span></td>
+                  <td style="text-align:center;"><button class="shop-table-action-btn">58,000 P</button></td>
+                </tr>
+                <tr>
+                  <td>24</td>
+                  <td>24분 전</td>
+                  <td><span class="gold-text">8,000 G</span></td>
+                  <td>
+                    <div class="seller-cell">
+                      <span class="faction alliance">A</span>
+                      <span class="level-pill">73 Lv</span>
+                      <strong>Moonwell</strong>
+                    </div>
+                  </td>
+                  <td><span class="realm-pill">Karazhan</span></td>
+                  <td><span class="ratio-pill">1.90</span></td>
+                  <td style="text-align:center;"><button class="shop-table-action-btn">4,200 P</button></td>
+                </tr>
+                <tr>
+                  <td>23</td>
+                  <td>36분 전</td>
+                  <td><span class="gold-text">30,000 G</span></td>
+                  <td>
+                    <div class="seller-cell">
+                      <span class="faction horde">H</span>
+                      <span class="level-pill">80 Lv</span>
+                      <strong>Karazhan</strong>
+                    </div>
+                  </td>
+                  <td><span class="realm-pill">Karazhan</span></td>
+                  <td><span class="ratio-pill">2.00</span></td>
+                  <td style="text-align:center;"><button class="shop-table-cancel-btn">판매취소</button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="pagination-stable">
+            <button class="page-btn">‹ 이전</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">다음 ›</button>
+          </div>
+
+          <div class="modal-overlay-preview">
+            <div class="modal-content-premium">
+              <div class="modal-header-premium">
+                <h3>코인시장 판매 등록</h3>
+                <button class="refresh-btn">×</button>
+              </div>
+              <div class="modal-body-premium">
+                <div class="filter-group">
+                  <label>판매 캐릭터</label>
+                  <select><option>Hellscream (Lv.80)</option></select>
+                </div>
+                <div class="filter-group">
+                  <label>보유 골드</label>
+                  <div class="input-premium" style="display:flex; align-items:center;">184,300 G</div>
+                </div>
+                <div class="filter-group">
+                  <label>판매 골드</label>
+                  <input placeholder="예: 1000">
+                </div>
+                <div class="filter-group">
+                  <label>판매 포인트</label>
+                  <input placeholder="예: 500">
+                </div>
+              </div>
+              <div class="modal-footer-premium">
+                <button class="refresh-btn">취소</button>
+                <button class="btn">등록</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
