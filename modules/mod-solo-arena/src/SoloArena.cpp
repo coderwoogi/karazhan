@@ -26,6 +26,7 @@
 #include "ScriptedGossip.h"
 #include "Spell.h"
 #include "SpellAuraDefines.h"
+#include "SpellAuras.h"
 #include "SpellMgr.h"
 #include "StringFormat.h"
 #include "TemporarySummon.h"
@@ -1508,7 +1509,7 @@ namespace
             sObjectMgr->GetAllCreatureData();
         for (auto const& [spawnId, data] : allCreatures)
         {
-            if (data.id1 != TRIAL_PATH_MARKER_ENTRY ||
+            if (data.id != TRIAL_PATH_MARKER_ENTRY ||
                 data.mapid != DEFAULT_OBJECTIVE_MAP_ID)
             {
                 continue;
@@ -3504,6 +3505,18 @@ bool SoloArenaMgr::ReturnPlayer(Player* player, bool eraseSession)
 
     ArenaSession session = itr->second;
 
+    // Clean up combat state and any auras left on the player / pet by the trial creatures
+    // (bot / shadow pet / summons) BEFORE leaving the battleground and teleporting.
+    // Otherwise those auras outlive their now-despawned caster and are destroyed later
+    // during BG-leave, teleport or pet-unsummon, dereferencing freed memory — a
+    // use-after-free that hard-crashes on macOS (hardened allocator + arm64) even though
+    // Windows tolerates the dangling read. Platform-agnostic on purpose. This covers every
+    // exit path (normal finish, RETURN command, abandon) since they all pass through here.
+    player->CombatStopWithPets(true);
+    player->RemoveNotOwnSingleTargetAuras();
+    if (Pet* trialPet = player->GetPet())
+        trialPet->RemoveNotOwnSingleTargetAuras();
+
     if (Battleground* battleground = player->GetBattleground())
         battleground->RemovePlayerAtLeave(player);
     else if (session.ArenaInstanceId)
@@ -3516,13 +3529,17 @@ bool SoloArenaMgr::ReturnPlayer(Player* player, bool eraseSession)
         GrantDeserterImmunity(player);
     player->TeleportTo(session.ReturnMapId, session.ReturnX, session.ReturnY,
         session.ReturnZ, session.ReturnO);
-    if (session.Scenario == TrialScenario::Objective)
-    {
-        player->RemoveBattlegroundQueueId(
-            BattlegroundMgr::BGQueueTypeId(session.BgTypeId, 0));
-        player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
-            PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
-    }
+
+    // Always clear the battleground linkage (not only for the objective scenario). If a
+    // stale/removed arena is left attached to the player, Unit::Kill dereferences
+    // player->GetBattleground()->HandleKillUnit() and crashes (null deref) — which is
+    // exactly what happened when a Flametongue proc killed a unit after a failed arena
+    // map transition ("Map could not be created ... porting to homebind").
+    player->RemoveBattlegroundQueueId(
+        BattlegroundMgr::BGQueueTypeId(session.BgTypeId, 0));
+    player->SetBattlegroundId(0, BATTLEGROUND_TYPE_NONE,
+        PLAYER_MAX_BATTLEGROUND_QUEUES, false, false, TEAM_NEUTRAL);
+
     if (session.Scenario == TrialScenario::Objective)
         player->RemoveAura(26013);
     if (eraseSession)
@@ -5196,6 +5213,51 @@ void SoloArenaMgr::ConfigureShadow(Creature* summon, Player* player,
 
 void SoloArenaMgr::FinishSession(Player* player, ArenaSession& session)
 {
+    // Strip auras cast by the trial creatures (bot / shadow pet / mechanic summons) from
+    // the player and pet BEFORE those creatures are despawned below. Otherwise the auras
+    // outlive their caster and dereference freed memory when they are later destroyed
+    // during the battleground-leave / teleport / instance teardown that follows — a
+    // use-after-free that hard-crashes on macOS (hardened allocator + arm64) even though
+    // Windows silently tolerates the dangling read. Platform-agnostic on purpose.
+    {
+        ObjectGuid const trialCasters[] = {
+            session.BotGuid, session.PetGuid, session.HelperGuid, session.HazardGuid
+        };
+        auto stripCasterAuras = [](Unit* unit, ObjectGuid casterGuid)
+        {
+            if (!unit || !casterGuid)
+                return;
+            // Removal can cascade and invalidate iterators, so restart after each hit.
+            bool removedAny = true;
+            while (removedAny)
+            {
+                removedAny = false;
+                for (Unit::AuraApplicationMap::iterator it = unit->GetAppliedAuras().begin();
+                     it != unit->GetAppliedAuras().end(); ++it)
+                {
+                    if (it->second->GetBase()->GetCasterGUID() == casterGuid)
+                    {
+                        unit->RemoveAura(it->second);
+                        removedAny = true;
+                        break;
+                    }
+                }
+            }
+        };
+
+        Pet* trialPet = player->GetPet();
+        for (ObjectGuid const& casterGuid : trialCasters)
+        {
+            stripCasterAuras(player, casterGuid);
+            stripCasterAuras(trialPet, casterGuid);
+        }
+        // Drop any remaining foreign single-target auras still pointing at the trial units.
+        player->RemoveNotOwnSingleTargetAuras();
+        if (trialPet)
+            trialPet->RemoveNotOwnSingleTargetAuras();
+        player->CombatStopWithPets(true);
+    }
+
     ClearMechanicObject(session);
     ClearMechanicSummons(session);
     player->RemoveAurasDueToSpell(TRIAL_MECHANIC_BUFF_AURA);
