@@ -1,0 +1,27 @@
+[worldserver]
+
+########################################
+# mod-profession-slot configuration
+########################################
+#
+#    ProfessionSlot.Enable
+#        Description: Master switch for the "extra primary profession slot" item feature.
+#        Default:     1 - (Enabled)
+#                     0 - (Disabled)
+
+ProfessionSlot.Enable = 1
+
+#
+#    ProfessionSlot.MaxBonus
+#        Description: Maximum number of EXTRA primary profession slots a character can gain
+#                     from using the item, on top of the core "MaxPrimaryTradeSkill" setting.
+#                     With MaxPrimaryTradeSkill = 2 and ProfessionSlot.MaxBonus = 1, a character
+#                     can learn up to 3 primary professions.
+#        Default:     1
+
+ProfessionSlot.MaxBonus = 1
+
+#
+#    NOTE: The granting item is bound in the database via item_template.ScriptName = 'item_artisan_seal'
+#          (default item entry 600035, "장인의 인장"). See data/sql/db-world/mod_profession_slot_world.sql.
+#

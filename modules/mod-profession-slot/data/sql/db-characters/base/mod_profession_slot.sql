@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS `mod_profession_slot` (
+    `guid` INT UNSIGNED NOT NULL,
+    `bonus` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
