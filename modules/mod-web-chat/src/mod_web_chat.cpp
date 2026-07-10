@@ -64,6 +64,11 @@ namespace
         if (!player)
             return;
 
+        // 애드온 메시지(LANG_ADDON=0xFFFFFFFF)는 기계 페이로드 - 웹 채팅에 기록하지 않는다.
+        // (language 컬럼 범위 초과로 MySQL 1264 오류를 유발하던 원인)
+        if (lang == LANG_ADDON)
+            return;
+
         std::string sender = player->GetName();
         uint32 guid = player->GetGUID().GetCounter();
         uint32 acc  = player->GetSession() ? player->GetSession()->GetAccountId() : 0;
