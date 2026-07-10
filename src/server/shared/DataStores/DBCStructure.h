@@ -1915,7 +1915,11 @@ struct SummonPropertiesEntry
     uint32  Flags;                                          // 5
 };
 
-#define MAX_TALENT_RANK 5
+// 카라잔 커스텀: 정복자 시스템의 특성 랭크 연장(6~9랭크)을 위해 5 -> 9.
+// Talent.dbc 랭크 슬롯은 물리적으로 9칸(필드 4-12)이며, 3.3.5 클라는 DBC 기준으로
+// 6랭크 이상을 정상 표시함(2026-07-08 실기 확인). 행 잠금 규칙(행당 5포인트)은
+// 이 값과 무관하게 5로 고정해야 한다(Player::LearnTalent 참고).
+#define MAX_TALENT_RANK 9
 #define MAX_PET_TALENT_RANK 3                               // use in calculations, expected <= MAX_TALENT_RANK
 #define MAX_TALENT_TABS 3
 
@@ -1925,8 +1929,7 @@ struct TalentEntry
     uint32    TalentTab;                                    // 1 index in TalentTab.dbc (TalentTabEntry)
     uint32    Row;                                          // 2
     uint32    Col;                                          // 3
-    std::array<uint32, MAX_TALENT_RANK> RankID;             // 4-8
-    // uint32 spellRank [4]                                 // 9-12 not used, always 0, maybe not used high ranks
+    std::array<uint32, MAX_TALENT_RANK> RankID;             // 4-12 (카라잔: 9랭크 전체 사용)
     uint32    DependsOn;                                    // 13 preReqTalent1 index in Talent.dbc (TalentEntry)
     // uint32 preReqTalent[2]                               // 14-15 not used
     uint32    DependsOnRank;                                // 16 preReqRank1

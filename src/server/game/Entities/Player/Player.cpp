@@ -14129,6 +14129,12 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank, bool command /*= fa
     if (!talentInfo)
         return;
 
+    // 카라잔: 연장 랭크(정복자 커스텀, 랭크 스펠 ID 954000 이상)는 특성창 클릭으로
+    // 배울 수 없다. 부여는 서버 스크립트 경로(Eluna LearnTalent → command=true)로만
+    // 이루어진다. command=false 경로는 위에서 talentRank < MAX_TALENT_RANK 가 보장됨.
+    if (!command && talentInfo->RankID[talentRank] >= 954000)
+        return;
+
     if (!sScriptMgr->OnPlayerCanLearnTalent(this, talentInfo, talentRank))
         return;
 
@@ -14202,7 +14208,9 @@ void Player::LearnTalent(uint32 talentId, uint32 talentRank, bool command /*= fa
         }
 
         // xinef: we do not have enough talent points to add talent of this tier
-        if (spentPoints < (talentInfo->Row * MAX_TALENT_RANK))
+        // 카라잔: 행 잠금 해제는 "행당 5포인트" 규칙(클라 고정)이므로 MAX_TALENT_RANK(9)와
+        // 분리해 5를 사용해야 한다. 9를 곱하면 하위 행 요구 포인트가 커져 트리가 잠긴다.
+        if (spentPoints < (talentInfo->Row * 5))
             return;
     }
 

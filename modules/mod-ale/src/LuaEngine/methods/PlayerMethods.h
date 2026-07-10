@@ -3399,7 +3399,10 @@ namespace LuaPlayer
         uint32 id = ALE::CHECKVAL<uint32>(L, 2);
         uint32 rank = ALE::CHECKVAL<uint32>(L, 3);
 
-        player->LearnTalent(id, rank);
+        // 카라잔: command=true — 서버 스크립트 부여 경로.
+        // 특성 포인트를 소비하지 않으며, 특성창 클릭이 차단된 연장 랭크(954000+)도
+        // 이 경로로만 부여할 수 있다(Player::LearnTalent 참고).
+        player->LearnTalent(id, rank, true);
         player->SendTalentsInfoData(false);
 
         return 0;
