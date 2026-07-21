@@ -119,7 +119,10 @@ public:
             return false;
         }
 
-        // 보상 스펠 영구 학습 (이미 배웠으면 생략)
+        // 보상 스펠 지급: 퀘스트 완료 시와 동일하게 캐스트(triggered)하여 효과를 발동시킨다.
+        // (RewardDisplaySpell 은 learnSpell 이 아니라 CastSpell 로 처리되는 스펠 —
+        //  SPELL_EFFECT_LEARN_SPELL 이면 실제 능력을 영구 학습, 그 외엔 해당 보상 효과 적용.
+        //  참고: Player::RewardQuest 의 GetRewSpellCast 처리와 동일한 메커니즘)
         if (spellId)
         {
             if (!sSpellMgr->GetSpellInfo(spellId))
@@ -127,8 +130,7 @@ public:
                 handler->PSendSysMessage("[Karazhan] Spell not found: {}", spellId);
                 return false;
             }
-            if (!player->HasSpell(spellId))
-                player->learnSpell(spellId, false);
+            player->CastSpell(player, spellId, true);
         }
 
         // 칭호 영구 부여
