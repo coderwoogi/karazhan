@@ -211,10 +211,22 @@ public:
 
         player->CompleteQuest(questId);
 
+        // 완료 후 즉시 턴인(보상 지급 + 로그에서 제거)하여 확실히 클리어한다. (.quest reward 미러링)
+        bool rewarded = false;
+        if (player->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
+        {
+            player->RewardQuest(quest, 0, player);
+            rewarded = true;
+        }
+
         SendKarazhanMonsterWhisper(
-            player, "프리미엄 퀘스트가 완료되었습니다. 완료 지점에서 보상을 수령하세요.");
+            player,
+            rewarded
+                ? "프리미엄 퀘스트가 완료되어 보상이 지급되었습니다."
+                : "프리미엄 퀘스트가 완료 처리되었습니다.");
         handler->PSendSysMessage(
-            "[Karazhan] Quest {} completed for {}.", questId, normalizedName);
+            "[Karazhan] Quest {} {} for {}.",
+            questId, rewarded ? "rewarded" : "completed", normalizedName);
         return true;
     }
 };
