@@ -1,12 +1,10 @@
 #include "Chat.h"
 #include "CommandScript.h"
 #include "DBCStores.h"
-#include "Item.h"
 #include "ObjectAccessor.h"
 #include "ObjectMgr.h"
 #include "Player.h"
-#include "QuestDef.h"
-#include "ReputationMgr.h"
+#include "SpellMgr.h"
 #include "WorldPacket.h"
 #include "WorldSession.h"
 
@@ -46,8 +44,8 @@ public:
     {
         static ChatCommandTable karazhanCommandTable =
         {
-            { "whisper",    HandleKarazhanWhisperCommand,    SEC_ADMINISTRATOR, Console::Yes },
-            { "questclear", HandleKarazhanQuestClearCommand, SEC_ADMINISTRATOR, Console::Yes }
+            { "whisper", HandleKarazhanWhisperCommand, SEC_ADMINISTRATOR, Console::Yes },
+            { "reward",  HandleKarazhanRewardCommand,  SEC_ADMINISTRATOR, Console::Yes }
         };
 
         static ChatCommandTable commandTable =
@@ -91,17 +89,16 @@ public:
         return true;
     }
 
-    // .karazhan questclear "캐릭터명" 퀘스트ID
-    // 선술집 프리미엄 퀘스트 아이템 구매 시 호출. 대상(온라인) 캐릭터가 해당 퀘스트를
-    // 수락하지 않았으면 강제로 추가한 뒤, 목표를 모두 충족시켜 완료 가능 상태로 만든다.
-    // (코어 .quest complete 로직을 미러링)
-    static bool HandleKarazhanQuestClearCommand(
-        ChatHandler* handler, QuotedString characterName, uint32 questId)
+    // .karazhan reward "캐릭터명" <spellId> <titleId>
+    // 선술집 프리미엄 퀘스트 아이템 구매 시 호출. 대상(온라인) 캐릭터에게
+    // 보상 스펠을 영구 학습시키고/또는 칭호를 영구 부여한다. 값이 0이면 해당 항목은 생략.
+    static bool HandleKarazhanRewardCommand(
+        ChatHandler* handler, QuotedString characterName, uint32 spellId, uint32 titleId)
     {
-        if (characterName.empty() || !questId)
+        if (characterName.empty() || (!spellId && !titleId))
         {
             handler->PSendSysMessage(
-                "Usage: .karazhan questclear \"캐릭터명\" 퀘스트ID");
+                "Usage: .karazhan reward \"캐릭터명\" <spellId> <titleId>");
             return false;
         }
 
@@ -122,111 +119,34 @@ public:
             return false;
         }
 
-        Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
-        if (!quest)
+        // 보상 스펠 영구 학습 (이미 배웠으면 생략)
+        if (spellId)
         {
-            handler->PSendSysMessage("[Karazhan] Quest not found: {}", questId);
-            return false;
-        }
-
-        // 수락하지 않았으면 강제로 퀘스트 추가
-        if (player->GetQuestStatus(questId) == QUEST_STATUS_NONE)
-        {
-            if (player->CanAddQuest(quest, false))
-                player->AddQuestAndCheckCompletion(quest, nullptr);
-        }
-
-        if (player->GetQuestStatus(questId) == QUEST_STATUS_NONE)
-        {
-            handler->PSendSysMessage(
-                "[Karazhan] Cannot add quest {} to {} (log full or requirements).",
-                questId, normalizedName);
-            return false;
-        }
-
-        // 목표 충족 — 코어 .quest complete 미러링
-        for (uint8 x = 0; x < QUEST_ITEM_OBJECTIVES_COUNT; ++x)
-        {
-            uint32 id    = quest->RequiredItemId[x];
-            uint32 count = quest->RequiredItemCount[x];
-            if (!id || !count)
-                continue;
-
-            uint32 curItemCount = player->GetItemCount(id, true);
-            if (curItemCount >= count)
-                continue;
-
-            ItemPosCountVec dest;
-            uint8 msg = player->CanStoreNewItem(NULL_BAG, NULL_SLOT, dest, id, count - curItemCount);
-            if (msg == EQUIP_ERR_OK)
+            if (!sSpellMgr->GetSpellInfo(spellId))
             {
-                Item* item = player->StoreNewItem(dest, id, true);
-                player->SendNewItem(item, count - curItemCount, true, false);
+                handler->PSendSysMessage("[Karazhan] Spell not found: {}", spellId);
+                return false;
             }
+            if (!player->HasSpell(spellId))
+                player->learnSpell(spellId, false);
         }
 
-        for (uint8 i = 0; i < QUEST_OBJECTIVES_COUNT; ++i)
+        // 칭호 영구 부여
+        if (titleId)
         {
-            int32  creature      = quest->RequiredNpcOrGo[i];
-            uint32 creatureCount  = quest->RequiredNpcOrGoCount[i];
-
-            if (creature > 0)
+            CharTitlesEntry const* title = sCharTitlesStore.LookupEntry(titleId);
+            if (!title)
             {
-                if (CreatureTemplate const* creatureInfo = sObjectMgr->GetCreatureTemplate(creature))
-                    for (uint16 z = 0; z < creatureCount; ++z)
-                        player->KilledMonster(creatureInfo, ObjectGuid::Empty);
+                handler->PSendSysMessage("[Karazhan] Title not found: {}", titleId);
+                return false;
             }
-            else if (creature < 0)
-            {
-                for (uint16 z = 0; z < creatureCount; ++z)
-                    player->KillCreditGO(creature);
-            }
+            player->SetTitle(title);
         }
 
-        if (quest->HasSpecialFlag(QUEST_SPECIAL_FLAGS_PLAYER_KILL))
-            if (uint32 reqPlayers = quest->GetPlayersSlain())
-                player->KilledPlayerCreditForQuest(reqPlayers, quest);
-
-        if (uint32 repFaction = quest->GetRepObjectiveFaction())
-        {
-            uint32 repValue = quest->GetRepObjectiveValue();
-            uint32 curRep   = player->GetReputationMgr().GetReputation(repFaction);
-            if (curRep < repValue)
-                if (FactionEntry const* factionEntry = sFactionStore.LookupEntry(repFaction))
-                    player->GetReputationMgr().SetReputation(factionEntry, static_cast<float>(repValue));
-        }
-
-        if (uint32 repFaction = quest->GetRepObjectiveFaction2())
-        {
-            uint32 repValue2 = quest->GetRepObjectiveValue2();
-            uint32 curRep    = player->GetReputationMgr().GetReputation(repFaction);
-            if (curRep < repValue2)
-                if (FactionEntry const* factionEntry = sFactionStore.LookupEntry(repFaction))
-                    player->GetReputationMgr().SetReputation(factionEntry, static_cast<float>(repValue2));
-        }
-
-        int32 reqOrRewMoney = quest->GetRewOrReqMoney(player->GetLevel());
-        if (reqOrRewMoney < 0)
-            player->ModifyMoney(-reqOrRewMoney);
-
-        player->CompleteQuest(questId);
-
-        // 완료 후 즉시 턴인(보상 지급 + 로그에서 제거)하여 확실히 클리어한다. (.quest reward 미러링)
-        bool rewarded = false;
-        if (player->GetQuestStatus(questId) == QUEST_STATUS_COMPLETE)
-        {
-            player->RewardQuest(quest, 0, player);
-            rewarded = true;
-        }
-
-        SendKarazhanMonsterWhisper(
-            player,
-            rewarded
-                ? "프리미엄 퀘스트가 완료되어 보상이 지급되었습니다."
-                : "프리미엄 퀘스트가 완료 처리되었습니다.");
+        SendKarazhanMonsterWhisper(player, "프리미엄 퀘스트 보상이 지급되었습니다.");
         handler->PSendSysMessage(
-            "[Karazhan] Quest {} {} for {}.",
-            questId, rewarded ? "rewarded" : "completed", normalizedName);
+            "[Karazhan] Reward given to {} (spell={}, title={}).",
+            normalizedName, spellId, titleId);
         return true;
     }
 };
